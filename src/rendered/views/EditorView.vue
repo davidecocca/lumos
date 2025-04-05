@@ -1,21 +1,17 @@
 <template>
-    <v-breadcrumbs :items="['Personal', 'New note']" class="ma-3 pa-0">
-        <template v-slot:prepend>
-            <v-icon icon="mdi-folder-outline" size="small" class="mb-1"></v-icon>
-        </template>
-        
-    </v-breadcrumbs>
-    
     <!-- Flex container to place button toggle and text field on the same line -->
-    <div class="d-flex align-bottom mb-2 ml-4 mr-4">
-        <v-text-field 
-        placeholder="New note" 
-        variant="underlined" 
-        prepend-inner-icon="mdi-format-title"
-        class="flex-grow-1 mr-2 note-title"
-        ></v-text-field>
+    <div v-if="note" class="d-flex align-center">
+        <div class="d-flex flex-column ml-4">
+            <p class="text-h4">{{ note.title }}</p>
+            <p class="text-subtitle-1 d-flex align-center">
+                <v-icon size="small" class="mr-2">mdi-folder-outline</v-icon>
+                {{ note.folderName }}
+            </p>
+        </div>
         
-        <v-btn-toggle divided class="ms-2">
+        <v-spacer></v-spacer>
+        
+        <v-btn-toggle divided class="ms-2 mr-4" :max="0" multiple variant="text">
             <v-tooltip text="Generate with AI" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="generateWithAI()">
@@ -24,23 +20,30 @@
                 </template>
             </v-tooltip>
             
-            <v-tooltip text="Add to favorites" location="top">
+            <v-tooltip :text="note.favorite === 1 ? 'Remove from favorites' : 'Add to favorites'" location="top">
                 <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props">
-                        <v-icon>mdi-heart</v-icon>
+                    <v-btn v-bind="props" @click="toggleFavorite(note.id)">
+                        <v-icon :icon="note.favorite === 1 ? 'mdi-heart-broken' : 'mdi-heart'"></v-icon>
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-tooltip text="Rename" location="top">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" @click="renameNoteDialog = true">
+                        <v-icon>mdi-rename</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
             <v-tooltip text="Move to" location="top">
                 <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props">
+                    <v-btn v-bind="props" @click="moveToFolderDialog = true">
                         <v-icon>mdi-file-move</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
             <v-tooltip text="Delete" location="top">
                 <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props">
+                    <v-btn v-bind="props" @click="store.openDeleteNoteConfirmationDialog(note.id)">
                         <v-icon>mdi-delete</v-icon>
                     </v-btn>
                 </template>
@@ -331,15 +334,64 @@
             Bullet list
         </button>
     </div>
-</floating-menu>
--->
+</floating-menu> -->
+
 
 <editor-content :editor="editor" v-model="content" class="ma-3"/>
 
+<!-- Snackbar notification -->
+<v-snackbar v-model="snackbarVisible" :timeout="snackbarDuration" bottom center :color="snackbarColor" variant="tonal">
+    <div class="d-flex align-center">
+        <v-icon icon="mdi-check-circle" class="me-2"></v-icon>
+        {{ snackbarMessage }}
+    </div>
+    
+    <template v-slot:actions>
+        <v-btn
+        variant="text"
+        @click="snackbarVisible = false"
+        >
+        Close
+    </v-btn>
+</template>
+</v-snackbar>
+
+<div v-if="note">
+    <RenameNoteDialog
+    v-model="renameNoteDialog"
+    :noteId="note.id"
+    :currentNoteTitle="note.title"
+    @rename-note="handleRenameNote"
+    />
+    
+    <MoveToFolderDialog
+    v-model="moveToFolderDialog"
+    :noteId="note.id"
+    :currentFolderId="note.folder_id"
+    :currentFolderName="note.folderName"
+    :folders="store.folders"
+    @move-note="handleMoveNote"
+    />
+    
+    <ConfirmDeleteNoteDialog
+    v-model="deleteNoteDialog"
+    :confirmationDialogTitle="confirmationDialogTitle"
+    :confirmationDialogText="confirmationDialogText"
+    :confirmationDialogButtonColor="confirmationDialogButtonColor"
+    :noteId="note.id"
+    @delete-note="handleDeleteNote"
+    />
+</div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import RenameNoteDialog from '../components/navbar/RenameNoteDialog.vue'
+import MoveToFolderDialog from '../components/navbar/MoveToFolderDialog.vue'
+import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDialog.vue'
+
+import { useRouter } from 'vue-router'
+import { useFoldersStore } from '../stores/foldersStore'
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import StarterKit from '@tiptap/starter-kit'
 import {
     BubbleMenu,
@@ -367,7 +419,7 @@ import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import TableRow from '@tiptap/extension-table-row'
 
-// Load all languages with "all" or common languages with "common"
+// Load all languages with "all" and common languages with "common"
 import { all, createLowlight } from 'lowlight'
 
 import { llmService } from '../services/llmService';
@@ -383,14 +435,47 @@ const props = defineProps({
     theme: {
         type: String,
         default: 'light',
+    },
+    noteId: {
+        type: Number,
+        mandatory: true,
     }
 })
 
-const backgroudColor = computed(
-() => {
+const router = useRouter()
+
+// Central store for folders
+const store = useFoldersStore()
+
+// Reactive variables for dialogs
+const renameNoteDialog = computed({
+    get: () => store.renameNoteDialog,
+    set: (val) => store.renameNoteDialog = val
+})
+const moveToFolderDialog = computed({
+    get: () => store.moveToFolderDialog,
+    set: (val) => store.moveToFolderDialog = val
+})
+const deleteNoteDialog = computed({
+    get: () => store.deleteNoteDialog,
+    set: (val) => store.deleteNoteDialog = val
+})
+
+const confirmationDialogTitle = computed(() => store.confirmationDialogTitle)
+const confirmationDialogText = computed(() => store.confirmationDialogText)
+const confirmationDialogButtonColor = computed(() => store.confirmationDialogButtonColor)
+
+// Snackbar reactive variables
+const snackbarVisible = ref(false)
+const snackbarMessage = ref('')
+const snackbarColor = ref('')
+const snackbarDuration = ref(2000)
+
+const note = ref(null)
+
+const backgroudColor = computed(() => {
     return props.theme === 'dark' ? 'black' : 'white'
-}
-)
+})
 
 // Create a lowlight instance
 const lowlight = createLowlight(all)
@@ -535,6 +620,75 @@ const aiMakeShorter = async () => {
     }
 }
 
+const getNote = async (id) => {
+    // Get note from the database
+    const noteInfo = await window.api.getNote(id)
+    note.value = noteInfo
+    
+    // Get note folder from the database
+    const folderInfo = await window.api.getFolder(noteInfo.folder_id)
+    note.value.folderName = folderInfo.name
+    
+    if (note.value && editor.value && note.value.content_json != '{}') {
+        editor.value.commands.setContent(note.value.content_json)
+    }
+}
+
+const saveNoteManually = async () => {
+    try {
+        // Save the content
+        await window.api.updateNote({ id: note.value.id, contentJson: editor.value.getJSON() })
+        
+        // Show snackbar notification
+        snackbarMessage.value = `Note saved!`
+        snackbarColor.value = ''
+        snackbarVisible.value = true
+    } catch (error) {
+        const errorMsg = 'Failed to save note'
+        console.error(errorMsg, error)
+        
+        // Show snackbar notification with error message
+        snackbarMessage.value = errorMsg
+        snackbarColor.value = 'error'
+        snackbarVisible.value = true
+    }
+}
+
+const handleKeyDown = (event) => {
+    // For Mac, event.metaKey is Command; fallback to Ctrl for others
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault()
+        saveNoteManually()
+    }
+}
+
+const handleRenameNote = (noteId, newTitle) => {
+    note.value.title = newTitle
+    store.renameNote(noteId, newTitle)
+}
+
+const toggleFavorite = async (noteId) => {
+    store.toggleNoteFavorite(noteId)
+    note.value.favorite = note.value.favorite === 0 ? 1 : 0
+}
+
+const handleMoveNote = (noteId, newFolderId) => {
+    store.moveNote(noteId, newFolderId)
+    
+    // Update note's folder id and name
+    note.value.folder_id = newFolderId
+    const folderInfo = store.folders.find(folder => folder.id === newFolderId)
+    if (folderInfo) {
+        note.value.folderName = folderInfo.name
+    }
+}
+
+const handleDeleteNote = (noteId) => {
+    store.deleteNote(noteId)
+    // Go back to home page using router
+    router.push({ name: 'home' })
+}
+
 onMounted(() => {
     editor.value = new Editor({
         extensions: [
@@ -573,12 +727,16 @@ onMounted(() => {
         TableCell,
         ],
     })
+    
+    getNote(props.noteId)
+    window.addEventListener('keydown', handleKeyDown)
 })
 
 onBeforeUnmount(() => {
     if (editor.value) {
         editor.value.destroy()
     }
+    window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
 
@@ -594,9 +752,8 @@ onBeforeUnmount(() => {
 .ProseMirror {
     padding: 32px;
     border-radius: 8px;
-    /* background-color: #FAFAFA; */
     border: 1px solid #dbdbdb;
-    height: calc(100vh - 200px);
+    height: calc(100vh - 170px);
     overflow-y: auto;
 }
 

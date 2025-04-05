@@ -3,7 +3,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import EditorView from '../views/EditorView.vue'
-import ChatView from '../views/ChatView.vue'
+import LumosAIView from '../views/LumosAIView.vue'
 
 const routes = [
     {
@@ -23,9 +23,9 @@ const routes = [
         props: true
     },
     {
-        path: '/chat',
-        name: 'chat',
-        component: ChatView
+        path: '/lumos-ai',
+        name: 'lumos-ai',
+        component: LumosAIView,
     },
 ]
 

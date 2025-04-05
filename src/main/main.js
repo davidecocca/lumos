@@ -1,9 +1,10 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, nativeImage, Menu } = require('electron');
 const path = require('path');
 
 // Import CRUD functions from the local DB layer
 const {
     createFolder,
+    getFolderContent,
     getFolder,
     updateFolder,
     deleteFolder,
@@ -18,6 +19,7 @@ const {
     setNoteFavorite,
     updateNoteLastViewed,
     getFavoriteNotes,
+    getLastViewedNotes,
 } = require('./database/crud.js');
 
 // Create the BrowserWindow
@@ -53,6 +55,15 @@ function setupIPC() {
             createFolder(name, (err, folderId) => {
                 if (err) reject(err);
                 else resolve(folderId);
+            });
+        });
+    });
+    
+    ipcMain.handle('get-folder-content', async (event, id) => {
+        return new Promise((resolve, reject) => {
+            getFolderContent(id, (err, folder) => {
+                if (err) reject(err);
+                else resolve(folder);
             });
         });
     });
@@ -183,10 +194,32 @@ function setupIPC() {
             });
         });
     });
+    
+    ipcMain.handle('get-last-viewed-notes', async (event) => {
+        return new Promise((resolve, reject) => {
+            getLastViewedNotes((err, notes) => {
+                if (err) reject(err);
+                else resolve(notes);
+            });
+        });
+    });
+}
+
+// Set the app name for macOS
+if (process.platform === 'darwin') {
+    app.setName('Lumos');
 }
 
 // App lifecycle
 app.whenReady().then(() => {
+    // Only on macOS
+    if (process.platform === 'darwin') {
+        // Set dock icon
+        const iconPath = path.join(__dirname, '..', 'rendered', 'assets', 'app_icon_dock.png');
+        const icon = nativeImage.createFromPath(iconPath);
+        app.dock.setIcon(icon);
+    }
+    
     createWindow();
     setupIPC();
     

@@ -7,7 +7,7 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 class LlmService {
     constructor() {
         this.llm = new ChatOllama({
-            model: "phi4:latest",
+            model: "gemma3:4b",
             temperature: 0,
             maxRetries: 2,
         });

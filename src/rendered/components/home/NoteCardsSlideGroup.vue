@@ -25,7 +25,7 @@
         :key="note.id"
         class="mx-2"
         >
-        <NoteCard :note="note" :class="['ma-4']" />
+        <NoteCard :note="note" :class="['ma-4']" :showAccessedAt="showAccessedAt" :showUpdatedAt="showUpdatedAt"/>
     </v-slide-group-item>
 </v-slide-group>
 </v-sheet>
@@ -57,6 +57,14 @@ const props = defineProps({
         type: String,
         default: 'light',
         validator: (value) => ['light', 'dark', 'auto'].includes(value)
-    }
+    },
+    showAccessedAt: {
+        type: Boolean,
+        default: false
+    },
+    showUpdatedAt: {
+        type: Boolean,
+        default: false
+    },
 });
 </script>

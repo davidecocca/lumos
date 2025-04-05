@@ -6,11 +6,11 @@
     @click="openHome()"
     ></v-list-item>
     
-    <!-- Chat menu -->
+    <!-- AI menu -->
     <v-list-item
-    title="Chat"
-    prepend-icon="mdi-robot"
-    @click="openAIChat()"
+    title="Lumos AI"
+    prepend-icon="mdi-lightning-bolt"
+    @click="openLumosAI()"
     ></v-list-item>
     
     <!-- Settings menu -->
@@ -34,7 +34,7 @@ const openSettings = () => {
     router.push({ name: 'settings' })
 }
 
-const openAIChat = () => {
-    router.push({ name: 'chat' })
+const openLumosAI = () => {
+    router.push({ name: 'lumos-ai' })
 }
 </script>

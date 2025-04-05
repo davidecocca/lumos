@@ -1,12 +1,30 @@
 <template>
-    <div class="mr-3 d-flex align-center">
-        <img src="../../assets/app_icon.svg" alt="Lumos logo" class="nav-logo" />
+    <div class="mr-4 d-flex align-center">
+        <img :src="currentIcon" alt="Lumos logo" class="nav-logo" style="width: 48px; height: auto;"/>
     </div>
-    <div class="d-flex flex-column">
+    <div class="d-flex flex-column justify-center mb-1">
         <span class="text-h6">Lumos</span>
         <span class="subtitle">Your notes, your way.</span>
     </div>
 </template>
+
+<script setup>
+import { useTheme } from 'vuetify'
+import { ref, watch } from 'vue'
+import appIconDark from '../../assets/app_icon_dark.png'
+import appIconLight from '../../assets/app_icon_light.png'
+
+const theme = useTheme()
+const currentIcon = ref(theme.global.name.value === 'dark' ? appIconDark : appIconLight)
+
+// Watch for theme changes
+watch(
+() => theme.global.name.value,
+(newTheme) => {
+    currentIcon.value = newTheme === 'dark' ? appIconDark : appIconLight
+}
+)
+</script>
 
 <style scoped>
 .nav-logo {

@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('api', {
     // Folders
     createFolder: (name) => ipcRenderer.invoke('create-folder', name),
+    getFolderContent: (id) => ipcRenderer.invoke('get-folder-content', id),
     getFolder: (id) => ipcRenderer.invoke('get-folder', id),
     updateFolder: (payload) => ipcRenderer.invoke('update-folder', payload),
     deleteFolder: (id) => ipcRenderer.invoke('delete-folder', id),
@@ -19,4 +20,5 @@ contextBridge.exposeInMainWorld('api', {
     setNoteFavorite: (payload) => ipcRenderer.invoke('set-note-favorite', payload),
     updateNoteLastViewed: (id) => ipcRenderer.invoke('update-note-last-viewed', id),
     getFavoriteNotes: () => ipcRenderer.invoke('get-favorite-notes'),
+    getLastViewedNotes: () => ipcRenderer.invoke('get-last-viewed-notes'),
 });

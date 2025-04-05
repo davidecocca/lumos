@@ -14,29 +14,31 @@
         ></div>
         
         <!-- Main content area -->
-        <v-main class="d-flex justify-center">
-            <v-row>
+        <v-main>
+            <v-row no-gutters>
                 <!-- Transition wrapper for navbar icon column -->
                 <transition name="navbar-col-slide-fade">
                     <v-col
                     v-if="showNavbarIcon"
                     class="navbar-col"
+                    cols="auto"
                     >
-                    <div class="pa-4" height="100%">
+                    <div class="pt-4 pb-4 pl-2 pr-2" height="100%">
                         <v-btn
                         icon="mdi-menu"
                         @click="toggleNavbar"
+                        variant="text"
                         />
                     </div>
                 </v-col>
             </transition>
             
             <!-- Main content -->
-            <v-col>
+            <v-col class="grow">
                 <v-container class="d-flex flex-column">
                     <router-view
                     :key="$route.fullPath"
-                    :theme="themePreference" 
+                    :theme="themePreference"
                     @update:theme="themePreference = $event"
                     />
                 </v-container>

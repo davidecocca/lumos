@@ -5,16 +5,17 @@
     :color="navbarColor"
     >
     <!-- Navbar header -->
-    <div class="d-flex align-center pa-4">
-        <!-- App title with logo at the top of navbar -->
-        <AppTitle />
-        
+    <div class="d-flex align-center pt-4 pb-4 pl-1">
         <!-- Button to toggle the drawer -->
         <v-btn
-        icon="mdi-menu-open"
+        icon="mdi-menu"
         @click="drawerOpen = !drawerOpen"
-        class="ml-auto"
+        variant="text"
+        class="mr-2"
         />
+        
+        <!-- App title with logo at the top of navbar -->
+        <AppTitle />
     </div>
     
     <!-- Divider -->
