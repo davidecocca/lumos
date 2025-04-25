@@ -49,15 +49,23 @@
 </template>
 
 <script setup>
+import NavigationDrawer from '../components/navbar/NavDrawer.vue';
+
+import { aiPreferencesStore } from '../stores/aiPreferencesStore';
+import LlmService from '../services/llmService';
+
 import { watch, ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useTheme, useDisplay } from 'vuetify'
-import NavigationDrawer from '../components/navbar/NavDrawer.vue';
 
 const isDrawerOpen = ref(true);
 const showNavbarIcon = ref(false);
 
 // Theme management
 const theme = useTheme()
+
+// Store for AI preferences
+const aiStore = aiPreferencesStore();
+const llmService = new LlmService();
 
 // Add display utilities for responsive behavior
 const { smAndDown } = useDisplay();
@@ -111,10 +119,25 @@ const closeNavbar = function() {
     isDrawerOpen.value = false;
 }
 
+// Fetch models for all providers
+const fetchAllModels = async () => {
+    try {
+        // Fetch Ollama models
+        const models = await llmService.getOllamaModels();
+        aiStore.updateAvailableModels('ollama', models);
+    } catch (error) {
+        console.error('Error fetching models:', error);
+    }
+};
+
 // Set up listener for OS theme changes
 onMounted(() => {
     mediaQuery.addEventListener("change", handleOSChange);
     updateTheme();
+    
+    // Load AI preferences once at app startup
+    aiStore.loadPreferences();
+    fetchAllModels();
 });
 
 // Clean up the media query event listener

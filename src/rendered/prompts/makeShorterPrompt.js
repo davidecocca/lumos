@@ -1,7 +1,5 @@
-const makeShorterPrompt = `You are an expert writer assistant.
-Your task is to summarize the provided text by making it more concise, clear, and engaging.
-Focus on grammar, punctuation, and style.
-Return only the summarized text. No explanations or additional comments allowed.
-`
+const makeShorterPrompt = `You are an expert writing assistant.
+Summarize the provided text so it’s concise, clear, and engaging.
+Return only the summarized text. No explanations or additional comments allowed.`
 
 export default makeShorterPrompt;

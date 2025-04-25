@@ -9,11 +9,15 @@
         :theme="theme"
         @update:theme="updateTheme"
         />
+        
+        <!-- Lumos AI settings -->
+        <LumosAICard />
     </div>
 </template>
 
 <script setup>
 import ChangeThemeCard from '../components/settings/ChangeThemeCard.vue';
+import LumosAICard from '../components/settings/LumosAICard.vue';
 
 import { computed } from 'vue';
 

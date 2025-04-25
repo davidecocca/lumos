@@ -1,6 +1,6 @@
 <template>
     <div class="ma-2">
-        <div class="d-flex align-center pa-4">
+        <div class="d-flex align-center pt-4 pb-4 pl-2 pr-2">
             <v-icon class="mr-2">mdi-shape</v-icon>
             <p class="text-h6">Appearance</p>
         </div>

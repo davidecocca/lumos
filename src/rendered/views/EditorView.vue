@@ -12,15 +12,15 @@
         <v-spacer></v-spacer>
         
         <v-btn-toggle divided class="ms-2 mr-4" :max="0" multiple variant="text">
-            <v-tooltip text="Generate with AI" location="top">
+            <v-tooltip text="Brainstorm with AI" location="top">
                 <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="generateWithAI()">
-                        <v-icon>mdi-lightning-bolt</v-icon>
+                    <v-btn v-bind="props" @click="brainstormWithAIDialog = !brainstormWithAIDialog">
+                        <v-icon>mdi-lightbulb</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
             
-            <v-tooltip :text="note.favorite === 1 ? 'Remove from favorites' : 'Add to favorites'" location="top">
+            <v-tooltip :text="note.favorite === 1 ? 'Unfavorite' : 'Favorite'" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="toggleFavorite(note.id)">
                         <v-icon :icon="note.favorite === 1 ? 'mdi-heart-broken' : 'mdi-heart'"></v-icon>
@@ -34,7 +34,7 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip text="Move to" location="top">
+            <v-tooltip text="Move" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="moveToFolderDialog = true">
                         <v-icon>mdi-file-move</v-icon>
@@ -64,9 +64,9 @@
         :style="{ backgroundColor: backgroudColor }"
         >
         
-        <div class="d-flex flex-column rounded pa-2 elevation-4" :style="{ width: '460px', backgroundColor: backgroudColor }">
+        <div class="d-flex flex-column rounded pa-2 elevation-4" :style="{ width: '465px', backgroundColor: backgroudColor }">
             <!-- First row with text formatting buttons -->
-            <div class="d-flex flex-row align-center mb-2">
+            <div class="d-flex flex-row align-center justify-center mb-2">
                 <v-btn-toggle
                 color="primary"
                 multiple
@@ -136,15 +136,15 @@
         <v-divider class="ma-1"></v-divider>
         
         <!-- Second row with style and highlight dropdowns -->
-        <div class="d-flex flex-row align-center mt-2">
+        <div class="d-flex flex-row align-center justify-center mt-2">
             <v-menu>
                 <template v-slot:activator="{ props }">
                     <v-btn
                     height="40px"
-                    width="119px"
+                    width="135px"
                     v-bind="props"
                     variant="text"
-                    append-icon="mdi-chevron-down"
+                    prepend-icon="mdi-chevron-down"
                     >
                     Style
                 </v-btn>
@@ -223,10 +223,10 @@
             <template v-slot:activator="{ props }">
                 <v-btn
                 height="40px"
-                width="175px"
+                width="135px"
                 v-bind="props"
                 variant="text"
-                append-icon="mdi-marker"
+                prepend-icon="mdi-marker"
                 >
                 Highlight
             </v-btn>
@@ -255,10 +255,10 @@
     <template v-slot:activator="{ props }">
         <v-btn
         height="40px"
-        width="118px"
+        width="135px"
         v-bind="props"
         variant="text"
-        append-icon="mdi-palette"
+        prepend-icon="mdi-palette"
         >
         Color
     </v-btn>
@@ -286,34 +286,138 @@
 <v-divider class="ma-1 mt-2"></v-divider>
 
 <!-- Third row with AI features -->
-<div class="d-flex flex-row align-center mt-2">
-    <!-- Improve -->
-    <v-tooltip text="Improve writing" location="bottom">
+<div class="d-flex flex-row align-center justify-center mt-2">
+    <!-- Ask AI -->
+    <v-tooltip text="Ask AI to explain or edit" location="bottom">
         <template v-slot:activator="{ props }">
             <v-btn
-            v-bind="props" @click="aiImproveWriting()"
+            v-bind="props" @click="aiAsk()"
             variant="text"
-            prepend-icon="mdi-magic-staff"
+            prepend-icon="mdi-forum"
+            width="135px"
+            height="40px"
             >
-            Fix
+            Ask AI
         </v-btn>
     </template>
 </v-tooltip>
 
 <v-divider vertical class="mx-2"></v-divider>
 
-<!-- Summarize -->
-<v-tooltip text="Make shorter" location="bottom">
+<!-- Check grammar -->
+<v-tooltip text="Fix spelling & grammar" location="bottom">
     <template v-slot:activator="{ props }">
         <v-btn
-        v-bind="props" @click="aiMakeShorter()"
+        v-bind="props" @click="aiFixGrammar()"
         variant="text"
-        prepend-icon="mdi-text-short"
+        prepend-icon="mdi-spellcheck"
+        width="135px"
+        height="40px"
         >
-        TL;DR
+        Check
     </v-btn>
 </template>
 </v-tooltip>
+
+<v-divider vertical class="mx-2"></v-divider>
+
+<v-menu>
+    <template v-slot:activator="{ props }">
+        <v-btn
+        height="40px"
+        width="135px"
+        v-bind="props"
+        variant="text"
+        prepend-icon="mdi-chevron-down"
+        >
+        AI Tools
+    </v-btn>
+</template>
+<v-list density="compact">
+    <v-list-subheader>Edit</v-list-subheader>
+    <v-list-item @click="aiFormatText()">
+        <template v-slot:prepend>
+            <v-icon icon="mdi-format-text"></v-icon>
+        </template>
+        <v-list-item-title>Format text</v-list-item-title>
+    </v-list-item>
+    <v-list-item @click="aiImproveWriting()">
+        <template v-slot:prepend>
+            <v-icon icon="mdi-auto-fix"></v-icon>
+        </template>
+        <v-list-item-title>Improve writing</v-list-item-title>
+    </v-list-item>
+    <v-list-item @click="aiMakeShorter()">
+        <template v-slot:prepend>
+            <v-icon icon="mdi-text-short"></v-icon>
+        </template>
+        <v-list-item-title>Summarize</v-list-item-title>
+    </v-list-item>
+    <v-list-item @click="aiMakeLonger()">
+        <template v-slot:prepend>
+            <v-icon icon="mdi-text-long"></v-icon>
+        </template>
+        <v-list-item-title>Expand</v-list-item-title>
+    </v-list-item>
+    <v-list-item @click="aiSimplify()">
+        <template v-slot:prepend>
+            <v-icon icon="mdi-cake-variant"></v-icon>
+        </template>
+        <v-list-item-title>Simplify language</v-list-item-title>
+    </v-list-item>
+    <v-list-subheader>Change tone</v-list-subheader>
+    <v-menu open-on-hover location="end" offset="-10">
+        <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-tune-variant"></v-icon>
+                </template>
+                <template v-slot:append>
+                    <v-icon icon="mdi-chevron-right"></v-icon>
+                </template>
+                <v-list-item-title>Change tone to</v-list-item-title>
+            </v-list-item>
+        </template>
+        <v-list density="compact" style="min-width: 180px;">
+            <v-list-item
+            v-for="tone in supportedTones"
+            :key="tone.key"
+            @click="aiChangeTone(tone.key)"
+            >
+            <template v-slot:prepend>
+                <v-icon :icon="tone.icon"></v-icon>
+            </template>
+            <v-list-item-title>{{ tone.label }}</v-list-item-title>
+        </v-list-item>
+    </v-list>
+</v-menu>
+<v-list-subheader>Translate</v-list-subheader>
+<v-menu open-on-hover location="end" offset="-10">
+    <template v-slot:activator="{ props }">
+        <v-list-item v-bind="props">
+            <template v-slot:prepend>
+                <v-icon icon="mdi-translate"></v-icon>
+            </template>
+            <template v-slot:append>
+                <v-icon icon="mdi-chevron-right"></v-icon>
+            </template>
+            <v-list-item-title>Translate to</v-list-item-title>
+        </v-list-item>
+    </template>
+    <v-list density="compact" style="min-width: 160px;">
+        <v-list-item
+        v-for="lang in supportedLanguages"
+        :key="lang.key"
+        @click="aiTranslateTo(lang.key)"
+        >
+        <v-list-item-title>
+            <span style="margin-right: 32px;">{{ lang.icon }}</span>{{ lang.label }}
+        </v-list-item-title>
+    </v-list-item>
+</v-list>
+</v-menu>
+</v-list>
+</v-menu>
 
 </div>
 </div>
@@ -381,6 +485,15 @@
     :noteId="note.id"
     @delete-note="handleDeleteNote"
     />
+    
+    <BrainstormWithAIDialog
+    v-model="brainstormWithAIDialog"
+    />
+    
+    <AskAIDialog
+    v-model="askAIDialog"
+    :selectedText="selectedText"
+    />
 </div>
 </template>
 
@@ -388,6 +501,18 @@
 import RenameNoteDialog from '../components/navbar/RenameNoteDialog.vue'
 import MoveToFolderDialog from '../components/navbar/MoveToFolderDialog.vue'
 import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDialog.vue'
+import BrainstormWithAIDialog from '../components/editor/BrainstormWithAIDialog.vue'
+import AskAIDialog from '../components/editor/AskAIDialog.vue'
+
+import { createLlmService } from '../services/llmService';
+import fixGrammarPrompt from '../prompts/fixGrammarPrompt'
+import formatTextPrompt from '../prompts/formatTextPrompt';
+import improveWritingPrompt from '../prompts/improveWritingPrompt'
+import makeShorterPrompt from '../prompts/makeShorterPrompt'
+import makeLongerPrompt from '../prompts/makeLongerPrompt'
+import simplifyLanguagePrompt from '../prompts/simplifyLanguagePrompt';
+import changeTonePrompt from '../prompts/changeTonePrompt';
+import translateToPrompt from '../prompts/translateToPrompt';
 
 import { useRouter } from 'vue-router'
 import { useFoldersStore } from '../stores/foldersStore'
@@ -419,17 +544,8 @@ import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import TableRow from '@tiptap/extension-table-row'
 
-// Load all languages with "all" and common languages with "common"
+// Code block highlighting: load all languages with "all" and common languages with "common"
 import { all, createLowlight } from 'lowlight'
-
-import { llmService } from '../services/llmService';
-import { createLlmService } from '../services/llmService';
-
-import improveWritingPrompt from '../prompts/improveWritingPrompt'
-const improveWritingLlmService = createLlmService(improveWritingPrompt);
-
-import makeShorterPrompt from '../prompts/makeShorterPrompt'
-const makeShorterLlmService = createLlmService(makeShorterPrompt);
 
 const props = defineProps({
     theme: {
@@ -446,6 +562,33 @@ const router = useRouter()
 
 // Central store for folders
 const store = useFoldersStore()
+
+// Init LLM services for AI features
+const fixGrammarLLMService = createLlmService(fixGrammarPrompt, 'editorTools');
+const formatTextLLMService = createLlmService(formatTextPrompt, 'editorTools');
+const improveWritingLLMService = createLlmService(improveWritingPrompt, 'editorTools');
+const makeShorterLLMService = createLlmService(makeShorterPrompt, 'editorTools');
+const makeLongerLLMService = createLlmService(makeLongerPrompt, 'editorTools');
+const simplifyLanguageLLMService = createLlmService(simplifyLanguagePrompt, 'editorTools');
+
+// Init list with supported tones for change tone tool
+const supportedTones = [
+{ key: 'professional', icon: 'mdi-briefcase', label: 'Professional' },
+{ key: 'friendly', icon: 'mdi-emoticon-happy', label: 'Friendly' },
+{ key: 'empathetic', icon: 'mdi-handshake', label: 'Empathetic' },
+{ key: 'persuasive', icon: 'mdi-creation', label: 'Persuasive' },
+{ key: 'casual', icon: 'mdi-emoticon-cool', label: 'Casual' }
+]
+
+// Init list with supported languages for translation tool
+const supportedLanguages = [
+{ key: 'english', icon: '🇺🇸', label: 'English' },
+{ key: 'italian', icon: '🇮🇹', label: 'Italian' },
+{ key: 'spanish', icon: '🇪🇸', label: 'Spanish' },
+{ key: 'french', icon: '🇫🇷', label: 'French' },
+{ key: 'german', icon: '🇩🇪', label: 'German' },
+{ key: 'portuguese', icon: '🇧🇷', label: 'Portuguese' },
+]
 
 // Reactive variables for dialogs
 const renameNoteDialog = computed({
@@ -471,10 +614,14 @@ const snackbarMessage = ref('')
 const snackbarColor = ref('')
 const snackbarDuration = ref(2000)
 
+const brainstormWithAIDialog = ref(false)
+const askAIDialog = ref(false)
+
 const note = ref(null)
+const selectedText = ref('')
 
 const backgroudColor = computed(() => {
-    return props.theme === 'dark' ? 'black' : 'white'
+    return props.theme === 'dark' ? '#1c1c1c' : 'white'
 })
 
 // Create a lowlight instance
@@ -524,99 +671,6 @@ const handleTextColor = (colorValue) => {
         editor.value.chain().focus().unsetColor().run();
     } else {
         editor.value.chain().focus().setColor(colorValue).run();
-    }
-}
-
-const generateWithAI = async () => {
-    try {
-        const userMessage = "Generate a simple hello message";
-        const response = await llmService.sendMessage(userMessage);
-        
-        // Display the response in your view
-        editor.value.chain().focus().insertContent(response).run();
-    } catch (error) {
-        console.error('Failed to get response:', error);
-        // Show error to user
-    }
-}
-
-const aiImproveWriting = async () => {
-    if (!editor.value) {
-        console.error('Editor not ready');
-        return;
-    }
-    
-    const { state } = editor.value.view;
-    const { from, to } = state.selection;
-    if (from === to) {
-        console.error('No text selected');
-        return;
-    }
-    
-    // Immediately hide bubble menu
-    editor.value.commands.blur();
-    
-    // Turn on skeleton
-    isLoading.value = true;
-    
-    try {
-        const selectedText = editor.value.getText(from, to);
-        const response = await improveWritingLlmService.sendMessage(selectedText);
-        
-        // Optional delay if needed to ensure bubble menu unmount
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Replace text
-        editor.value.chain()
-        .focus()
-        .deleteRange({ from, to })
-        .insertContent(response)
-        .run();
-    } catch (error) {
-        console.error('Failed to get response:', error);
-    } finally {
-        // Turn off skeleton
-        isLoading.value = false;
-    }
-}
-
-const aiMakeShorter = async () => {
-    if (!editor.value) {
-        console.error('Editor not ready');
-        return;
-    }
-    
-    const { state } = editor.value.view;
-    const { from, to } = state.selection;
-    if (from === to) {
-        console.error('No text selected');
-        return;
-    }
-    
-    // Immediately hide bubble menu
-    editor.value.commands.blur();
-    
-    // Turn on skeleton
-    isLoading.value = true;
-    
-    try {
-        const selectedText = editor.value.getText(from, to);
-        const response = await makeShorterLlmService.sendMessage(selectedText);
-        
-        // Optional delay if needed to ensure bubble menu unmount
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Replace text
-        editor.value.chain()
-        .focus()
-        .deleteRange({ from, to })
-        .insertContent(response)
-        .run();
-    } catch (error) {
-        console.error('Failed to get response:', error);
-    } finally {
-        // Turn off skeleton
-        isLoading.value = false;
     }
 }
 
@@ -687,6 +741,391 @@ const handleDeleteNote = (noteId) => {
     store.deleteNote(noteId)
     // Go back to home page using router
     router.push({ name: 'home' })
+}
+
+const aiAsk = () => {
+    if (!editor.value) {
+        console.error('Editor not ready');
+        return;
+    }
+    
+    const { state } = editor.value.view;
+    const { from, to } = state.selection;
+    if (from === to) {
+        console.error('No text selected');
+        return;
+    }
+    
+    // Immediately hide bubble menu
+    editor.value.commands.blur();
+    
+    // Get selected text
+    selectedText.value = state.doc.textBetween(from, to, ' ');
+
+    // Show AI dialog
+    askAIDialog.value = true;
+}
+
+const aiFixGrammar = async () => {
+    if (!editor.value) {
+        console.error('Editor not ready');
+        return;
+    }
+    
+    const { state } = editor.value.view;
+    const { from, to } = state.selection;
+    if (from === to) {
+        console.error('No text selected');
+        return;
+    }
+    
+    // Immediately hide bubble menu
+    editor.value.commands.blur();
+    
+    // Turn on skeleton
+    isLoading.value = true;
+    
+    try {
+        const selectedText = state.doc.textBetween(from, to, ' ');
+
+        let streamedText = '';
+        let firstChunk = true;
+        const stream = await fixGrammarLLMService.stream(selectedText);
+        
+        for await (const chunk of stream) {
+            streamedText += chunk;
+            if (firstChunk) {
+                // Delete the range and insert the first chunk
+                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                firstChunk = false;
+            } else {
+                // Only append the new chunk
+                editor.value.chain().focus().insertContent(chunk).run();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to get response:', error);
+    } finally {
+        // Turn off skeleton
+        isLoading.value = false;
+    }
+}
+
+const aiFormatText = async () => {
+    if (!editor.value) {
+        console.error('Editor not ready');
+        return;
+    }
+    
+    const { state } = editor.value.view;
+    const { from, to } = state.selection;
+    if (from === to) {
+        console.error('No text selected');
+        return;
+    }
+    
+    // Immediately hide bubble menu
+    editor.value.commands.blur();
+    
+    // Turn on skeleton
+    isLoading.value = true;
+    
+    try {
+        const selectedText = state.doc.textBetween(from, to, ' ')
+
+        const response = await formatTextLLMService.generate(selectedText);
+
+        // Optional delay if needed to ensure bubble menu unmount
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Replace text
+        editor.value.chain()
+        .focus()
+        .deleteRange({ from, to })
+        .insertContent(response)
+        .run();
+    } catch (error) {
+        console.error('Failed to get response:', error);
+    } finally {
+        // Turn off skeleton
+        isLoading.value = false;
+    }
+}
+
+const aiImproveWriting = async () => {
+    if (!editor.value) {
+        console.error('Editor not ready');
+        return;
+    }
+    
+    const { state } = editor.value.view;
+    const { from, to } = state.selection;
+    if (from === to) {
+        console.error('No text selected');
+        return;
+    }
+    
+    // Immediately hide bubble menu
+    editor.value.commands.blur();
+    
+    // Turn on skeleton
+    isLoading.value = true;
+    
+    try {
+        const selectedText = state.doc.textBetween(from, to, ' ');
+
+        let streamedText = '';
+        let firstChunk = true;
+        const stream = await improveWritingLLMService.stream(selectedText);
+        
+        for await (const chunk of stream) {
+            streamedText += chunk;
+            if (firstChunk) {
+                // Delete the range and insert the first chunk
+                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                firstChunk = false;
+            } else {
+                // Only append the new chunk
+                editor.value.chain().focus().insertContent(chunk).run();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to get response:', error);
+    } finally {
+        // Turn off skeleton
+        isLoading.value = false;
+    }
+}
+
+const aiMakeShorter = async () => {
+    if (!editor.value) {
+        console.error('Editor not ready');
+        return;
+    }
+    
+    const { state } = editor.value.view;
+    const { from, to } = state.selection;
+    if (from === to) {
+        console.error('No text selected');
+        return;
+    }
+    
+    // Immediately hide bubble menu
+    editor.value.commands.blur();
+    
+    // Turn on skeleton
+    isLoading.value = true;
+    
+    try {
+        const selectedText = state.doc.textBetween(from, to, ' ');
+
+        let streamedText = '';
+        let firstChunk = true;
+        const stream = await makeShorterLLMService.stream(selectedText);
+        
+        for await (const chunk of stream) {
+            streamedText += chunk;
+            if (firstChunk) {
+                // Delete the range and insert the first chunk
+                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                firstChunk = false;
+            } else {
+                // Only append the new chunk
+                editor.value.chain().focus().insertContent(chunk).run();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to get response:', error);
+    } finally {
+        // Turn off skeleton
+        isLoading.value = false;
+    }
+}
+
+const aiMakeLonger = async () => {
+    if (!editor.value) {
+        console.error('Editor not ready');
+        return;
+    }
+    
+    const { state } = editor.value.view;
+    const { from, to } = state.selection;
+    if (from === to) {
+        console.error('No text selected');
+        return;
+    }
+    
+    // Immediately hide bubble menu
+    editor.value.commands.blur();
+    
+    // Turn on skeleton
+    isLoading.value = true;
+    
+    try {
+        const selectedText = state.doc.textBetween(from, to, ' ');
+
+        let streamedText = '';
+        let firstChunk = true;
+        const stream = await makeLongerLLMService.stream(selectedText);
+        
+        for await (const chunk of stream) {
+            streamedText += chunk;
+            if (firstChunk) {
+                // Delete the range and insert the first chunk
+                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                firstChunk = false;
+            } else {
+                // Only append the new chunk
+                editor.value.chain().focus().insertContent(chunk).run();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to get response:', error);
+    } finally {
+        // Turn off skeleton
+        isLoading.value = false;
+    }
+}
+
+const aiSimplify = async () => {
+    if (!editor.value) {
+        console.error('Editor not ready');
+        return;
+    }
+    
+    const { state } = editor.value.view;
+    const { from, to } = state.selection;
+    if (from === to) {
+        console.error('No text selected');
+        return;
+    }
+    
+    // Immediately hide bubble menu
+    editor.value.commands.blur();
+    
+    // Turn on skeleton
+    isLoading.value = true;
+    
+    try {
+        const selectedText = state.doc.textBetween(from, to, ' ');
+
+        let streamedText = '';
+        let firstChunk = true;
+        const stream = await simplifyLanguageLLMService.stream(selectedText);
+        
+        for await (const chunk of stream) {
+            streamedText += chunk;
+            if (firstChunk) {
+                // Delete the range and insert the first chunk
+                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                firstChunk = false;
+            } else {
+                // Only append the new chunk
+                editor.value.chain().focus().insertContent(chunk).run();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to get response:', error);
+    } finally {
+        // Turn off skeleton
+        isLoading.value = false;
+    }
+}
+
+const aiChangeTone = async (tone) => {
+    if (!editor.value) {
+        console.error('Editor not ready');
+        return;
+    }
+    
+    const { state } = editor.value.view;
+    const { from, to } = state.selection;
+    if (from === to) {
+        console.error('No text selected');
+        return;
+    }
+    
+    // Immediately hide bubble menu
+    editor.value.commands.blur();
+    
+    // Turn on skeleton
+    isLoading.value = true;
+    
+    try {
+        // Create LLM service with the selected tone
+        const changeToneLLMService = createLlmService(changeTonePrompt(tone), 'editorTools');
+        
+        const selectedText = state.doc.textBetween(from, to, ' ');
+
+        let streamedText = '';
+        let firstChunk = true;
+        const stream = await changeToneLLMService.stream(selectedText);
+        
+        for await (const chunk of stream) {
+            streamedText += chunk;
+            if (firstChunk) {
+                // Delete the range and insert the first chunk
+                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                firstChunk = false;
+            } else {
+                // Only append the new chunk
+                editor.value.chain().focus().insertContent(chunk).run();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to get response:', error);
+    } finally {
+        // Turn off skeleton
+        isLoading.value = false;
+    }
+}
+
+const aiTranslateTo = async (language) => {
+    if (!editor.value) {
+        console.error('Editor not ready');
+        return;
+    }
+    
+    const { state } = editor.value.view;
+    const { from, to } = state.selection;
+    if (from === to) {
+        console.error('No text selected');
+        return;
+    }
+    
+    // Immediately hide bubble menu
+    editor.value.commands.blur();
+    
+    // Turn on skeleton
+    isLoading.value = true;
+    
+    try {
+        // Create LLM service with the chosen language
+        const translateToLLMService = createLlmService(translateToPrompt(language), 'editorTools');
+        
+        const selectedText = state.doc.textBetween(from, to, ' ');
+
+        let streamedText = '';
+        let firstChunk = true;
+        const stream = await translateToLLMService.stream(selectedText);
+        
+        for await (const chunk of stream) {
+            streamedText += chunk;
+            if (firstChunk) {
+                // Delete the range and insert the first chunk
+                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                firstChunk = false;
+            } else {
+                // Only append the new chunk
+                editor.value.chain().focus().insertContent(chunk).run();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to get response:', error);
+    } finally {
+        // Turn off skeleton
+        isLoading.value = false;
+    }
 }
 
 onMounted(() => {

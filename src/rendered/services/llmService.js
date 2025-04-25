@@ -1,5 +1,10 @@
 import { ChatOllama } from "@langchain/ollama";
+import { ChatGroq } from "@langchain/groq";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { aiPreferencesStore } from '../stores/aiPreferencesStore';
+
+const ollamaBaseUrl = "http://localhost:11434";
+const ollamaListModelsUrl = `${ollamaBaseUrl}/api/tags`;
 
 /**
 * Service for interacting with LLM models
@@ -25,7 +30,7 @@ class LlmService {
     * @param {string} message - The user's message
     * @returns {Promise<object>} - The LLM's response
     */
-    async sendMessage(message) {
+    async generate(message) {
         try {
             const response = await this.chain.invoke({
                 input: message,
@@ -33,6 +38,26 @@ class LlmService {
             return response.content;
         } catch (error) {
             console.error("Error communicating with LLM:", error);
+            throw error;
+        }
+    }
+    
+    /**
+    * Stream responses from the LLM
+    * @param {string} message - The user's message
+    * @returns {AsyncGenerator<string>} - Generator yielding response chunks
+    */
+    async *stream(message) {
+        try {
+            const stream = await this.chain.stream({
+                input: message,
+            });
+            
+            for await (const chunk of stream) {
+                yield chunk.content;
+            }
+        } catch (error) {
+            console.error("Error streaming from LLM:", error);
             throw error;
         }
     }
@@ -48,30 +73,67 @@ class LlmService {
         ]);
         this.chain = this.prompt.pipe(this.llm);
     }
+    
+    async getOllamaModels() {
+        try {
+            const response = await fetch(ollamaListModelsUrl);
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+            const models = await response.json();
+            const modelNames = models.models.map(model => model.name);
+            return modelNames;
+        } catch (error) {
+            console.error("Error fetching models:", error);
+            throw error;
+        }
+    }
+    
 }
 
 /**
 * Create a custom instance of LlmService with a specific prompt
 * @param {string} systemPrompt - The system prompt to use
+* @param {string} feature - The feature for which the LLM is being configured (e.g., 'chat')
 * @param {object} options - Optional configuration for the LLM (model, temperature, etc.)
 * @returns {LlmService} - A configured LlmService instance
 */
-export function createLlmService(systemPrompt, options = {}) {
+export function createLlmService(systemPrompt, feature = 'chat', options = {}) {
     const service = new LlmService();
+    const aiStore = aiPreferencesStore();
     
     // Set custom system prompt
     service.setSystemPrompt(systemPrompt || "You are a helpful assistant.");
     
-    // Configure custom model options if provided
-    if (options.model || options.temperature !== undefined || options.maxRetries !== undefined) {
+    // Get settings from store based on feature
+    const featureSettings = aiStore[feature];
+    const provider = featureSettings?.provider;
+    const model = featureSettings?.model;
+    
+    // Configure LLM based on provider and model
+    if (provider === 'ollama' && model) {
         service.llm = new ChatOllama({
-            model: options.model || "llama3.2:3b",
+            model: model,
             temperature: options.temperature !== undefined ? options.temperature : 0,
             maxRetries: options.maxRetries !== undefined ? options.maxRetries : 2,
         });
-        // Rebuild the chain with new LLM
-        service.chain = service.prompt.pipe(service.llm);
     }
+    else if (provider === 'groq' && model) {
+        service.llm = new ChatGroq({
+            model: model,
+            temperature: options.temperature !== undefined ? options.temperature : 0,
+            maxRetries: options.maxRetries !== undefined ? options.maxRetries : 2,
+            apiKey: aiStore.apiKeys.groq,
+        });
+    } else if (provider === 'openai' && model) {
+        // Configure OpenAI LLM here
+        // service.llm = new OpenAILLM({ model, ...options });
+    } else {
+        throw new Error(`Unsupported provider: ${provider}`);
+    }
+    
+    // Rebuild the chain with new LLM
+    service.chain = service.prompt.pipe(service.llm);
     
     return service;
 }
