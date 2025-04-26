@@ -1192,7 +1192,7 @@ onBeforeUnmount(() => {
     padding: 32px;
     border-radius: 8px;
     border: 1px solid #dbdbdb;
-    height: calc(100vh - 170px);
+    height: calc(100vh - 220px);
     overflow-y: auto;
 }
 

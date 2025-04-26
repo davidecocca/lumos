@@ -27,6 +27,11 @@ function createWindow() {
     const win = new BrowserWindow({
         width: 800,
         height: 600,
+        // Remove the default titlebar
+        titleBarStyle: 'hidden',
+        trafficLightPosition: { x: 10, y: 16 },
+        // Expose window controlls in Windows/Linux
+        ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
         webPreferences: {
             // Use a preload script for secure IPC access from renderer
             preload: path.join(__dirname, 'preload.js'),
@@ -45,6 +50,24 @@ function createWindow() {
         win.loadFile(path.join(__dirname, '../../dist', 'index.html'));
         // Adjust the path above to match where Vite outputs your build
     }
+    
+    // Setup the events to manage window fullscreen state
+    win.on('enter-full-screen', () => {
+        console.log('Main process: Entered full screen');
+        // Send message to the renderer process
+        win.webContents.send('fullscreen-changed', true);
+    });
+    
+    win.on('leave-full-screen', () => {
+        console.log('Main process: Left full screen');
+        // Send message to the renderer process
+        win.webContents.send('fullscreen-changed', false);
+    });
+    
+    // Initial check in case the window starts fullscreen
+    win.webContents.on('did-finish-load', () => {
+        win.webContents.send('fullscreen-changed', win.isFullScreen());
+    });
 }
 
 // Set up IPC handlers for folders and notes
@@ -215,7 +238,7 @@ app.whenReady().then(() => {
     // Only on macOS
     if (process.platform === 'darwin') {
         // Set dock icon
-        const iconPath = path.join(__dirname, '..', 'rendered', 'assets', 'app_icon_dock.png');
+        const iconPath = path.join(__dirname, '..', 'rendered', 'assets', 'app_logo.png');
         const icon = nativeImage.createFromPath(iconPath);
         app.dock.setIcon(icon);
     }

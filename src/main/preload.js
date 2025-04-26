@@ -21,4 +21,10 @@ contextBridge.exposeInMainWorld('api', {
     updateNoteLastViewed: (id) => ipcRenderer.invoke('update-note-last-viewed', id),
     getFavoriteNotes: () => ipcRenderer.invoke('get-favorite-notes'),
     getLastViewedNotes: () => ipcRenderer.invoke('get-last-viewed-notes'),
+    
+    // IPC events
+    on: (channel, callback) => ipcRenderer.on(channel, callback),
+    once: (channel, callback) => ipcRenderer.once(channel, callback),
+    removeListener: (channel, callback) => ipcRenderer.removeListener(channel, callback),
+    removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
 });
