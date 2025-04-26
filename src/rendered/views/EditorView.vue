@@ -61,7 +61,8 @@
         class="bubble-menu"
         :tippy-options="{
             duration: 100,
-            zIndex: 10,
+            position: fixed,
+            zIndex: 1500,
         }"
         :editor="editor"
         :style="{ backgroundColor: backgroudColor }"
@@ -337,16 +338,19 @@
     </v-btn>
 </template>
 <v-list density="compact">
-    <v-list-subheader>Edit</v-list-subheader>
+    <!-- Format submenu -->
+    <v-list-subheader>Format</v-list-subheader>
     <v-list-item @click="aiFormatText()">
         <template v-slot:prepend>
-            <v-icon icon="mdi-format-text"></v-icon>
+            <v-icon icon="mdi-format-letter-case-lower"></v-icon>
         </template>
         <v-list-item-title>Format text</v-list-item-title>
     </v-list-item>
+    <!-- Edit submenu -->
+    <v-list-subheader>Edit</v-list-subheader>
     <v-list-item @click="aiImproveWriting()">
         <template v-slot:prepend>
-            <v-icon icon="mdi-auto-fix"></v-icon>
+            <v-icon icon="mdi-pencil"></v-icon>
         </template>
         <v-list-item-title>Improve writing</v-list-item-title>
     </v-list-item>
@@ -364,10 +368,11 @@
     </v-list-item>
     <v-list-item @click="aiSimplify()">
         <template v-slot:prepend>
-            <v-icon icon="mdi-cake-variant"></v-icon>
+            <v-icon icon="mdi-alphabetical-variant"></v-icon>
         </template>
         <v-list-item-title>Simplify language</v-list-item-title>
     </v-list-item>
+    <!-- Change tone submenu -->
     <v-list-subheader>Change tone</v-list-subheader>
     <v-menu open-on-hover location="end" offset="-10">
         <template v-slot:activator="{ props }">
@@ -394,6 +399,7 @@
         </v-list-item>
     </v-list>
 </v-menu>
+<!-- Translate submenu -->
 <v-list-subheader>Translate</v-list-subheader>
 <v-menu open-on-hover location="end" offset="-10">
     <template v-slot:activator="{ props }">
@@ -567,12 +573,22 @@ const router = useRouter()
 const store = useFoldersStore()
 
 // Init LLM services for AI features
-const fixGrammarLLMService = createLlmService(fixGrammarPrompt, 'editorTools');
-const formatTextLLMService = createLlmService(formatTextPrompt, 'editorTools');
-const improveWritingLLMService = createLlmService(improveWritingPrompt, 'editorTools');
-const makeShorterLLMService = createLlmService(makeShorterPrompt, 'editorTools');
-const makeLongerLLMService = createLlmService(makeLongerPrompt, 'editorTools');
-const simplifyLanguageLLMService = createLlmService(simplifyLanguagePrompt, 'editorTools');
+var fixGrammarLLMService = null
+var formatTextLLMService = null
+var improveWritingLLMService = null
+var makeShorterLLMService = null
+var makeLongerLLMService = null
+var simplifyLanguageLLMService = null
+try {
+    fixGrammarLLMService = createLlmService(fixGrammarPrompt, 'editorBasicTools');
+    formatTextLLMService = createLlmService(formatTextPrompt, 'editorAdvancedTools');
+    improveWritingLLMService = createLlmService(improveWritingPrompt, 'editorBasicTools');
+    makeShorterLLMService = createLlmService(makeShorterPrompt, 'editorBasicTools');
+    makeLongerLLMService = createLlmService(makeLongerPrompt, 'editorBasicTools');
+    simplifyLanguageLLMService = createLlmService(simplifyLanguagePrompt, 'editorBasicTools');
+} catch (error) {
+    console.error('Error initializing LLM services:', error);
+}
 
 // Init list with supported tones for change tone tool
 const supportedTones = [
@@ -1056,7 +1072,7 @@ const aiChangeTone = async (tone) => {
     
     try {
         // Create LLM service with the selected tone
-        const changeToneLLMService = createLlmService(changeTonePrompt(tone), 'editorTools');
+        const changeToneLLMService = createLlmService(changeTonePrompt(tone), 'editorBasicTools');
         
         const selectedText = state.doc.textBetween(from, to, ' ');
         
@@ -1104,7 +1120,7 @@ const aiTranslateTo = async (language) => {
     
     try {
         // Create LLM service with the chosen language
-        const translateToLLMService = createLlmService(translateToPrompt(language), 'editorTools');
+        const translateToLLMService = createLlmService(translateToPrompt(language), 'editorBasicTools');
         
         const selectedText = state.doc.textBetween(from, to, ' ');
         

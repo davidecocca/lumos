@@ -12,15 +12,22 @@
         
         <!-- Select model section -->
         <v-card-text class="mt-2">
-            <!-- Select LLM for editor tools-->
-            <p class="text-subtitle-1 mb-2">Editor tools (Fix spelling & grammar, format text, summarize, ...)</p>
+            <!-- Select LLM for editor basic tools -->
+            <div class="d-flex align-center mb-2">
+                <p class="text-subtitle-1">Editor basic tools</p>
+                <v-tooltip text="Grammar check, improve writing, summarize, expand, simplify language, change tone, and translate tools" location="right">
+                    <template v-slot:activator="{ props }">
+                        <v-icon v-bind="props" size="small" class="ml-2">mdi-information-outline</v-icon>
+                    </template>
+                </v-tooltip>
+            </div>
             <div class="d-flex flex-column">
                 <div class="d-flex">
                     <div class="flex-1 mr-2" style="width: 50%">
                         <v-select
                         label="Select provider"
                         :items="providers"
-                        v-model="editorToolsSelectedProvider"
+                        v-model="editorBasicToolsSelectedProvider"
                         clearable
                         ></v-select>
                     </div>
@@ -28,23 +35,61 @@
                     <div class="flex-1" style="width: 50%" v-if="editorToolsSelectedProvider !== null">
                         <v-select
                         label="Select model"
-                        :items="getProviderModels(editorToolsSelectedProvider)"
-                        v-model="editorToolsSelectedModel"
+                        :items="getProviderModels(editorBasicToolsSelectedProvider)"
+                        v-model="editorBasicToolsSelectedModel"
                         clearable
                         ></v-select>
                     </div>
                 </div>
             </div>
             
-            <!-- Select LLM for generate tool-->
-            <p class="text-subtitle-1 mb-2">Brainstorm with AI tool</p>
+            <!-- Select LLM for editor advanced tools -->
+            <div class="d-flex align-center mb-2">
+                <p class="text-subtitle-1">Editor advanced tools</p>
+                <v-tooltip text="Format text tool" location="right">
+                    <template v-slot:activator="{ props }">
+                        <v-icon v-bind="props" size="small" class="ml-2">mdi-information-outline</v-icon>
+                    </template>
+                </v-tooltip>
+            </div>
             <div class="d-flex flex-column">
                 <div class="d-flex">
                     <div class="flex-1 mr-2" style="width: 50%">
                         <v-select
                         label="Select provider"
                         :items="providers"
-                        v-model="generateWithAISelectedProvider"
+                        v-model="editorAdvancedToolsSelectedProvider"
+                        clearable
+                        ></v-select>
+                    </div>
+                    
+                    <div class="flex-1" style="width: 50%" v-if="editorToolsSelectedProvider !== null">
+                        <v-select
+                        label="Select model"
+                        :items="getProviderModels(editorAdvancedToolsSelectedProvider)"
+                        v-model="editorAdvancedToolsSelectedModel"
+                        clearable
+                        ></v-select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Select LLM for editor chat tool-->
+            <div class="d-flex align-center mb-2">
+                <p class="text-subtitle-1">Editor chat tools</p>
+                <v-tooltip text="Brainstorm with AI & and Ask AI tools" location="right">
+                    <template v-slot:activator="{ props }">
+                        <v-icon v-bind="props" size="small" class="ml-2">mdi-information-outline</v-icon>
+                    </template>
+                </v-tooltip>
+            </div>
+            <div class="d-flex flex-column">
+                <div class="d-flex">
+                    <div class="flex-1 mr-2" style="width: 50%">
+                        <v-select
+                        label="Select provider"
+                        :items="providers"
+                        v-model="editorChatToolsSelectedProvider"
                         clearable
                         ></v-select>
                     </div>
@@ -52,15 +97,15 @@
                     <div class="flex-1" style="width: 50%" v-if="generateWithAISelectedProvider !== null">
                         <v-select
                         label="Select model"
-                        :items="getProviderModels(generateWithAISelectedProvider)"
-                        v-model="generateWithAISelectedModel"
+                        :items="getProviderModels(editorChatToolsSelectedProvider)"
+                        v-model="editorChatToolsSelectedModel"
                         clearable
                         ></v-select>
                     </div>
                 </div>
             </div>
             
-            <!-- Select LLM for chat-->
+            <!-- Select LLM for chat -->
             <p class="text-subtitle-1 mb-2">Chat</p>
             <div class="d-flex flex-column">
                 <div class="d-flex">
@@ -148,24 +193,34 @@ import { aiPreferencesStore } from '../../stores/aiPreferencesStore';
 const aiStore = aiPreferencesStore();
 
 // Computed properties to bind to the UI
-const editorToolsSelectedProvider = computed({
-    get: () => aiStore.editorTools.provider,
-    set: (value) => aiStore.setProvider('editorTools', value)
+const editorBasicToolsSelectedProvider = computed({
+    get: () => aiStore.editorBasicTools.provider,
+    set: (value) => aiStore.setProvider('editorBasicTools', value)
 });
 
-const editorToolsSelectedModel = computed({
-    get: () => aiStore.editorTools.model,
-    set: (value) => aiStore.setModel('editorTools', value)
+const editorBasicToolsSelectedModel = computed({
+    get: () => aiStore.editorBasicTools.model,
+    set: (value) => aiStore.setModel('editorBasicTools', value)
 });
 
-const generateWithAISelectedProvider = computed({
-    get: () => aiStore.generateWithAI.provider,
-    set: (value) => aiStore.setProvider('generateWithAI', value)
+const editorAdvancedToolsSelectedProvider = computed({
+    get: () => aiStore.editorAdvancedTools.provider,
+    set: (value) => aiStore.setProvider('editorAdvancedTools', value)
 });
 
-const generateWithAISelectedModel = computed({
-    get: () => aiStore.generateWithAI.model,
-    set: (value) => aiStore.setModel('generateWithAI', value)
+const editorAdvancedToolsSelectedModel = computed({
+    get: () => aiStore.editorAdvancedTools.model,
+    set: (value) => aiStore.setModel('editorAdvancedTools', value)
+});
+
+const editorChatToolsSelectedProvider = computed({
+    get: () => aiStore.editorChatTools.provider,
+    set: (value) => aiStore.setProvider('editorChatTools', value)
+});
+
+const editorChatToolsSelectedModel = computed({
+    get: () => aiStore.editorChatTools.model,
+    set: (value) => aiStore.setModel('editorChatTools', value)
 });
 
 const chatSelectedProvider = computed({

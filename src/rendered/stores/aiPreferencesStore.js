@@ -3,11 +3,15 @@ import { defineStore } from 'pinia'
 export const aiPreferencesStore = defineStore('aiPreferences', {
     state: () => ({
         // Provider selections for different features
-        editorTools: {
+        editorBasicTools: {
             provider: null,
             model: null
         },
-        generateWithAI: {
+        editorAdvancedTools: {
+            provider: null,
+            model: null
+        },
+        editorChatTools: {
             provider: null,
             model: null
         },
@@ -21,11 +25,32 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
             openai: ''
         },
         // Available providers and models
-        availableProviders: ['ollama', 'groq', 'openai'],
+        availableProviders: [
+            'ollama',
+            'groq',
+            'openai'
+        ],
         availableModels: {
             ollama: [],
-            groq: ['llama3-8b-8192', 'llama3-70b-8192', 'mixtral-8x7b-32768', 'gemma-7b-it', 'meta-llama/llama-4-scout-17b-16e-instruct', 'meta-llama/llama-4-maverick-17b-128e-instruct'],
-            openai: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o']
+            groq: [
+                'llama-3.1-8b-instant',
+                'llama3-70b-8192',
+                'llama3-8b-8192',
+                'llama-3.3-70b-versatile',
+                'meta-llama/llama-4-scout-17b-16e-instruct',
+                'meta-llama/llama-4-maverick-17b-128e-instruct',
+                'deepseek-r1-distill-llama-70b',
+                'gemma2-9b-it',
+                'qwen-qwq-32b'
+            ],
+            openai: [
+                'gpt-4o',
+                'gpt-4o-mini',
+                'gpt-4.1',
+                'gpt-4.1-mini',
+                'gpt-4.1-nano',
+                'o4-mini'
+            ]
         }
     }),
     
@@ -37,8 +62,9 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
                 const preferences = JSON.parse(savedPrefs)
                 
                 // Load provider and model selections
-                this.editorTools = preferences.editorTools || this.editorTools
-                this.generateWithAI = preferences.generateWithAI || this.generateWithAI
+                this.editorBasicTools = preferences.editorBasicTools || this.editorBasicTools
+                this.editorAdvancedTools = preferences.editorAdvancedTools || this.editorAdvancedTools
+                this.editorChatTools = preferences.editorChatTools || this.editorChatTools
                 this.chat = preferences.chat || this.chat
                 
                 // Load API keys
@@ -49,8 +75,9 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
         // Save preferences to localStorage
         savePreferences() {
             const preferences = {
-                editorTools: this.editorTools,
-                generateWithAI: this.generateWithAI,
+                editorBasicTools: this.editorBasicTools,
+                editorAdvancedTools: this.editorAdvancedTools,
+                editorChatTools: this.editorChatTools,
                 chat: this.chat,
                 apiKeys: this.apiKeys
             }

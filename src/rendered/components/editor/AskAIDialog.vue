@@ -34,7 +34,7 @@
                     </p>
                 </template>
                 <span>
-                    Prompt will be used only by the <b>Edit</b> function.
+                    Prompt will be used only by the <b>Edit</b> function
                 </span>
             </v-tooltip>
         </div>
@@ -117,7 +117,13 @@ const props = defineProps({
     }
 })
 
-const explainLLMService = createLlmService(explainPrompt, 'editorTools');
+// Init the LLM service for the explain service
+var explainLLMService = null;
+try {
+    explainLLMService = createLlmService(explainPrompt, 'editorChatTools');
+} catch (error) {
+    console.error("Error creating LLM service:", error);
+}
 
 const userText = ref('')
 const aiText = ref('')
@@ -146,7 +152,7 @@ const editWithAI = async () => {
         aiText.value = "Generating..."
         
         // Create an instance of the LLM service with the editWithAIPrompt
-        const editWithAI = createLlmService(editWithAIPrompt(userText.value), 'editorTools');
+        const editWithAI = createLlmService(editWithAIPrompt(userText.value), 'editorChatTools');
         
         let isFirstChunk = true
         const stream = editWithAI.stream(props.selectedText)

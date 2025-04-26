@@ -75,7 +75,13 @@ const props = defineProps({
     },
 })
 
-const generateWithAILlmService = createLlmService(generateWithAIPrompt, 'generateWithAI');
+// Init the LLM service for the brainstorm with AI service
+var brainstormWithAILLMService = null
+try {
+    brainstormWithAILLMService = createLlmService(generateWithAIPrompt, 'editorChatTools');
+} catch (error) {
+    console.error("Error creating LLM service:", error);
+}
 
 const userText = ref('')
 const aiText = ref('')
@@ -104,7 +110,7 @@ const generateWithAI = async () => {
         aiText.value = "Generating..."
         
         let isFirstChunk = true
-        const stream = generateWithAILlmService.stream(userText.value)
+        const stream = brainstormWithAILLMService.stream(userText.value)
         for await (const chunk of stream) {
             if (isFirstChunk) {
                 aiText.value = ''
