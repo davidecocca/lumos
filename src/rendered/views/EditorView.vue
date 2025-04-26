@@ -59,7 +59,10 @@
     <div v-if="editor">
         <bubble-menu
         class="bubble-menu"
-        :tippy-options="{ duration: 100 }"
+        :tippy-options="{
+            duration: 100,
+            zIndex: 10,
+        }"
         :editor="editor"
         :style="{ backgroundColor: backgroudColor }"
         >
@@ -761,7 +764,7 @@ const aiAsk = () => {
     
     // Get selected text
     selectedText.value = state.doc.textBetween(from, to, ' ');
-
+    
     // Show AI dialog
     askAIDialog.value = true;
 }
@@ -787,7 +790,7 @@ const aiFixGrammar = async () => {
     
     try {
         const selectedText = state.doc.textBetween(from, to, ' ');
-
+        
         let streamedText = '';
         let firstChunk = true;
         const stream = await fixGrammarLLMService.stream(selectedText);
@@ -832,9 +835,9 @@ const aiFormatText = async () => {
     
     try {
         const selectedText = state.doc.textBetween(from, to, ' ')
-
+        
         const response = await formatTextLLMService.generate(selectedText);
-
+        
         // Optional delay if needed to ensure bubble menu unmount
         await new Promise(resolve => setTimeout(resolve, 100));
         
@@ -873,7 +876,7 @@ const aiImproveWriting = async () => {
     
     try {
         const selectedText = state.doc.textBetween(from, to, ' ');
-
+        
         let streamedText = '';
         let firstChunk = true;
         const stream = await improveWritingLLMService.stream(selectedText);
@@ -918,7 +921,7 @@ const aiMakeShorter = async () => {
     
     try {
         const selectedText = state.doc.textBetween(from, to, ' ');
-
+        
         let streamedText = '';
         let firstChunk = true;
         const stream = await makeShorterLLMService.stream(selectedText);
@@ -963,7 +966,7 @@ const aiMakeLonger = async () => {
     
     try {
         const selectedText = state.doc.textBetween(from, to, ' ');
-
+        
         let streamedText = '';
         let firstChunk = true;
         const stream = await makeLongerLLMService.stream(selectedText);
@@ -1008,7 +1011,7 @@ const aiSimplify = async () => {
     
     try {
         const selectedText = state.doc.textBetween(from, to, ' ');
-
+        
         let streamedText = '';
         let firstChunk = true;
         const stream = await simplifyLanguageLLMService.stream(selectedText);
@@ -1056,7 +1059,7 @@ const aiChangeTone = async (tone) => {
         const changeToneLLMService = createLlmService(changeTonePrompt(tone), 'editorTools');
         
         const selectedText = state.doc.textBetween(from, to, ' ');
-
+        
         let streamedText = '';
         let firstChunk = true;
         const stream = await changeToneLLMService.stream(selectedText);
@@ -1104,7 +1107,7 @@ const aiTranslateTo = async (language) => {
         const translateToLLMService = createLlmService(translateToPrompt(language), 'editorTools');
         
         const selectedText = state.doc.textBetween(from, to, ' ');
-
+        
         let streamedText = '';
         let firstChunk = true;
         const stream = await translateToLLMService.stream(selectedText);
