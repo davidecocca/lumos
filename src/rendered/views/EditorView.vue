@@ -76,6 +76,7 @@
                 multiple
                 divided
                 variant="text"
+                :max="0"
                 >
                 <!-- Bold -->
                 <v-tooltip text="Bold (⌘B)" location="top">

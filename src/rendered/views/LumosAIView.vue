@@ -1,6 +1,6 @@
 <template>
     <div class="d-flex flex-column align-center">
-        <p class="text-h4">Lumos AI</p>
+        <p class="text-h4">Lumos <b>AI</b></p>
         
         <v-card class="mt-10 pa-6 rounded-md border" width="100%" elevation="1">
             <v-card-item class="d-flex flex-column align-center text-center">

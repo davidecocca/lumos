@@ -77,7 +77,7 @@
             <!-- Select LLM for editor chat tool-->
             <div class="d-flex align-center mb-2">
                 <p class="text-subtitle-1">Editor chat tools</p>
-                <v-tooltip text="Brainstorm with AI & and Ask AI tools" location="right">
+                <v-tooltip text="Brainstorm with AI & Ask AI tools" location="right">
                     <template v-slot:activator="{ props }">
                         <v-icon v-bind="props" size="small" class="ml-2">mdi-information-outline</v-icon>
                     </template>
