@@ -66,7 +66,7 @@
 import { createLlmService } from '../../services/llmService';
 import generateWithAIPrompt from '../../prompts/generateWithAIPrompt';
 
-import { defineProps, ref, reactive, computed, nextTick } from 'vue'
+import { ref, reactive, computed, nextTick } from 'vue'
 
 const props = defineProps({
     modelValue: {

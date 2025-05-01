@@ -454,7 +454,7 @@
 <editor-content :editor="editor" v-model="content" class="ma-3"/>
 
 <!-- Snackbar notification -->
-<v-snackbar v-model="snackbarVisible" :timeout="snackbarDuration" bottom center :color="snackbarColor" variant="tonal">
+<v-snackbar v-model="snackbarVisible" bottom center :color="snackbarColor" variant="tonal">
     <div class="d-flex align-center">
         <v-icon icon="mdi-check-circle" class="me-2"></v-icon>
         {{ snackbarMessage }}
@@ -710,21 +710,37 @@ const getNote = async (id) => {
 
 const saveNoteManually = async () => {
     try {
-        // Save the content
-        await window.api.updateNote({ id: note.value.id, contentJson: editor.value.getJSON() })
-        
-        // Show snackbar notification
-        snackbarMessage.value = `Note saved!`
-        snackbarColor.value = ''
+        // Show saving notification
+        snackbarMessage.value = 'Saving note...'
+        snackbarColor.value = 'info'
         snackbarVisible.value = true
+        
+        // Save the content
+        const payload = {
+            id: note.value.id,
+            contentJson: editor.value.getJSON(),
+            contentText: editor.value.getText(),
+        }
+        await window.api.updateNote(payload)
+        
+        // Show success notification
+        snackbarMessage.value = 'Note saved successfully!'
+        snackbarColor.value = 'success'
+        // Let the success message visible for a few seconds before hiding
+        setTimeout(() => {
+            snackbarVisible.value = false
+        }, snackbarDuration.value)
     } catch (error) {
         const errorMsg = 'Failed to save note'
         console.error(errorMsg, error)
         
-        // Show snackbar notification with error message
+        // Show error notification
         snackbarMessage.value = errorMsg
         snackbarColor.value = 'error'
-        snackbarVisible.value = true
+        // Let the error message visible for a few seconds before hiding
+        setTimeout(() => {
+            snackbarVisible.value = false
+        }, snackbarDuration.value)
     }
 }
 

@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, nativeImage, Menu } = require('electron');
 const path = require('path');
+const vectorStore = require('./database/vectorStore');
 
 // Import CRUD functions from the local DB layer
 const {
@@ -155,9 +156,9 @@ function setupIPC() {
         });
     });
     
-    ipcMain.handle('update-note', async (event, { id, contentJson }) => {
+    ipcMain.handle('update-note', async (event, { id, contentJson, contentText }) => {
         return new Promise((resolve, reject) => {
-            updateNote(id, contentJson, (err, changes) => {
+            updateNote(id, contentJson, contentText, (err, changes) => {
                 if (err) reject(err);
                 else resolve(changes);
             });
@@ -226,6 +227,14 @@ function setupIPC() {
             });
         });
     });
+    
+    ipcMain.handle('search-similar-notes', async (event, query) => {
+        return new Promise((resolve, reject) => {
+            vectorStore.searchSimilarNotes(query)
+            .then(results => resolve(results))
+            .catch(err => reject(err));
+        });
+    });
 }
 
 // Set the app name for macOS
@@ -243,8 +252,16 @@ app.whenReady().then(() => {
         app.dock.setIcon(icon);
     }
     
-    createWindow();
-    setupIPC();
+    // Initialize the vector store
+    vectorStore.initialize()
+    .then(() => {
+        createWindow();
+        setupIPC();
+    })
+    .catch((err) => {
+        console.error('Failed to initialize vector store:', err);
+        app.quit();
+    });
     
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();

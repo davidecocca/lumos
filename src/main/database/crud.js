@@ -1,4 +1,5 @@
 const db = require('./db');
+const vectorStore = require('./vectorStore');
 
 /* ---------------------------
 Folder CRUD Operations
@@ -70,6 +71,7 @@ function createNote(folder_id, title, contentJson, callback) {
     db.run(sql, [folder_id, title, JSON.stringify(contentJson)], function (err) {
         callback(err, this ? this.lastID : null);
     });
+    // Note: the note is not added to the vector store here because the content is not yet available
 }
 
 // Get a note by ID
@@ -96,30 +98,72 @@ function renameNote(id, newTitle, callback) {
 }
 
 // Update note content
-function updateNote(id, contentJson, callback) {
+function updateNote(id, contentJson, contentText, callback) {
     const sql = `
     UPDATE notes 
     SET content_json = ?, updated_at = CURRENT_TIMESTAMP 
     WHERE id = ?
   `;
-    db.run(sql, [JSON.stringify(contentJson), id], function (err) {
-        callback(err, this.changes);
+    db.run(sql, [JSON.stringify(contentJson), id], async function (err) {
+        if (err) {
+            callback(err);
+            return;
+        }
+        try {
+            await vectorStore.deleteNote(id);
+            await vectorStore.addNote(id, contentText);
+            callback(null);
+        } catch (vectorErr) {
+            callback(vectorErr);
+        }
     });
 }
 
 // Delete a note
 function deleteNote(id, callback) {
     const sql = `DELETE FROM notes WHERE id = ?`;
-    db.run(sql, [id], function (err) {
-        callback(err, this.changes);
+    db.run(sql, [id], async function (err) {
+        if (err) {
+            callback(err);
+            return;
+        }
+        try {
+            await vectorStore.deleteNote(id);
+            callback(null);
+        } catch (vectorErr) {
+            callback(vectorErr);
+        }
     });
 }
 
 // Delete all notes in a folder
 function deleteNotesInFolder(folderId, callback) {
-    const sql = `DELETE FROM notes WHERE folder_id = ?`;
-    db.run(sql, [folderId], function (err) {
-        callback(err, this.changes);
+    // Get all notes in the folder
+    const getNotesSql = `SELECT id FROM notes WHERE folder_id = ?`;
+    db.all(getNotesSql, [folderId], async (err, notes) => {
+        if (err) {
+            callback(err);
+            return;
+        }
+        
+        // Delete notes from the database
+        const deleteNotesSql = `DELETE FROM notes WHERE folder_id = ?`;
+        db.run(deleteNotesSql, [folderId], async function (err) {
+            if (err) {
+                callback(err);
+                return;
+            }
+            
+            try {
+                // Delete each note from vector store
+                for (const note of notes) {
+                    await vectorStore.deleteNote(note.id);
+                }
+                callback(null, this.changes);
+            } catch (vectorErr) {
+                callback(vectorErr);
+            }
+        });
     });
 }
 
