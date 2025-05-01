@@ -11,8 +11,8 @@ const defaultEmbeddingModel = "snowflake-arctic-embed2";
 const tableName = "notes_embeddings";
 const chunkSize = 2000;
 const chunkOverlap = 200;
-const similarityThreshold = 0.8;    // Not yet used
-const maxResults = 5;
+const similarityThreshold = 1.0;
+const maxResults = 3;
 const dbPath = path.join(os.homedir(), "lancedb");
 
 /**
@@ -134,16 +134,35 @@ class VectorStore {
     * @returns {Promise<object[]>} - The search results.
     * @throws {Error} If there is an error searching the vector store.
     */
-    // TODO: Add support for similarity threshold
-    // TODO: Sort results by similarity score
-    async searchSimilarNotes(query, limit = maxResults) {
+    async searchSimilarNotes(query, sources, limit = maxResults) {
         try {
+            // Search for similar notes
             const results = await this.vectorStore.similaritySearch(
                 query, 
                 limit,
             );
             
-            return results
+            // Filter out results with similarity scores above threshold
+            // Lower _distance values indicate higher similarity
+            const filteredResults = results.filter(result => {
+                const similarityScore = result.metadata._distance || 0;
+                return similarityScore < similarityThreshold;
+            });
+            
+            let finalResults;
+            // Filter out results based on sources (if provided)
+            if (sources && sources.length > 0) {
+                finalResults = filteredResults.filter(result => {
+                    const noteSource = result.metadata.source;
+                    return sources.includes(noteSource);
+                });
+            } else {
+                // If no sources specified, return all filtered results
+                finalResults = filteredResults;
+            }
+            
+            return finalResults;
+            
         } catch (err) {
             console.error('Error searching vector store:', err);
             throw err;

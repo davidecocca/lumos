@@ -12,6 +12,8 @@ const {
     createNote,
     listFolders,
     getNote,
+    getNotesByIds,
+    listNotes,
     renameNote,
     updateNote,
     deleteNote,
@@ -147,11 +149,29 @@ function setupIPC() {
         });
     });
     
+    ipcMain.handle('get-notes-by-ids', async (event, ids) => {
+        return new Promise((resolve, reject) => {
+            getNotesByIds(ids, (err, notes) => {
+                if (err) reject(err);
+                else resolve(notes);
+            });
+        });
+    });
+    
     ipcMain.handle('rename-note', async (event, { id, newTitle }) => {
         return new Promise((resolve, reject) => {
             renameNote(id, newTitle, (err, changes) => {
                 if (err) reject(err);
                 else resolve(changes);
+            });
+        });
+    });
+    
+    ipcMain.handle('list-notes', async (event) => {
+        return new Promise((resolve, reject) => {
+            listNotes((err, notes) => {
+                if (err) reject(err);
+                else resolve(notes);
             });
         });
     });
@@ -228,9 +248,9 @@ function setupIPC() {
         });
     });
     
-    ipcMain.handle('search-similar-notes', async (event, query) => {
+    ipcMain.handle('search-similar-notes', async (event, { query, sources }) => {
         return new Promise((resolve, reject) => {
-            vectorStore.searchSimilarNotes(query)
+            vectorStore.searchSimilarNotes(query, sources)
             .then(results => resolve(results))
             .catch(err => reject(err));
         });

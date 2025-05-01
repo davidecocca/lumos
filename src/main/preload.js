@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('api', {
     // Notes
     createNote: (payload) => ipcRenderer.invoke('create-note', payload),
     getNote: (id) => ipcRenderer.invoke('get-note', id),
+    getNotesByIds: (ids) => ipcRenderer.invoke('get-notes-by-ids', ids),
+    listNotes: () => ipcRenderer.invoke('list-notes'),
     renameNote: (payload) => ipcRenderer.invoke('rename-note', payload),
     updateNote: (payload) => ipcRenderer.invoke('update-note', payload),
     deleteNote: (id) => ipcRenderer.invoke('delete-note', id),
@@ -21,7 +23,7 @@ contextBridge.exposeInMainWorld('api', {
     updateNoteLastViewed: (id) => ipcRenderer.invoke('update-note-last-viewed', id),
     getFavoriteNotes: () => ipcRenderer.invoke('get-favorite-notes'),
     getLastViewedNotes: () => ipcRenderer.invoke('get-last-viewed-notes'),
-    searchSimilarNotes: (query) => ipcRenderer.invoke('search-similar-notes', query),
+    searchSimilarNotes: (payload) => ipcRenderer.invoke('search-similar-notes', payload),
     
     // IPC events
     on: (channel, callback) => ipcRenderer.on(channel, callback),

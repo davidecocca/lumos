@@ -89,6 +89,38 @@ function getNote(id, callback) {
     });
 }
 
+// Get notes by ids
+function getNotesByIds(ids, callback) {
+    const sql = `
+    SELECT notes.id, notes.title, folders.name AS folder_name 
+    FROM notes 
+    LEFT JOIN folders ON notes.folder_id = folders.id 
+    WHERE notes.id IN (${ids.join(',')})`;
+    db.all(sql, [], (err, rows) => {
+        if (rows) {
+            rows.forEach(row => {
+                if (row.content_json) {
+                    row.content_json = JSON.parse(row.content_json);
+                }
+            });
+        }
+        callback(err, rows);
+    });
+}
+
+// List all notes
+function listNotes(callback) {
+    const sql = `
+    SELECT notes.id, notes.title, folders.name AS folder_name
+    FROM notes
+    LEFT JOIN folders ON notes.folder_id = folders.id
+    ORDER BY title ASC
+  `;
+    db.all(sql, [], (err, rows) => {
+        callback(err, rows);
+    });
+}
+
 // Rename a note
 function renameNote(id, newTitle, callback) {
     const sql = `UPDATE notes SET title = ? WHERE id = ?`;
@@ -230,6 +262,8 @@ module.exports = {
     listFolders,
     createNote,
     getNote,
+    getNotesByIds,
+    listNotes,
     renameNote,
     updateNote,
     deleteNote,

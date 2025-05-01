@@ -341,8 +341,6 @@ export const useFoldersStore = defineStore('folders', {
                     favorite: newFav
                 }
                 
-                console.log('Updated note:', updatedNote)
-                
                 if (newFav === 1 && favIndex === -1) {
                     // Add to favorites
                     this.favorites.push(updatedNote)
