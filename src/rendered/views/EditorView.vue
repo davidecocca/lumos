@@ -11,37 +11,53 @@
         
         <v-spacer></v-spacer>
         
-        <v-btn-toggle divided class="ms-2 mr-4" :max="0" multiple variant="text">
-            <v-tooltip text="Brainstorm with AI" location="top">
+        <v-btn-toggle divided class="ms-2 mr-3" :max="0" multiple variant="text">
+            <v-tooltip text="Undo" location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="brainstormWithAIDialog = !brainstormWithAIDialog">
-                        <v-icon>mdi-lightbulb</v-icon>
+                    <v-btn v-bind="props" @click="editor.chain().focus().undo().run()">
+                        <v-icon>mdi-undo</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
             
-            <v-tooltip :text="note.favorite === 1 ? 'Unfavorite' : 'Favorite'" location="top">
+            <v-tooltip text="Redo" location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" @click="editor.chain().focus().redo().run()">
+                        <v-icon>mdi-redo</v-icon>
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            
+            <v-tooltip text="Save" location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" @click="saveNoteManually">
+                        <v-icon>mdi-content-save</v-icon>
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            
+            <v-tooltip :text="note.favorite === 1 ? 'Unfavorite' : 'Favorite'" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="toggleFavorite(note.id)">
                         <v-icon :icon="note.favorite === 1 ? 'mdi-heart-broken' : 'mdi-heart'"></v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip text="Rename" location="top">
+            <v-tooltip text="Rename" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="renameNoteDialog = true">
                         <v-icon>mdi-rename</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip text="Move" location="top">
+            <v-tooltip text="Move" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="moveToFolderDialog = true">
                         <v-icon>mdi-file-move</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip text="Delete" location="top">
+            <v-tooltip text="Delete" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="store.openDeleteNoteConfirmationDialog(note.id)">
                         <v-icon>mdi-delete</v-icon>
@@ -453,6 +469,21 @@
 
 <editor-content :editor="editor" v-model="content" class="ma-3"/>
 
+<!-- Fab button -->
+<div class="d-flex justify-end mr-2">
+    <v-tooltip text="Brainstorm with AI" location="left">
+        <template v-slot:activator="{ props }">
+            <v-btn
+            v-bind="props"
+            color="primary"
+            variant="tonal"
+            icon="mdi-lightbulb"
+            @click="brainstormWithAIDialog = !brainstormWithAIDialog"
+            />
+        </template>
+    </v-tooltip>
+</div>
+
 <!-- Snackbar notification -->
 <v-snackbar v-model="snackbarVisible" bottom center :color="snackbarColor" variant="tonal">
     <div class="d-flex align-center">
@@ -460,7 +491,7 @@
         {{ snackbarMessage }}
     </div>
     
-    <template v-slot:actions>
+    <template v-slot:actions v-if="snackbarCloseButtonVisible">
         <v-btn
         variant="text"
         @click="snackbarVisible = false"
@@ -633,6 +664,7 @@ const snackbarVisible = ref(false)
 const snackbarMessage = ref('')
 const snackbarColor = ref('')
 const snackbarDuration = ref(2000)
+const snackbarCloseButtonVisible = ref(false)
 
 const brainstormWithAIDialog = ref(false)
 const askAIDialog = ref(false)
@@ -714,6 +746,7 @@ const saveNoteManually = async () => {
         snackbarMessage.value = 'Saving note...'
         snackbarColor.value = 'info'
         snackbarVisible.value = true
+        snackbarCloseButtonVisible.value = false
         
         // Save the content
         const payload = {
@@ -726,6 +759,7 @@ const saveNoteManually = async () => {
         // Show success notification
         snackbarMessage.value = 'Note saved successfully!'
         snackbarColor.value = 'success'
+        snackbarCloseButtonVisible.value = true
         // Let the success message visible for a few seconds before hiding
         setTimeout(() => {
             snackbarVisible.value = false
@@ -737,10 +771,8 @@ const saveNoteManually = async () => {
         // Show error notification
         snackbarMessage.value = errorMsg
         snackbarColor.value = 'error'
-        // Let the error message visible for a few seconds before hiding
-        setTimeout(() => {
-            snackbarVisible.value = false
-        }, snackbarDuration.value)
+        snackbarVisible.value = true
+        snackbarCloseButtonVisible.value = true
     }
 }
 
@@ -1228,7 +1260,7 @@ onBeforeUnmount(() => {
     padding: 32px;
     border-radius: 8px;
     border: 1px solid #dbdbdb;
-    height: calc(100vh - 220px);
+    height: calc(100vh - 230px);
     overflow-y: auto;
 }
 

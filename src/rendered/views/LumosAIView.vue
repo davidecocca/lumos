@@ -3,7 +3,7 @@
         <p class="text-h4">Lumos <b>AI</b></p>
         <p class="text-h6">Write. Chat. Connect.</p>
         
-        <div class="d-flex flex-column mt-2 pl-4" style="align-self: flex-start;">
+        <div class="d-flex flex-column mt-2 ml-4 pl-4" style="align-self: flex-start;">
             <!-- New chat button -->
             <v-tooltip text="Clear this thread and start a new conversation">
                 <template v-slot:activator="{ props }">
@@ -11,7 +11,7 @@
                     v-bind="props"
                     variant="tonal"
                     color="primary"
-                    prepend-icon="mdi-plus"
+                    prepend-icon="mdi-plus-circle"
                     @click="resetChat"
                     >New chat</v-btn>
                 </template>
