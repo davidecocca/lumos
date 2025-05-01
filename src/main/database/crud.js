@@ -97,13 +97,6 @@ function getNotesByIds(ids, callback) {
     LEFT JOIN folders ON notes.folder_id = folders.id 
     WHERE notes.id IN (${ids.join(',')})`;
     db.all(sql, [], (err, rows) => {
-        if (rows) {
-            rows.forEach(row => {
-                if (row.content_json) {
-                    row.content_json = JSON.parse(row.content_json);
-                }
-            });
-        }
         callback(err, rows);
     });
 }
