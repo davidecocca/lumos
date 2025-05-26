@@ -6,6 +6,12 @@
 
 **Lumos** is a next-generation note-taking app, **built from the ground up with AI in mind**. Forget cloud lock-in and complex UI. Lumos gives you total control over your notes, enhanced with the latest in local and private AI. All your notes, all your ideas, safely on your machine.
 
+
+## ⚠️ Project Status
+
+> **Alpha Stage Warning**: Lumos is currently in early alpha. It's not fully tested and may contain bugs. Use with caution and please report any issues you find.
+
+
 ## 🖼️ Screenshots
 <p align="center">
   <h3 align="center">Home</h3>
@@ -116,6 +122,33 @@ Notion and other modern note apps are great, but they often tie your data to the
 I'm a software engineer passionate about open source, AI, and building technology that empowers users and protects their privacy.
 
 Lumos started as a side project—built to offer a simple, local, and AI-powered note-taking experience as an alternative to Notion, without relying on the cloud.
+
+
+## 📋 Todo
+
+### Core Features
+- [ ] Add support for rich media in notes:
+    - [ ] Add images with drag-and-drop
+    - [ ] Add tables with formatting
+    - [ ] Embed YouTube videos
+- [ ] Implement drag-and-drop for notes organization
+- [ ] Add note categorization with tags/labels
+- [ ] Add function to export notes
+
+### Technical Improvements
+- [ ] Refactor codebase:
+    - [ ] Modularize components
+    - [ ] Improve code organization
+    - [ ] Add documentation
+- [ ] Implement comprehensive test suite:
+    - [ ] Unit tests
+    - [ ] Integration tests
+    - [ ] End-to-end (E2E) testing
+
+### AI Features
+- [ ] Enhance chat functionality:
+    - [ ] Add conversation history
+    - [ ] Implement context retention
 
 
 ## 📣 Contributing
