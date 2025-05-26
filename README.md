@@ -1,18 +1,26 @@
+# ✨ Lumos: your notes, your way
+
 <p align="center">
   <img src="images/lumos_logo.png" alt="Lumos Logo" width="100" />
 </p>
 
-# Lumos: Your Notes, Your Way ✨
-
-Lumos is a next-generation note-taking app, **built from the ground up with AI in mind**. Forget cloud lock-in and complex interfaces. Lumos gives you total control over your notes, enhanced with the latest in local and private AI. All your notes, all your ideas, safely on your machine.
+**Lumos** is a next-generation note-taking app, **built from the ground up with AI in mind**. Forget cloud lock-in and complex UI. Lumos gives you total control over your notes, enhanced with the latest in local and private AI. All your notes, all your ideas, safely on your machine.
 
 ## 🖼️ Screenshots
 
 <p align="center">
+  Home
   <img src="images/home.png" alt="Home" width="600" />
+  Note View / Editor
   <img src="images/note_view.png" alt="Note View" width="600" />
+  Note Editor Tools
+  <img src="images/note_editor_tools.png" alt="Note Editor Tools" width="600" />
+  Lumos AI Chat
   <img src="images/chat.png" alt="Chat" width="600" />
+  Dark Theme
   <img src="images/dark_theme.png" alt="Note View (Dark Theme)" width="600" />
+  Brainstorm with AI Tool
+  <img src="images/brainstorm_with_ai.gif" alt="Brainstorm with AI Tool" width="550" style="margin-top: 20px"/>
 </p>
 
 
