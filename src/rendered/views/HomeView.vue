@@ -7,10 +7,28 @@
         </div>
         
         <!-- Favorite notes -->
-        <NoteCardsSlideGroup :notes="favoriteNotes" :showAccessedAt="false" :showUpdatedAt="true" title="Favorites" icon="mdi-heart" tooltipText="Your peak notes"/>
+        <NoteCardsSlideGroup
+        :notes="favoriteNotes"
+        :showAccessedAt="false"
+        :showUpdatedAt="true"
+        title="Favorites"
+        icon="mdi-heart"
+        tooltipText="Your peak notes"
+        emptyStateTitle="No favorites yet"
+        emptyStateText="Add notes to your favorites to see them here."
+        />
         
         <!-- Recent notes -->
-        <NoteCardsSlideGroup :notes="recentNotes" :showAccessedAt="true" :showUpdatedAt="false" title="Recents" icon="mdi-history" tooltipText="Jump into notes you've seen recently"/>
+        <NoteCardsSlideGroup
+        :notes="recentNotes"
+        :showAccessedAt="true"
+        :showUpdatedAt="false"
+        title="Recents"
+        icon="mdi-history"
+        tooltipText="Jump into notes you've seen recently"
+        emptyStateTitle="No recent notes"
+        emptyStateText="Open notes to see them here."
+        />
     </div>
 </template>
 

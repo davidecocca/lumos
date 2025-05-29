@@ -11,7 +11,15 @@
             </v-tooltip>
         </div>
         
+        <EmptyState
+        v-if="notes.length === 0"
+        :title="emptyStateTitle"
+        :text="emptyStateText"
+        icon="mdi-package-variant"
+        />
+        
         <v-sheet
+        v-else
         class="mx-auto"
         color="transparent"
         >
@@ -35,6 +43,7 @@
 
 <script setup>
 import NoteCard from './NoteCard.vue';
+import EmptyState from './EmptyState.vue';
 
 const props = defineProps({
     notes: {
@@ -66,5 +75,13 @@ const props = defineProps({
         type: Boolean,
         default: false
     },
+    emptyStateTitle: {
+        type: String,
+        default: 'No notes found'
+    },
+    emptyStateText: {
+        type: String,
+        default: 'Start creating notes to see them here.'
+    }
 });
 </script>
