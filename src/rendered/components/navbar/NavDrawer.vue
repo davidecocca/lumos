@@ -23,9 +23,16 @@
                     <PageRouter />
                 </div>
             </div>
-
+            
+            <!-- Divider shown only when the scrollable content overflows AND the content has been scrolled -->
+            <transition name="divider-fade">
+                <div v-if="hasScrollbar && hasScrolled" class="divider-container">
+                    <v-divider></v-divider>
+                </div>
+            </transition>
+            
             <!-- Scrollable content section with favorite notes and folders -->
-            <div class="nav-content">
+            <div ref="navContent" class="nav-content">
                 <FoldersTree />
             </div>
         </div>
@@ -38,6 +45,7 @@ import FoldersTree from './FoldersTree.vue'
 import PageRouter from './PageRouter.vue'
 
 import { computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
     isDrawerOpen: {
@@ -53,6 +61,51 @@ const drawerOpen = computed({
     set: (value) => {
         emit('update:isDrawerOpen', value)
     }
+})
+
+// Detect whether the scrollable nav content currently shows a vertical scrollbar
+const navContent = ref(null)
+const hasScrollbar = ref(false)
+const hasScrolled = ref(false)
+
+function updateHasScrollbar() {
+    const el = navContent.value
+    if (!el) return
+    // Compare scrollHeight to clientHeight for vertical overflow
+    hasScrollbar.value = el.scrollHeight > el.clientHeight + 1
+    // Update scrolled state in case scroll position changed
+    hasScrolled.value = el.scrollTop > 0
+}
+
+function onScroll() {
+    const el = navContent.value
+    if (!el) return
+    hasScrolled.value = el.scrollTop > 0
+}
+
+let ro = null
+let mo = null
+onMounted(() => {
+    updateHasScrollbar()
+    if (navContent.value) {
+        // Scroll listener to detect when top content moves under header
+        navContent.value.addEventListener('scroll', onScroll, { passive: true })
+    }
+    if (navContent.value && typeof ResizeObserver !== 'undefined') {
+        ro = new ResizeObserver(updateHasScrollbar)
+        ro.observe(navContent.value)
+    }
+    // MutationObserver to catch content changes (items added/removed)
+    if (navContent.value && typeof MutationObserver !== 'undefined') {
+        mo = new MutationObserver(updateHasScrollbar)
+        mo.observe(navContent.value, { childList: true, subtree: true })
+    }
+})
+
+onBeforeUnmount(() => {
+    if (navContent.value) navContent.value.removeEventListener('scroll', onScroll)
+    if (ro && navContent.value) ro.unobserve(navContent.value)
+    if (mo) mo.disconnect()
 })
 </script>
 
@@ -102,5 +155,24 @@ const drawerOpen = computed({
 .sidebar-box .nav-content {
     padding: 8px 12px 16px 12px;
     overflow-y: auto;
+}
+
+/* Transition for the conditional divider: subtle fade and slide */
+.divider-container {
+    z-index: 9; /* sit under the sticky header */
+}
+.divider-fade-enter-active,
+.divider-fade-leave-active {
+    transition: opacity 120ms ease, transform 120ms ease;
+}
+.divider-fade-enter-from,
+.divider-fade-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+.divider-fade-enter-to,
+.divider-fade-leave-from {
+    opacity: 1;
+    transform: translateY(0);
 }
 </style>
