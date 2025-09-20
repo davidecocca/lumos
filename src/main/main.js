@@ -176,9 +176,9 @@ function setupIPC() {
         });
     });
     
-    ipcMain.handle('update-note', async (event, { id, contentJson, contentText }) => {
+    ipcMain.handle('update-note', async (event, { id, topic, contentJson, contentText }) => {
         return new Promise((resolve, reject) => {
-            updateNote(id, contentJson, contentText, (err, changes) => {
+            updateNote(id, topic, contentJson, contentText, (err, changes) => {
                 if (err) reject(err);
                 else resolve(changes);
             });

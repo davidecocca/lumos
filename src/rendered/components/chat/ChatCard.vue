@@ -3,6 +3,7 @@
     :color="props.message.bgColor"
     :variant="props.message.variant"
     :text="props.message.text"
+    rounded="lg"
     >
     <div v-if="props.message.sources !== null && props.message.sources.length > 0">
         <v-card-actions

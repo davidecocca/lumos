@@ -1,25 +1,46 @@
 <template>
     <div class="d-flex flex-column">
         <div class="d-flex flex-column align-center">
-            <p class="text-h4">Settings</p>
+            <p class="text-h4 font-weight-medium">Settings</p>
         </div>
         
-        <!-- Theme settings -->
-        <ChangeThemeCard
-        :theme="theme"
-        @update:theme="updateTheme"
-        />
-        
+        <v-tabs
+        v-model="tab"
+        align-tabs="center"
+        color="primary"
+        class="mb-4 mt-4"
+        >
+        <v-tab :value="profileTab">Profile</v-tab>
+        <v-tab :value="appearanceTab">Appearance</v-tab>
+        <v-tab :value="lumosAITab">Lumos AI</v-tab>
+    </v-tabs>
+    
+    <v-tabs-window v-model="tab">
+        <!-- Profile settings -->
+        <v-tabs-window-item>
+            <ProfileCard />
+        </v-tabs-window-item>
+        <!-- Appearance settings -->
+        <v-tabs-window-item>
+            <ChangeThemeCard
+            :theme="theme"
+            @update:theme="updateTheme"
+            />
+        </v-tabs-window-item>
         <!-- Lumos AI settings -->
-        <LumosAICard />
-    </div>
+        <v-tabs-window-item>
+            <LumosAICard />
+        </v-tabs-window-item>
+    </v-tabs-window>
+</div>
 </template>
 
 <script setup>
+import ProfileCard from '../components/settings/ProfileCard.vue';
 import ChangeThemeCard from '../components/settings/ChangeThemeCard.vue';
 import LumosAICard from '../components/settings/LumosAICard.vue';
 
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     theme: {
@@ -30,6 +51,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:theme']);
+
+// Tab states
+const tab = ref('appearanceTab')
 
 // Use computed property to access the theme
 const theme = computed(() => props.theme);

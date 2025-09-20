@@ -28,6 +28,7 @@ db.serialize(() => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       folder_id INTEGER,
       title TEXT NOT NULL,
+      topic TEXT,
       content_json TEXT NOT NULL,
       favorite INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

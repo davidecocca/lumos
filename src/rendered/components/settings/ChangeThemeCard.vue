@@ -1,13 +1,10 @@
 <template>
     <div class="ma-2">
-        <div class="d-flex align-center pt-4 pb-4 pl-2 pr-2">
-            <v-icon class="mr-2">mdi-shape</v-icon>
-            <p class="text-h6">Appearance</p>
-        </div>
         <v-card
         class="rounded-md border ma-2"
         title="Theme"
         subtitle="Customize how Lumos looks on your device."
+        rounded="lg"
         >
         <v-card-text>
             <v-btn-toggle v-model="localTheme" mandatory color="primary" divided>

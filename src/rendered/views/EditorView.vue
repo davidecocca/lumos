@@ -2,16 +2,21 @@
     <!-- Flex container to place button toggle and text field on the same line -->
     <div v-if="note" class="d-flex align-center">
         <div class="d-flex flex-column ml-4">
-            <p class="text-h4">{{ note.title }}</p>
-            <p class="text-subtitle-1 d-flex align-center">
-                <v-icon size="small" class="mr-2">mdi-folder-outline</v-icon>
-                {{ note.folderName }}
-            </p>
+            <p class="text-h4 font-weight-medium">{{ note.title }}</p>
+            <div class="d-inline-flex mt-2">
+                <v-chip
+                color="primary"
+                variant="tonal"
+                >
+                {{ note.folder_name }}
+            </v-chip>
         </div>
-        
-        <v-spacer></v-spacer>
-        
-        <v-btn-toggle divided class="ms-2 mr-3" :max="0" multiple variant="text">
+    </div>
+    
+    <v-spacer></v-spacer>
+    
+    <div class="d-flex align-center">
+        <v-btn-toggle divided class="ms-2" :max="0" multiple variant="text">
             <v-tooltip text="Undo" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().undo().run()">
@@ -36,210 +41,240 @@
                 </template>
             </v-tooltip>
             
-            <v-tooltip :text="note.favorite === 1 ? 'Unfavorite' : 'Favorite'" location="bottom">
+            <v-tooltip text="More" location="bottom">
+                <template v-slot:activator="{ props: tooltipProps }">
+                    <v-menu>
+                        <template v-slot:activator="{ props: menuProps }">
+                            <v-btn v-bind="{ ...tooltipProps, ...menuProps }">
+                                <v-icon>mdi-dots-horizontal</v-icon>
+                            </v-btn>
+                        </template>
+                        <v-list>
+                            <v-list-item @click="toggleFavorite(note.id)">
+                                <template v-slot:prepend>
+                                    <v-icon :icon="note.favorite === 1 ? 'mdi-heart-broken' : 'mdi-heart'"></v-icon>
+                                </template>
+                                <v-list-item-title>{{ note.favorite === 1 ? 'Unfavorite' : 'Favorite' }}</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item @click="renameNoteDialog = true">
+                                <template v-slot:prepend>
+                                    <v-icon>mdi-rename</v-icon>
+                                </template>
+                                <v-list-item-title>Rename</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item @click="moveToFolderDialog = true">
+                                <template v-slot:prepend>
+                                    <v-icon>mdi-file-move</v-icon>
+                                </template>
+                                <v-list-item-title>Move</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)">
+                                <template v-slot:prepend>
+                                    <v-icon>mdi-delete</v-icon>
+                                </template>
+                                <v-list-item-title>Delete</v-list-item-title>
+                            </v-list-item>
+                        </v-list>
+                    </v-menu>
+                </template>
+            </v-tooltip>
+        </v-btn-toggle>
+        
+    </div>
+</div>
+
+<!-- AI quick functions -->
+<div class="d-flex justify-left align-center pa-2 mt-2 ai-actions">
+    <v-tooltip text="Generate content with AI" location="bottom">
+        <template v-slot:activator="{ props }">
+            <v-btn v-bind="props" @click="generateWithAIDialog = !generateWithAIDialog" class="ma-2" variant="outlined" prepend-icon="mdi-lightbulb" rounded="lg" color="orange">Generate</v-btn>
+        </template>
+    </v-tooltip>
+    <v-tooltip text="Ask AI about your content" location="bottom">
+        <template v-slot:activator="{ props }">
+            <v-btn v-bind="props" @click="askAISidebar = !askAISidebar" class="ma-2" variant="outlined" prepend-icon="mdi-forum" rounded="lg" color="primary">Ask AI</v-btn>
+        </template>
+    </v-tooltip>
+    <v-tooltip text="Edit selection with AI" location="bottom">
+        <template v-slot:activator="{ props }">
+            <v-btn v-bind="props" @click="aiEdit()" class="ma-2" variant="outlined" prepend-icon="mdi-pencil" rounded="lg">Edit</v-btn>
+        </template>
+    </v-tooltip>
+    <v-tooltip text="Fix spelling & grammar" location="bottom">
+        <template v-slot:activator="{ props }">
+            <v-btn v-bind="props" @click="aiFixGrammar()" class="ma-2" variant="outlined" prepend-icon="mdi-spellcheck" rounded="lg" color="teal">Fix grammar</v-btn>
+        </template>
+    </v-tooltip>
+    <v-tooltip text="Format text with AI" location="bottom">
+        <template v-slot:activator="{ props }">
+            <v-btn v-bind="props" @click="aiFormatText()" class="ma-2" variant="outlined" prepend-icon="mdi-format-letter-case-lower" rounded="lg">Format</v-btn>
+        </template>
+    </v-tooltip>
+    <v-menu>
+        <template v-slot:activator="{ props }">
+            <v-btn v-bind="props" class="ma-2" variant="outlined" prepend-icon="mdi-chevron-down" rounded="lg">AI Tools</v-btn>
+        </template>
+        <v-list density="compact">
+            <!-- Edit submenu (no Format here) -->
+            <v-list-subheader>Edit</v-list-subheader>
+            <v-list-item @click="aiImproveWriting()">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-pencil"></v-icon>
+                </template>
+                <v-list-item-title>Improve writing</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="aiMakeShorter()">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-text-short"></v-icon>
+                </template>
+                <v-list-item-title>Summarize</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="aiMakeLonger()">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-text-long"></v-icon>
+                </template>
+                <v-list-item-title>Expand</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="aiSimplify()">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-alphabetical-variant"></v-icon>
+                </template>
+                <v-list-item-title>Simplify language</v-list-item-title>
+            </v-list-item>
+            <!-- Change tone submenu -->
+            <v-list-subheader>Change tone</v-list-subheader>
+            <v-menu open-on-hover location="end" offset="-10">
                 <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="toggleFavorite(note.id)">
-                        <v-icon :icon="note.favorite === 1 ? 'mdi-heart-broken' : 'mdi-heart'"></v-icon>
+                    <v-list-item v-bind="props">
+                        <template v-slot:prepend>
+                            <v-icon icon="mdi-tune-variant"></v-icon>
+                        </template>
+                        <template v-slot:append>
+                            <v-icon icon="mdi-chevron-right"></v-icon>
+                        </template>
+                        <v-list-item-title>Change tone to</v-list-item-title>
+                    </v-list-item>
+                </template>
+                <v-list density="compact" style="min-width: 180px;">
+                    <v-list-item v-for="tone in supportedTones" :key="tone.key" @click="aiChangeTone(tone.key)">
+                        <template v-slot:prepend>
+                            <v-icon :icon="tone.icon"></v-icon>
+                        </template>
+                        <v-list-item-title>{{ tone.label }}</v-list-item-title>
+                    </v-list-item>
+                </v-list>
+            </v-menu>
+            <!-- Translate submenu -->
+            <v-list-subheader>Translate</v-list-subheader>
+            <v-menu open-on-hover location="end" offset="-10">
+                <template v-slot:activator="{ props }">
+                    <v-list-item v-bind="props">
+                        <template v-slot:prepend>
+                            <v-icon icon="mdi-translate"></v-icon>
+                        </template>
+                        <template v-slot:append>
+                            <v-icon icon="mdi-chevron-right"></v-icon>
+                        </template>
+                        <v-list-item-title>Translate to</v-list-item-title>
+                    </v-list-item>
+                </template>
+                <v-list density="compact" style="min-width: 160px;">
+                    <v-list-item v-for="lang in supportedLanguages" :key="lang.key" @click="aiTranslateTo(lang.key)">
+                        <v-list-item-title>
+                            <span style="margin-right: 32px;">{{ lang.icon }}</span>{{ lang.label }}
+                        </v-list-item-title>
+                    </v-list-item>
+                </v-list>
+            </v-menu>
+        </v-list>
+    </v-menu>
+</div>
+
+<div v-if="editor">
+    <bubble-menu
+    class="bubble-menu"
+    :tippy-options="{
+        duration: 100,
+        position: fixed,
+        zIndex: 1500,
+    }"
+    :editor="editor"
+    >
+    
+    <div class="d-flex flex-column rounded-lg pa-2 elevation-4" :style="{ width: '465px', backgroundColor: backgroudColor }">
+        <!-- First row with text formatting buttons -->
+        <div class="d-flex flex-row align-center justify-center mb-2">
+            <v-btn-toggle
+            color="primary"
+            multiple
+            divided
+            variant="text"
+            :max="0"
+            >
+            <!-- Bold -->
+            <v-tooltip text="Bold (⌘B)" location="top">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" @click="editor.chain().focus().toggleBold().run()">
+                        <v-icon>mdi-format-bold</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip text="Rename" location="bottom">
+            <!-- Italic -->
+            <v-tooltip text="Italic (⌘I)" location="top">
                 <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="renameNoteDialog = true">
-                        <v-icon>mdi-rename</v-icon>
+                    <v-btn v-bind="props" @click="editor.chain().focus().toggleItalic().run()">
+                        <v-icon>mdi-format-italic</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip text="Move" location="bottom">
+            <!-- Underline -->
+            <v-tooltip text="Underline (⌘U)" location="top">
                 <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="moveToFolderDialog = true">
-                        <v-icon>mdi-file-move</v-icon>
+                    <v-btn v-bind="props" @click="editor.chain().focus().toggleUnderline().run()">
+                        <v-icon>mdi-format-underline</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip text="Delete" location="bottom">
+            <!-- Strike -->
+            <v-tooltip text="Strike (⌘⇧S)" location="top">
                 <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="store.openDeleteNoteConfirmationDialog(note.id)">
-                        <v-icon>mdi-delete</v-icon>
+                    <v-btn v-bind="props" @click="editor.chain().focus().toggleStrike().run()">
+                        <v-icon>mdi-format-strikethrough</v-icon>
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <!-- Superscript -->
+            <v-tooltip text="Superscript (⌘.)" location="top">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" @click="editor.chain().focus().toggleSuperscript().run()">
+                        <v-icon>mdi-format-superscript</v-icon>
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <!-- Subscript -->
+            <v-tooltip text="Subscript (⌘,)" location="top">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" @click="editor.chain().focus().toggleSubscript().run()">
+                        <v-icon>mdi-format-subscript</v-icon>
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <!-- Inline code -->
+            <v-tooltip text="Inline code (⌘E)" location="top">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" @click="editor.chain().focus().toggleCode().run()">
+                        <v-icon>mdi-code-tags</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
         </v-btn-toggle>
     </div>
     
-    <!-- Loader for the editor -->
-    <v-container v-if="isLoading" class="ga-1">
-        <v-progress-linear indeterminate color="primary"></v-progress-linear>
-    </v-container>
+    <!-- Divider between the two rows -->
+    <v-divider class="ma-1"></v-divider>
     
-    <div v-if="editor">
-        <bubble-menu
-        class="bubble-menu"
-        :tippy-options="{
-            duration: 100,
-            position: fixed,
-            zIndex: 1500,
-        }"
-        :editor="editor"
-        :style="{ backgroundColor: backgroudColor }"
-        >
-        
-        <div class="d-flex flex-column rounded pa-2 elevation-4" :style="{ width: '465px', backgroundColor: backgroudColor }">
-            <!-- First row with text formatting buttons -->
-            <div class="d-flex flex-row align-center justify-center mb-2">
-                <v-btn-toggle
-                color="primary"
-                multiple
-                divided
-                variant="text"
-                :max="0"
-                >
-                <!-- Bold -->
-                <v-tooltip text="Bold (⌘B)" location="top">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" @click="editor.chain().focus().toggleBold().run()">
-                            <v-icon>mdi-format-bold</v-icon>
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <!-- Italic -->
-                <v-tooltip text="Italic (⌘I)" location="top">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" @click="editor.chain().focus().toggleItalic().run()">
-                            <v-icon>mdi-format-italic</v-icon>
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <!-- Underline -->
-                <v-tooltip text="Underline (⌘U)" location="top">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" @click="editor.chain().focus().toggleUnderline().run()">
-                            <v-icon>mdi-format-underline</v-icon>
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <!-- Strike -->
-                <v-tooltip text="Strike (⌘⇧S)" location="top">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" @click="editor.chain().focus().toggleStrike().run()">
-                            <v-icon>mdi-format-strikethrough</v-icon>
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <!-- Superscript -->
-                <v-tooltip text="Superscript (⌘.)" location="top">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" @click="editor.chain().focus().toggleSuperscript().run()">
-                            <v-icon>mdi-format-superscript</v-icon>
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <!-- Subscript -->
-                <v-tooltip text="Subscript (⌘,)" location="top">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" @click="editor.chain().focus().toggleSubscript().run()">
-                            <v-icon>mdi-format-subscript</v-icon>
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <!-- Inline code -->
-                <v-tooltip text="Inline code (⌘E)" location="top">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" @click="editor.chain().focus().toggleCode().run()">
-                            <v-icon>mdi-code-tags</v-icon>
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-            </v-btn-toggle>
-        </div>
-        
-        <!-- Divider between the two rows -->
-        <v-divider class="ma-1"></v-divider>
-        
-        <!-- Second row with style and highlight dropdowns -->
-        <div class="d-flex flex-row align-center justify-center mt-2">
-            <v-menu>
-                <template v-slot:activator="{ props }">
-                    <v-btn
-                    height="40px"
-                    width="135px"
-                    v-bind="props"
-                    variant="text"
-                    prepend-icon="mdi-chevron-down"
-                    >
-                    Style
-                </v-btn>
-            </template>
-            <v-list density="compact">
-                <v-list-subheader>Turn into</v-list-subheader>
-                <!-- Paragraph -->
-                <v-list-item @click="editor.commands.setParagraph()">
-                    <template v-slot:prepend>
-                        <v-icon icon="mdi-format-paragraph"></v-icon>
-                    </template>
-                    <v-list-item-title>Paragraph</v-list-item-title>
-                </v-list-item>
-                <!-- Heading 1 -->
-                <v-list-item @click="editor.commands.toggleHeading({ level: 1 })">
-                    <template v-slot:prepend>
-                        <v-icon icon="mdi-format-header-1"></v-icon>
-                    </template>
-                    <v-list-item-title>Heading 1</v-list-item-title>
-                </v-list-item>
-                <!-- Heading 2 -->
-                <v-list-item @click="editor.commands.toggleHeading({ level: 2 })">
-                    <template v-slot:prepend>
-                        <v-icon icon="mdi-format-header-2"></v-icon>
-                    </template>
-                    <v-list-item-title>Heading 2</v-list-item-title>
-                </v-list-item>
-                <!-- Heading 3 -->
-                <v-list-item @click="editor.commands.toggleHeading({ level: 3 })">
-                    <template v-slot:prepend>
-                        <v-icon icon="mdi-format-header-3"></v-icon>
-                    </template>
-                    <v-list-item-title>Heading 3</v-list-item-title>
-                </v-list-item>
-                <!-- Bullet list -->
-                <v-list-item @click="editor.commands.toggleBulletList()">
-                    <template v-slot:prepend>
-                        <v-icon icon="mdi-format-list-bulleted"></v-icon>
-                    </template>
-                    <v-list-item-title>Bullet list</v-list-item-title>
-                </v-list-item>
-                <!-- Numbered list -->
-                <v-list-item @click="editor.commands.toggleOrderedList()">
-                    <template v-slot:prepend>
-                        <v-icon icon="mdi-format-list-numbered"></v-icon>
-                    </template>
-                    <v-list-item-title>Numbered list</v-list-item-title>
-                </v-list-item>
-                <!-- Task list -->
-                <v-list-item @click="editor.commands.toggleTaskList()">
-                    <template v-slot:prepend>
-                        <v-icon icon="mdi-format-list-checkbox"></v-icon>
-                    </template>
-                    <v-list-item-title>Task list</v-list-item-title>
-                </v-list-item>
-                <!-- Blockquote -->
-                <v-list-item @click="editor.commands.toggleBlockquote()">
-                    <template v-slot:prepend>
-                        <v-icon icon="mdi-format-quote-open"></v-icon>
-                    </template>
-                    <v-list-item-title>Quote</v-list-item-title>
-                </v-list-item>
-                <!-- Code block -->
-                <v-list-item @click="editor.commands.toggleCodeBlock()">
-                    <template v-slot:prepend>
-                        <v-icon icon="mdi-code-tags"></v-icon>
-                    </template>
-                    <v-list-item-title>Code block</v-list-item-title>
-                </v-list-item>
-            </v-list>
-        </v-menu>
-        
-        <v-divider vertical class="mx-2"></v-divider>
-        
+    <!-- Second row with style and highlight dropdowns -->
+    <div class="d-flex flex-row align-center justify-center mt-2">
         <v-menu>
             <template v-slot:activator="{ props }">
                 <v-btn
@@ -247,27 +282,109 @@
                 width="135px"
                 v-bind="props"
                 variant="text"
-                prepend-icon="mdi-marker"
+                prepend-icon="mdi-chevron-down"
                 >
-                Highlight
+                Style
             </v-btn>
         </template>
-        <!-- Card with all color to highlight -->
-        <v-card class="pa-2" max-width="340">
-            <v-row dense>
-                <v-col v-for="(color, index) in highlightColors" :key="index" cols="3">
-                    <v-btn
-                    :style="{ backgroundColor: color.value }"
-                    class="color-btn ma-1"
-                    variant="flat"
-                    width="20px" 
-                    height="40px"
-                    @click="handleHighlight(color.value)"
-                    >
-                </v-btn>
-            </v-col>
-        </v-row>
-    </v-card>
+        <v-list density="compact">
+            <v-list-subheader>Turn into</v-list-subheader>
+            <!-- Paragraph -->
+            <v-list-item @click="editor.commands.setParagraph()">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-format-paragraph"></v-icon>
+                </template>
+                <v-list-item-title>Paragraph</v-list-item-title>
+            </v-list-item>
+            <!-- Heading 1 -->
+            <v-list-item @click="editor.commands.toggleHeading({ level: 1 })">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-format-header-1"></v-icon>
+                </template>
+                <v-list-item-title>Heading 1</v-list-item-title>
+            </v-list-item>
+            <!-- Heading 2 -->
+            <v-list-item @click="editor.commands.toggleHeading({ level: 2 })">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-format-header-2"></v-icon>
+                </template>
+                <v-list-item-title>Heading 2</v-list-item-title>
+            </v-list-item>
+            <!-- Heading 3 -->
+            <v-list-item @click="editor.commands.toggleHeading({ level: 3 })">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-format-header-3"></v-icon>
+                </template>
+                <v-list-item-title>Heading 3</v-list-item-title>
+            </v-list-item>
+            <!-- Bullet list -->
+            <v-list-item @click="editor.commands.toggleBulletList()">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-format-list-bulleted"></v-icon>
+                </template>
+                <v-list-item-title>Bullet list</v-list-item-title>
+            </v-list-item>
+            <!-- Numbered list -->
+            <v-list-item @click="editor.commands.toggleOrderedList()">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-format-list-numbered"></v-icon>
+                </template>
+                <v-list-item-title>Numbered list</v-list-item-title>
+            </v-list-item>
+            <!-- Task list -->
+            <v-list-item @click="editor.commands.toggleTaskList()">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-format-list-checkbox"></v-icon>
+                </template>
+                <v-list-item-title>Task list</v-list-item-title>
+            </v-list-item>
+            <!-- Blockquote -->
+            <v-list-item @click="editor.commands.toggleBlockquote()">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-format-quote-open"></v-icon>
+                </template>
+                <v-list-item-title>Quote</v-list-item-title>
+            </v-list-item>
+            <!-- Code block -->
+            <v-list-item @click="editor.commands.toggleCodeBlock()">
+                <template v-slot:prepend>
+                    <v-icon icon="mdi-code-tags"></v-icon>
+                </template>
+                <v-list-item-title>Code block</v-list-item-title>
+            </v-list-item>
+        </v-list>
+    </v-menu>
+    
+    <v-divider vertical class="mx-2"></v-divider>
+    
+    <v-menu>
+        <template v-slot:activator="{ props }">
+            <v-btn
+            height="40px"
+            width="135px"
+            v-bind="props"
+            variant="text"
+            prepend-icon="mdi-marker"
+            >
+            Highlight
+        </v-btn>
+    </template>
+    <!-- Card with all color to highlight -->
+    <v-card class="pa-2 rounded-lg elevation-4" max-width="340" :style="{ backgroundColor: backgroudColor }">
+        <v-row dense>
+            <v-col v-for="(color, index) in highlightColors" :key="index" cols="3">
+                <v-btn
+                :style="{ backgroundColor: color.value }"
+                class="color-btn ma-1"
+                variant="flat"
+                width="20px" 
+                height="40px"
+                @click="handleHighlight(color.value)"
+                >
+            </v-btn>
+        </v-col>
+    </v-row>
+</v-card>
 </v-menu>
 
 <v-divider vertical class="mx-2"></v-divider>
@@ -285,7 +402,7 @@
     </v-btn>
 </template>
 <!-- Card with all color for the text -->
-<v-card class="pa-2" max-width="340">
+<v-card class="pa-2 rounded-lg elevation-4" max-width="340" :style="{ backgroundColor: backgroudColor }">
     <v-row dense>
         <v-col v-for="(color, index) in textColors" :key="index" cols="3">
             <v-btn
@@ -301,150 +418,6 @@
 </v-row>
 </v-card>
 </v-menu>
-</div>
-
-<!-- Divider between the two rows -->
-<v-divider class="ma-1 mt-2"></v-divider>
-
-<!-- Third row with AI features -->
-<div class="d-flex flex-row align-center justify-center mt-2">
-    <!-- Ask AI -->
-    <v-tooltip text="Ask AI to explain or edit" location="bottom">
-        <template v-slot:activator="{ props }">
-            <v-btn
-            v-bind="props" @click="aiAsk()"
-            variant="text"
-            prepend-icon="mdi-forum"
-            width="135px"
-            height="40px"
-            >
-            Ask AI
-        </v-btn>
-    </template>
-</v-tooltip>
-
-<v-divider vertical class="mx-2"></v-divider>
-
-<!-- Check grammar -->
-<v-tooltip text="Fix spelling & grammar" location="bottom">
-    <template v-slot:activator="{ props }">
-        <v-btn
-        v-bind="props" @click="aiFixGrammar()"
-        variant="text"
-        prepend-icon="mdi-spellcheck"
-        width="135px"
-        height="40px"
-        >
-        Check
-    </v-btn>
-</template>
-</v-tooltip>
-
-<v-divider vertical class="mx-2"></v-divider>
-
-<v-menu>
-    <template v-slot:activator="{ props }">
-        <v-btn
-        height="40px"
-        width="135px"
-        v-bind="props"
-        variant="text"
-        prepend-icon="mdi-chevron-down"
-        >
-        AI Tools
-    </v-btn>
-</template>
-<v-list density="compact">
-    <!-- Format submenu -->
-    <v-list-subheader>Format</v-list-subheader>
-    <v-list-item @click="aiFormatText()">
-        <template v-slot:prepend>
-            <v-icon icon="mdi-format-letter-case-lower"></v-icon>
-        </template>
-        <v-list-item-title>Format text</v-list-item-title>
-    </v-list-item>
-    <!-- Edit submenu -->
-    <v-list-subheader>Edit</v-list-subheader>
-    <v-list-item @click="aiImproveWriting()">
-        <template v-slot:prepend>
-            <v-icon icon="mdi-pencil"></v-icon>
-        </template>
-        <v-list-item-title>Improve writing</v-list-item-title>
-    </v-list-item>
-    <v-list-item @click="aiMakeShorter()">
-        <template v-slot:prepend>
-            <v-icon icon="mdi-text-short"></v-icon>
-        </template>
-        <v-list-item-title>Summarize</v-list-item-title>
-    </v-list-item>
-    <v-list-item @click="aiMakeLonger()">
-        <template v-slot:prepend>
-            <v-icon icon="mdi-text-long"></v-icon>
-        </template>
-        <v-list-item-title>Expand</v-list-item-title>
-    </v-list-item>
-    <v-list-item @click="aiSimplify()">
-        <template v-slot:prepend>
-            <v-icon icon="mdi-alphabetical-variant"></v-icon>
-        </template>
-        <v-list-item-title>Simplify language</v-list-item-title>
-    </v-list-item>
-    <!-- Change tone submenu -->
-    <v-list-subheader>Change tone</v-list-subheader>
-    <v-menu open-on-hover location="end" offset="-10">
-        <template v-slot:activator="{ props }">
-            <v-list-item v-bind="props">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-tune-variant"></v-icon>
-                </template>
-                <template v-slot:append>
-                    <v-icon icon="mdi-chevron-right"></v-icon>
-                </template>
-                <v-list-item-title>Change tone to</v-list-item-title>
-            </v-list-item>
-        </template>
-        <v-list density="compact" style="min-width: 180px;">
-            <v-list-item
-            v-for="tone in supportedTones"
-            :key="tone.key"
-            @click="aiChangeTone(tone.key)"
-            >
-            <template v-slot:prepend>
-                <v-icon :icon="tone.icon"></v-icon>
-            </template>
-            <v-list-item-title>{{ tone.label }}</v-list-item-title>
-        </v-list-item>
-    </v-list>
-</v-menu>
-<!-- Translate submenu -->
-<v-list-subheader>Translate</v-list-subheader>
-<v-menu open-on-hover location="end" offset="-10">
-    <template v-slot:activator="{ props }">
-        <v-list-item v-bind="props">
-            <template v-slot:prepend>
-                <v-icon icon="mdi-translate"></v-icon>
-            </template>
-            <template v-slot:append>
-                <v-icon icon="mdi-chevron-right"></v-icon>
-            </template>
-            <v-list-item-title>Translate to</v-list-item-title>
-        </v-list-item>
-    </template>
-    <v-list density="compact" style="min-width: 160px;">
-        <v-list-item
-        v-for="lang in supportedLanguages"
-        :key="lang.key"
-        @click="aiTranslateTo(lang.key)"
-        >
-        <v-list-item-title>
-            <span style="margin-right: 32px;">{{ lang.icon }}</span>{{ lang.label }}
-        </v-list-item-title>
-    </v-list-item>
-</v-list>
-</v-menu>
-</v-list>
-</v-menu>
-
 </div>
 </div>
 </bubble-menu>
@@ -467,39 +440,44 @@
 </floating-menu> -->
 
 
-<editor-content :editor="editor" v-model="content" class="ma-3"/>
-
-<!-- Fab button -->
-<div class="d-flex justify-end mr-2">
-    <v-tooltip text="Brainstorm with AI" location="left">
-        <template v-slot:activator="{ props }">
-            <v-btn
-            v-bind="props"
-            color="primary"
-            variant="tonal"
-            icon="mdi-lightbulb"
-            @click="brainstormWithAIDialog = !brainstormWithAIDialog"
-            />
-        </template>
-    </v-tooltip>
+<!-- Main content area with resizable layout -->
+<div class="editor-layout">
+    <!-- Left side - Editor content -->
+    <div class="editor-content" :style="{ width: askAISidebar ? `calc(100% - ${sidebarWidth}px)` : '100%' }">
+        <v-card 
+        elevation="1"
+        class="rounded-md border ma-3"
+        rounded="lg"
+        :loading="isLoading"
+        >
+        <v-card-text>
+            <editor-content :editor="editor" v-model="content"/>
+        </v-card-text>
+    </v-card>
 </div>
 
-<!-- Snackbar notification -->
-<v-snackbar v-model="snackbarVisible" bottom center :color="snackbarColor" variant="tonal">
-    <div class="d-flex align-center">
-        <v-icon icon="mdi-check-circle" class="me-2"></v-icon>
-        {{ snackbarMessage }}
-    </div>
-    
-    <template v-slot:actions v-if="snackbarCloseButtonVisible">
-        <v-btn
-        variant="text"
-        @click="snackbarVisible = false"
-        >
-        Close
-    </v-btn>
-</template>
-</v-snackbar>
+<!-- Resizable divider -->
+<div 
+v-if="askAISidebar" 
+class="resize-divider"
+@mousedown="startResize"
+></div>
+
+<!-- Right side - Ask AI Sidebar -->
+<div 
+v-if="askAISidebar" 
+class="sidebar-container"
+:style="{ width: `${sidebarWidth}px` }"
+>
+<AskAISidebar
+v-model="askAISidebar"
+:selectedText="selectedText"
+:theme="props.theme"
+:noteContent="editorContent"
+:noteId="note?.id"
+/>
+</div>
+</div>
 
 <div v-if="note">
     <RenameNoteDialog
@@ -527,8 +505,8 @@
     @delete-note="handleDeleteNote"
     />
     
-    <BrainstormWithAIDialog
-    v-model="brainstormWithAIDialog"
+    <GenerateAIDialog
+    v-model="generateWithAIDialog"
     />
     
     <AskAIDialog
@@ -542,8 +520,8 @@
 import RenameNoteDialog from '../components/navbar/RenameNoteDialog.vue'
 import MoveToFolderDialog from '../components/navbar/MoveToFolderDialog.vue'
 import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDialog.vue'
-import BrainstormWithAIDialog from '../components/editor/BrainstormWithAIDialog.vue'
-import AskAIDialog from '../components/editor/AskAIDialog.vue'
+import GenerateAIDialog from '../components/editor/GenerateAIDialog.vue'
+import AskAISidebar from '../components/editor/AskAISidebar.vue'
 
 import { createLlmService } from '../services/llmService';
 import fixGrammarPrompt from '../prompts/fixGrammarPrompt'
@@ -554,6 +532,7 @@ import makeLongerPrompt from '../prompts/makeLongerPrompt'
 import simplifyLanguagePrompt from '../prompts/simplifyLanguagePrompt';
 import changeTonePrompt from '../prompts/changeTonePrompt';
 import translateToPrompt from '../prompts/translateToPrompt';
+import getTopicPrompt from '../prompts/getTopicPrompt';
 
 import { useRouter } from 'vue-router'
 import { useFoldersStore } from '../stores/foldersStore'
@@ -611,6 +590,7 @@ var improveWritingLLMService = null
 var makeShorterLLMService = null
 var makeLongerLLMService = null
 var simplifyLanguageLLMService = null
+var getTopicService = null
 try {
     fixGrammarLLMService = createLlmService(fixGrammarPrompt, 'editorBasicTools');
     formatTextLLMService = createLlmService(formatTextPrompt, 'editorAdvancedTools');
@@ -618,6 +598,7 @@ try {
     makeShorterLLMService = createLlmService(makeShorterPrompt, 'editorBasicTools');
     makeLongerLLMService = createLlmService(makeLongerPrompt, 'editorBasicTools');
     simplifyLanguageLLMService = createLlmService(simplifyLanguagePrompt, 'editorBasicTools');
+    getTopicService = createLlmService(getTopicPrompt, 'editorBasicTools');
 } catch (error) {
     console.error('Error initializing LLM services:', error);
 }
@@ -659,21 +640,48 @@ const confirmationDialogTitle = computed(() => store.confirmationDialogTitle)
 const confirmationDialogText = computed(() => store.confirmationDialogText)
 const confirmationDialogButtonColor = computed(() => store.confirmationDialogButtonColor)
 
-// Snackbar reactive variables
-const snackbarVisible = ref(false)
-const snackbarMessage = ref('')
-const snackbarColor = ref('')
-const snackbarDuration = ref(2000)
-const snackbarCloseButtonVisible = ref(false)
-
-const brainstormWithAIDialog = ref(false)
+const generateWithAIDialog = ref(false)
 const askAIDialog = ref(false)
+const askAISidebar = ref(false)
+const sidebarWidth = ref(400) // Default sidebar width in pixels
+const isResizing = ref(false)
+
+// Resize functionality
+const startResize = (e) => {
+    isResizing.value = true
+    document.addEventListener('mousemove', handleResize)
+    document.addEventListener('mouseup', stopResize)
+    e.preventDefault()
+}
+
+const handleResize = (e) => {
+    if (!isResizing.value) return
+    
+    const container = document.querySelector('.editor-layout')
+    if (!container) return
+    
+    const containerRect = container.getBoundingClientRect()
+    const newWidth = containerRect.right - e.clientX
+    
+    // Set minimum and maximum sidebar width
+    const minWidth = 300
+    const maxWidth = containerRect.width * 0.6 // Max 60% of container width
+    
+    sidebarWidth.value = Math.max(minWidth, Math.min(maxWidth, newWidth))
+}
+
+const stopResize = () => {
+    isResizing.value = false
+    document.removeEventListener('mousemove', handleResize)
+    document.removeEventListener('mouseup', stopResize)
+}
 
 const note = ref(null)
 const selectedText = ref('')
 
 const backgroudColor = computed(() => {
-    return props.theme === 'dark' ? '#1c1c1c' : 'white'
+    // Softer surfaces for menus consistent with app theme
+    return props.theme === 'dark' ? '#232428' : '#ffffff'
 })
 
 // Create a lowlight instance
@@ -741,38 +749,27 @@ const getNote = async (id) => {
 }
 
 const saveNoteManually = async () => {
-    try {
-        // Show saving notification
-        snackbarMessage.value = 'Saving note...'
-        snackbarColor.value = 'info'
-        snackbarVisible.value = true
-        snackbarCloseButtonVisible.value = false
+    try {       
+        // Enable loading state
+        isLoading.value = 'primary'
+        
+        // Extract the topic from note content using AI service
+        const topic = await getTopicService.generate(editor.value.getText());
         
         // Save the content
         const payload = {
             id: note.value.id,
             contentJson: editor.value.getJSON(),
             contentText: editor.value.getText(),
+            topic: topic,
         }
         await window.api.updateNote(payload)
         
-        // Show success notification
-        snackbarMessage.value = 'Note saved successfully!'
-        snackbarColor.value = 'success'
-        snackbarCloseButtonVisible.value = true
-        // Let the success message visible for a few seconds before hiding
-        setTimeout(() => {
-            snackbarVisible.value = false
-        }, snackbarDuration.value)
+        // Stop loading state
+        isLoading.value = false
     } catch (error) {
         const errorMsg = 'Failed to save note'
         console.error(errorMsg, error)
-        
-        // Show error notification
-        snackbarMessage.value = errorMsg
-        snackbarColor.value = 'error'
-        snackbarVisible.value = true
-        snackbarCloseButtonVisible.value = true
     }
 }
 
@@ -811,7 +808,7 @@ const handleDeleteNote = (noteId) => {
     router.push({ name: 'home' })
 }
 
-const aiAsk = () => {
+const aiEdit = () => {
     if (!editor.value) {
         console.error('Editor not ready');
         return;
@@ -830,20 +827,13 @@ const aiAsk = () => {
     // Get selected text
     selectedText.value = state.doc.textBetween(from, to, ' ');
     
-    // Show AI dialog
-    askAIDialog.value = true;
+    // Show AI sidebar
+    askAISidebar.value = true;
 }
 
 const aiFixGrammar = async () => {
     if (!editor.value) {
         console.error('Editor not ready');
-        return;
-    }
-    
-    const { state } = editor.value.view;
-    const { from, to } = state.selection;
-    if (from === to) {
-        console.error('No text selected');
         return;
     }
     
@@ -854,7 +844,19 @@ const aiFixGrammar = async () => {
     isLoading.value = true;
     
     try {
-        const selectedText = state.doc.textBetween(from, to, ' ');
+        const { state } = editor.value.view;
+        const { from, to } = state.selection;
+        
+        let selectedText = '';
+        let isTextSelected = false;
+        if (from === to) {
+            // No text selected, use all content
+            selectedText = state.doc.textContent;
+        } else {
+            // Use the selected text
+            selectedText = state.doc.textBetween(from, to, ' ');
+            isTextSelected = true;
+        }
         
         let streamedText = '';
         let firstChunk = true;
@@ -863,8 +865,24 @@ const aiFixGrammar = async () => {
         for await (const chunk of stream) {
             streamedText += chunk;
             if (firstChunk) {
-                // Delete the range and insert the first chunk
-                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                if (isTextSelected) {
+                    // Delete the range and insert the first chunk
+                    editor.value
+                    .chain()
+                    .focus()
+                    .deleteRange({ from, to })
+                    .insertContent(streamedText)
+                    .run();
+                }
+                else {
+                    // Delete the entire note content insert the first chunk
+                    editor.value
+                    .chain()
+                    .focus()
+                    .deleteRange({ from: 0, to: state.doc.content.size })
+                    .insertContent(streamedText)
+                    .run();
+                }
                 firstChunk = false;
             } else {
                 // Only append the new chunk
@@ -885,13 +903,6 @@ const aiFormatText = async () => {
         return;
     }
     
-    const { state } = editor.value.view;
-    const { from, to } = state.selection;
-    if (from === to) {
-        console.error('No text selected');
-        return;
-    }
-    
     // Immediately hide bubble menu
     editor.value.commands.blur();
     
@@ -899,19 +910,43 @@ const aiFormatText = async () => {
     isLoading.value = true;
     
     try {
-        const selectedText = state.doc.textBetween(from, to, ' ')
+        const { state } = editor.value.view;
+        const { from, to } = state.selection;
+        
+        let selectedText = '';
+        let isTextSelected = false;
+        if (from === to) {
+            // No text selected, use all content
+            selectedText = state.doc.textContent;
+        } else {
+            // Use the selected text
+            selectedText = state.doc.textBetween(from, to, ' ');
+            isTextSelected = true;
+        }
         
         const response = await formatTextLLMService.generate(selectedText);
         
         // Optional delay if needed to ensure bubble menu unmount
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Replace text
-        editor.value.chain()
-        .focus()
-        .deleteRange({ from, to })
-        .insertContent(response)
-        .run();
+        // Replace the selected text
+        if (isTextSelected) {
+            editor.value
+            .chain()
+            .focus()
+            .deleteRange({ from, to })
+            .insertContent(response)
+            .run();
+        }
+        // Or replace the entire note content
+        else {
+            editor.value
+            .chain()
+            .focus()
+            .deleteRange({ from: 0, to: state.doc.content.size })
+            .insertContent(response)
+            .run();
+        }
     } catch (error) {
         console.error('Failed to get response:', error);
     } finally {
@@ -925,42 +960,39 @@ const aiImproveWriting = async () => {
         console.error('Editor not ready');
         return;
     }
-    
     const { state } = editor.value.view;
     const { from, to } = state.selection;
-    if (from === to) {
-        console.error('No text selected');
-        return;
-    }
-    
     // Immediately hide bubble menu
     editor.value.commands.blur();
-    
-    // Turn on skeleton
     isLoading.value = true;
-    
     try {
-        const selectedText = state.doc.textBetween(from, to, ' ');
-        
+        let text = '';
+        let isTextSelected = false;
+        if (from === to) {
+            text = state.doc.textContent;
+        } else {
+            text = state.doc.textBetween(from, to, ' ');
+            isTextSelected = true;
+        }
         let streamedText = '';
         let firstChunk = true;
-        const stream = await improveWritingLLMService.stream(selectedText);
-        
+        const stream = await improveWritingLLMService.stream(text);
         for await (const chunk of stream) {
             streamedText += chunk;
             if (firstChunk) {
-                // Delete the range and insert the first chunk
-                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                if (isTextSelected) {
+                    editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                } else {
+                    editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
+                }
                 firstChunk = false;
             } else {
-                // Only append the new chunk
                 editor.value.chain().focus().insertContent(chunk).run();
             }
         }
     } catch (error) {
         console.error('Failed to get response:', error);
     } finally {
-        // Turn off skeleton
         isLoading.value = false;
     }
 }
@@ -970,42 +1002,38 @@ const aiMakeShorter = async () => {
         console.error('Editor not ready');
         return;
     }
-    
     const { state } = editor.value.view;
     const { from, to } = state.selection;
-    if (from === to) {
-        console.error('No text selected');
-        return;
-    }
-    
-    // Immediately hide bubble menu
     editor.value.commands.blur();
-    
-    // Turn on skeleton
     isLoading.value = true;
-    
     try {
-        const selectedText = state.doc.textBetween(from, to, ' ');
-        
+        let text = '';
+        let isTextSelected = false;
+        if (from === to) {
+            text = state.doc.textContent;
+        } else {
+            text = state.doc.textBetween(from, to, ' ');
+            isTextSelected = true;
+        }
         let streamedText = '';
         let firstChunk = true;
-        const stream = await makeShorterLLMService.stream(selectedText);
-        
+        const stream = await makeShorterLLMService.stream(text);
         for await (const chunk of stream) {
             streamedText += chunk;
             if (firstChunk) {
-                // Delete the range and insert the first chunk
-                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                if (isTextSelected) {
+                    editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                } else {
+                    editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
+                }
                 firstChunk = false;
             } else {
-                // Only append the new chunk
                 editor.value.chain().focus().insertContent(chunk).run();
             }
         }
     } catch (error) {
         console.error('Failed to get response:', error);
     } finally {
-        // Turn off skeleton
         isLoading.value = false;
     }
 }
@@ -1015,42 +1043,38 @@ const aiMakeLonger = async () => {
         console.error('Editor not ready');
         return;
     }
-    
     const { state } = editor.value.view;
     const { from, to } = state.selection;
-    if (from === to) {
-        console.error('No text selected');
-        return;
-    }
-    
-    // Immediately hide bubble menu
     editor.value.commands.blur();
-    
-    // Turn on skeleton
     isLoading.value = true;
-    
     try {
-        const selectedText = state.doc.textBetween(from, to, ' ');
-        
+        let text = '';
+        let isTextSelected = false;
+        if (from === to) {
+            text = state.doc.textContent;
+        } else {
+            text = state.doc.textBetween(from, to, ' ');
+            isTextSelected = true;
+        }
         let streamedText = '';
         let firstChunk = true;
-        const stream = await makeLongerLLMService.stream(selectedText);
-        
+        const stream = await makeLongerLLMService.stream(text);
         for await (const chunk of stream) {
             streamedText += chunk;
             if (firstChunk) {
-                // Delete the range and insert the first chunk
-                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                if (isTextSelected) {
+                    editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                } else {
+                    editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
+                }
                 firstChunk = false;
             } else {
-                // Only append the new chunk
                 editor.value.chain().focus().insertContent(chunk).run();
             }
         }
     } catch (error) {
         console.error('Failed to get response:', error);
     } finally {
-        // Turn off skeleton
         isLoading.value = false;
     }
 }
@@ -1060,42 +1084,38 @@ const aiSimplify = async () => {
         console.error('Editor not ready');
         return;
     }
-    
     const { state } = editor.value.view;
     const { from, to } = state.selection;
-    if (from === to) {
-        console.error('No text selected');
-        return;
-    }
-    
-    // Immediately hide bubble menu
     editor.value.commands.blur();
-    
-    // Turn on skeleton
     isLoading.value = true;
-    
     try {
-        const selectedText = state.doc.textBetween(from, to, ' ');
-        
+        let text = '';
+        let isTextSelected = false;
+        if (from === to) {
+            text = state.doc.textContent;
+        } else {
+            text = state.doc.textBetween(from, to, ' ');
+            isTextSelected = true;
+        }
         let streamedText = '';
         let firstChunk = true;
-        const stream = await simplifyLanguageLLMService.stream(selectedText);
-        
+        const stream = await simplifyLanguageLLMService.stream(text);
         for await (const chunk of stream) {
             streamedText += chunk;
             if (firstChunk) {
-                // Delete the range and insert the first chunk
-                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                if (isTextSelected) {
+                    editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                } else {
+                    editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
+                }
                 firstChunk = false;
             } else {
-                // Only append the new chunk
                 editor.value.chain().focus().insertContent(chunk).run();
             }
         }
     } catch (error) {
         console.error('Failed to get response:', error);
     } finally {
-        // Turn off skeleton
         isLoading.value = false;
     }
 }
@@ -1105,45 +1125,40 @@ const aiChangeTone = async (tone) => {
         console.error('Editor not ready');
         return;
     }
-    
     const { state } = editor.value.view;
     const { from, to } = state.selection;
-    if (from === to) {
-        console.error('No text selected');
-        return;
-    }
-    
-    // Immediately hide bubble menu
     editor.value.commands.blur();
-    
-    // Turn on skeleton
     isLoading.value = true;
-    
     try {
         // Create LLM service with the selected tone
         const changeToneLLMService = createLlmService(changeTonePrompt(tone), 'editorBasicTools');
-        
-        const selectedText = state.doc.textBetween(from, to, ' ');
-        
+        let text = '';
+        let isTextSelected = false;
+        if (from === to) {
+            text = state.doc.textContent;
+        } else {
+            text = state.doc.textBetween(from, to, ' ');
+            isTextSelected = true;
+        }
         let streamedText = '';
         let firstChunk = true;
-        const stream = await changeToneLLMService.stream(selectedText);
-        
+        const stream = await changeToneLLMService.stream(text);
         for await (const chunk of stream) {
             streamedText += chunk;
             if (firstChunk) {
-                // Delete the range and insert the first chunk
-                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                if (isTextSelected) {
+                    editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                } else {
+                    editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
+                }
                 firstChunk = false;
             } else {
-                // Only append the new chunk
                 editor.value.chain().focus().insertContent(chunk).run();
             }
         }
     } catch (error) {
         console.error('Failed to get response:', error);
     } finally {
-        // Turn off skeleton
         isLoading.value = false;
     }
 }
@@ -1153,45 +1168,40 @@ const aiTranslateTo = async (language) => {
         console.error('Editor not ready');
         return;
     }
-    
     const { state } = editor.value.view;
     const { from, to } = state.selection;
-    if (from === to) {
-        console.error('No text selected');
-        return;
-    }
-    
-    // Immediately hide bubble menu
     editor.value.commands.blur();
-    
-    // Turn on skeleton
     isLoading.value = true;
-    
     try {
         // Create LLM service with the chosen language
         const translateToLLMService = createLlmService(translateToPrompt(language), 'editorBasicTools');
-        
-        const selectedText = state.doc.textBetween(from, to, ' ');
-        
+        let text = '';
+        let isTextSelected = false;
+        if (from === to) {
+            text = state.doc.textContent;
+        } else {
+            text = state.doc.textBetween(from, to, ' ');
+            isTextSelected = true;
+        }
         let streamedText = '';
         let firstChunk = true;
-        const stream = await translateToLLMService.stream(selectedText);
-        
+        const stream = await translateToLLMService.stream(text);
         for await (const chunk of stream) {
             streamedText += chunk;
             if (firstChunk) {
-                // Delete the range and insert the first chunk
-                editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                if (isTextSelected) {
+                    editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                } else {
+                    editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
+                }
                 firstChunk = false;
             } else {
-                // Only append the new chunk
                 editor.value.chain().focus().insertContent(chunk).run();
             }
         }
     } catch (error) {
         console.error('Failed to get response:', error);
     } finally {
-        // Turn off skeleton
         isLoading.value = false;
     }
 }
@@ -1244,6 +1254,10 @@ onBeforeUnmount(() => {
         editor.value.destroy()
     }
     window.removeEventListener('keydown', handleKeyDown)
+    
+    // Clean up resize event listeners
+    document.removeEventListener('mousemove', handleResize)
+    document.removeEventListener('mouseup', stopResize)
 })
 </script>
 
@@ -1257,10 +1271,8 @@ onBeforeUnmount(() => {
 }
 
 .ProseMirror {
-    padding: 32px;
-    border-radius: 8px;
-    border: 1px solid #dbdbdb;
-    height: calc(100vh - 230px);
+    padding: 16px;
+    height: calc(100vh - 300px);
     overflow-y: auto;
 }
 
@@ -1293,6 +1305,16 @@ onBeforeUnmount(() => {
 .text-color-btn:hover {
     transform: scale(1.1);
     transition: transform 0.2s;
+}
+
+/* AI actions responsive container */
+.ai-actions {
+    gap: 8px;
+    flex-wrap: wrap;
+    overflow-x: auto;
+}
+.ai-actions .v-btn {
+    flex: 0 0 auto;
 }
 
 blockquote {
@@ -1470,6 +1492,59 @@ table {
 &.resize-cursor {
     cursor: ew-resize;
     cursor: col-resize;
+}
+
+/* Editor layout styles */
+.editor-layout {
+    display: flex;
+    height: calc(100vh - 240px); /* Adjust based on your header height */
+    position: relative;
+}
+
+.editor-content {
+    flex: 1;
+    transition: width 0.3s ease;
+    overflow: hidden;
+}
+
+.resize-divider {
+    width: 4px;
+    height: calc(100vh - 300px + 32px);
+    margin: 12px 0;
+    background-color: #e0e0e0;
+    cursor: ew-resize;
+    position: relative;
+    flex-shrink: 0;
+    align-self: flex-start;
+}
+
+.resize-divider:hover {
+    background-color: #2196f3;
+}
+
+.resize-divider::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -2px;
+    right: -2px;
+    bottom: 0;
+    background: transparent;
+}
+
+.sidebar-container {
+    flex-shrink: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Dark theme support for resize divider */
+[data-theme="dark"] .resize-divider {
+    background-color: #424242;
+}
+
+[data-theme="dark"] .resize-divider:hover {
+    background-color: #2196f3;
 }
 
 /* Floating menu */

@@ -1,19 +1,12 @@
 <template>
     <!-- App bar -->
     <v-app-bar
-    elevation="1"
+    elevation="0"
     density="compact"
-    :class="['drag', { 'pl-16': !isFullscreen }]">
+    :class="['drag', { 'pl-16': !isFullscreen }]"
+    color="#F5F8FB"
+    >
     <v-app-bar-nav-icon variant="text" @click.stop="toggleNavbar" class="no-drag"/>
-    <v-img
-    src="../assets/lumos_logo.png"
-    max-height="32"
-    max-width="32"
-    class="drag ml-2"
-    />
-    <v-toolbar-title class="drag ml-1 mt-1">
-        Lumos
-    </v-toolbar-title>
 </v-app-bar>
 
 <!-- Navigation drawer -->
@@ -30,7 +23,7 @@ class="drawer-overlay"
 ></div>
 
 <!-- Main content area -->
-<v-main>
+<v-main :style="{ background: 'linear-gradient(to bottom, #F5F8FB, #EAF0F7)' }">
     <v-container>
         <router-view
         :key="$route.fullPath"

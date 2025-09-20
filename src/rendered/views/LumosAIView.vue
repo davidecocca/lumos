@@ -1,7 +1,7 @@
 <template>
     <div class="d-flex flex-column align-center">
-        <p class="text-h4">Lumos <b>AI</b></p>
-        <p class="text-h6">Write. Chat. Connect.</p>
+        <p class="text-h4 font-weight-medium">Lumos AI</p>
+        <p class="text-h6 font-weight-light">Chat with your notes</p>
         
         <div class="d-flex flex-column mt-2 ml-4 pl-4" style="align-self: flex-start;">
             <!-- New chat button -->
@@ -11,7 +11,8 @@
                     v-bind="props"
                     variant="tonal"
                     color="primary"
-                    prepend-icon="mdi-shape-square-plus"
+                    rounded="lg"
+                    prepend-icon="mdi-plus"
                     @click="resetChat"
                     >New chat</v-btn>
                 </template>
@@ -69,22 +70,27 @@
     <v-text-field
     v-model="userInput"
     label="Ask something"
-    variant="solo-filled"
+    variant="solo"
+    hide-details
+    rounded
     clearable
+    single-line
     @keyup.enter="sendMessage"
+    class="ma-4"
     >
-    <template v-slot:append>
+    <template v-slot:append-inner>
         <v-tooltip text="Send" location="top">
             <template v-slot:activator="{ props }">
                 <v-icon
                 v-bind="props"
                 icon="mdi-send"
                 @click="sendMessage()"
+                class="ml-2"
                 />
             </template>
         </v-tooltip>
     </template>
-    <template v-slot:prepend>
+    <template v-slot:prepend-inner>
         <v-menu v-model="menu" :close-on-content-click="false">
             <template v-slot:activator="{ props }">
                 <v-tooltip text="Restrict search" location="top">
