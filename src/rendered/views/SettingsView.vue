@@ -1,14 +1,15 @@
 <template>
     <div class="d-flex flex-column">
-        <div class="d-flex flex-column align-center">
+        <div class="d-flex flex-column align-center mt-2 mb-4">
             <p class="text-h4 font-weight-medium">Settings</p>
+            <p class="text-h6 font-weight-light">Set things your way.</p>
         </div>
         
         <v-tabs
         v-model="tab"
         align-tabs="center"
         color="primary"
-        class="mb-4 mt-4"
+        class="mb-4"
         >
         <v-tab :value="profileTab">Profile</v-tab>
         <v-tab :value="appearanceTab">Appearance</v-tab>

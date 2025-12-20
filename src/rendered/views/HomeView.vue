@@ -1,19 +1,7 @@
 <template>
     <div class="d-flex flex-column">
-        <!-- Search bar -->
-        <v-text-field
-        prepend-inner-icon="mdi-magnify"
-        label="Ask Lumos..."
-        variant="solo"
-        hide-details
-        single-line
-        @click:append-inner="onClick"
-        class="mt-2 mb-4 ml-4 mr-4"
-        rounded
-        ></v-text-field>
-        
         <!-- Page title -->
-        <div class="d-flex flex-column align-center mt-4 mb-4">
+        <div class="d-flex flex-column align-center mt-2 mb-4">
             <p class="text-h4 font-weight-medium">{{ userName ? 'Welcome back, ' + userName + '!' : 'Welcome back!' }}</p>
             <p class="text-h6 font-weight-light">{{ subtitle }}</p>
         </div>
