@@ -3,7 +3,6 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import EditorView from '../views/EditorView.vue'
-import LumosAIView from '../views/LumosAIView.vue'
 
 const routes = [
     {
@@ -21,12 +20,7 @@ const routes = [
         name: 'notes',
         component: EditorView,
         props: true
-    },
-    {
-        path: '/lumos-ai',
-        name: 'lumos-ai',
-        component: LumosAIView,
-    },
+    }
 ]
 
 const router = createRouter({

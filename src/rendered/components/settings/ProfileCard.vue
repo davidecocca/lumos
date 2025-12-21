@@ -5,6 +5,7 @@
         title="About you"
         subtitle="Tell Lumos more about you."
         rounded="lg"
+        elevation="0"
         >
         <v-card-text>
             <div class="d-flex flex-column">

@@ -5,6 +5,7 @@
         title="LLMs"
         subtitle="Your notes, your LLM: stay local or go hosted."
         rounded="lg"
+        elevation="0"
         >
         
         <!-- Select model section -->
@@ -101,6 +102,7 @@
     title="Provider Settings"
     subtitle="Setup your API keys."
     rounded="lg"
+    elevation="0"
     >
     <v-card-text>
         <div class="d-flex flex-column">

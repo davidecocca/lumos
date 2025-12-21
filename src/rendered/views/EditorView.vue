@@ -85,34 +85,29 @@
 
 <!-- AI quick functions -->
 <div class="d-flex justify-left align-center pa-2 mt-2 ai-actions">
-    <v-tooltip text="Generate content with AI" location="bottom">
+    <v-tooltip text="Generate with AI" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="generateWithAIDialog = !generateWithAIDialog" class="ma-2" variant="outlined" prepend-icon="mdi-lightbulb" rounded="lg" color="orange">Generate</v-btn>
+            <v-btn v-bind="props" @click="generateWithAIDialog = !generateWithAIDialog" class="ma-2" variant="outlined" prepend-icon="mdi-lightbulb" rounded="lg" color="primary">Generate</v-btn>
         </template>
     </v-tooltip>
-    <v-tooltip text="Ask AI about your content" location="bottom">
+    <v-tooltip text="Edit with AI" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="askAISidebar = !askAISidebar" class="ma-2" variant="outlined" prepend-icon="mdi-forum" rounded="lg" color="primary">Ask AI</v-btn>
-        </template>
-    </v-tooltip>
-    <v-tooltip text="Edit selection with AI" location="bottom">
-        <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiEdit()" class="ma-2" variant="outlined" prepend-icon="mdi-pencil" rounded="lg">Edit</v-btn>
+            <v-btn v-bind="props" @click="aiEdit()" class="ma-2" variant="outlined" prepend-icon="mdi-pencil" rounded="lg" :color="theme === 'dark' ? 'amber' : 'orange-darken-4'">Edit</v-btn>
         </template>
     </v-tooltip>
     <v-tooltip text="Fix spelling & grammar" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiFixGrammar()" class="ma-2" variant="outlined" prepend-icon="mdi-spellcheck" rounded="lg" color="teal">Fix grammar</v-btn>
+            <v-btn v-bind="props" @click="aiFixGrammar()" class="ma-2" variant="outlined" prepend-icon="mdi-spellcheck" rounded="lg" :color="theme === 'dark' ? 'teal' : 'teal-darken-4'">Fix</v-btn>
         </template>
     </v-tooltip>
     <v-tooltip text="Format text with AI" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiFormatText()" class="ma-2" variant="outlined" prepend-icon="mdi-format-letter-case-lower" rounded="lg">Format</v-btn>
+            <v-btn v-bind="props" @click="aiFormatText()" class="ma-2" variant="outlined" prepend-icon="mdi-format-letter-case-lower" rounded="lg" :color="theme === 'dark' ? 'blue-grey-lighten-1' : 'blue-grey-darken-4'">Format</v-btn>
         </template>
     </v-tooltip>
     <v-menu>
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" class="ma-2" variant="outlined" prepend-icon="mdi-chevron-down" rounded="lg">AI Tools</v-btn>
+            <v-btn v-bind="props" class="ma-2" variant="outlined" prepend-icon="mdi-chevron-down" rounded="lg">Other</v-btn>
         </template>
         <v-list density="compact">
             <!-- Edit submenu (no Format here) -->
@@ -443,9 +438,9 @@
 <!-- Main content area with resizable layout -->
 <div class="editor-layout">
     <!-- Left side - Editor content -->
-    <div class="editor-content" :style="{ width: askAISidebar ? `calc(100% - ${sidebarWidth}px)` : '100%' }">
+    <div class="editor-content">
         <v-card 
-        elevation="1"
+        elevation="0"
         class="rounded-md border ma-3"
         rounded="lg"
         :loading="isLoading"
@@ -456,27 +451,6 @@
     </v-card>
 </div>
 
-<!-- Resizable divider -->
-<div 
-v-if="askAISidebar" 
-class="resize-divider"
-@mousedown="startResize"
-></div>
-
-<!-- Right side - Ask AI Sidebar -->
-<div 
-v-if="askAISidebar" 
-class="sidebar-container"
-:style="{ width: `${sidebarWidth}px` }"
->
-<AskAISidebar
-v-model="askAISidebar"
-:selectedText="selectedText"
-:theme="props.theme"
-:noteContent="editorContent"
-:noteId="note?.id"
-/>
-</div>
 </div>
 
 <div v-if="note">
@@ -508,1069 +482,1021 @@ v-model="askAISidebar"
     <GenerateAIDialog
     v-model="generateWithAIDialog"
     />
-    
-    <AskAIDialog
-    v-model="askAIDialog"
-    :selectedText="selectedText"
-    />
 </div>
 </template>
 
 <script setup>
-import RenameNoteDialog from '../components/navbar/RenameNoteDialog.vue'
-import MoveToFolderDialog from '../components/navbar/MoveToFolderDialog.vue'
-import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDialog.vue'
-import GenerateAIDialog from '../components/editor/GenerateAIDialog.vue'
-import AskAISidebar from '../components/editor/AskAISidebar.vue'
-
-import { createLlmService } from '../services/llmService';
-import fixGrammarPrompt from '../prompts/fixGrammarPrompt'
-import formatTextPrompt from '../prompts/formatTextPrompt';
-import improveWritingPrompt from '../prompts/improveWritingPrompt'
-import makeShorterPrompt from '../prompts/makeShorterPrompt'
-import makeLongerPrompt from '../prompts/makeLongerPrompt'
-import simplifyLanguagePrompt from '../prompts/simplifyLanguagePrompt';
-import changeTonePrompt from '../prompts/changeTonePrompt';
-import translateToPrompt from '../prompts/translateToPrompt';
-import getTopicPrompt from '../prompts/getTopicPrompt';
-
-import { useRouter } from 'vue-router'
-import { useFoldersStore } from '../stores/foldersStore'
-import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
-import StarterKit from '@tiptap/starter-kit'
-import {
-    BubbleMenu,
-    Editor,
-    EditorContent,
-    FloatingMenu,
-} from '@tiptap/vue-3'
-import Underline from '@tiptap/extension-underline'
-import Placeholder from '@tiptap/extension-placeholder'
-import Subscript from '@tiptap/extension-subscript'
-import Superscript from '@tiptap/extension-superscript'
-import Highlight from '@tiptap/extension-highlight'
-import Blockquote from '@tiptap/extension-blockquote'
-import BulletList from '@tiptap/extension-bullet-list'
-import OrderedList from '@tiptap/extension-ordered-list'
-import ListItem from '@tiptap/extension-list-item'
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-import TaskList from '@tiptap/extension-task-list'
-import TaskItem from '@tiptap/extension-task-item'
-import HorizontalRule from '@tiptap/extension-horizontal-rule'
-import { Color } from '@tiptap/extension-color'
-import TextStyle from '@tiptap/extension-text-style'
-import Table from '@tiptap/extension-table'
-import TableCell from '@tiptap/extension-table-cell'
-import TableHeader from '@tiptap/extension-table-header'
-import TableRow from '@tiptap/extension-table-row'
-
-// Code block highlighting: load all languages with "all" and common languages with "common"
-import { all, createLowlight } from 'lowlight'
-
-const props = defineProps({
-    theme: {
-        type: String,
-        default: 'light',
-    },
-    noteId: {
-        type: Number,
-        mandatory: true,
-    }
-})
-
-const router = useRouter()
-
-// Central store for folders
-const store = useFoldersStore()
-
-// Init LLM services for AI features
-var fixGrammarLLMService = null
-var formatTextLLMService = null
-var improveWritingLLMService = null
-var makeShorterLLMService = null
-var makeLongerLLMService = null
-var simplifyLanguageLLMService = null
-var getTopicService = null
-try {
-    fixGrammarLLMService = createLlmService(fixGrammarPrompt, 'editorBasicTools');
-    formatTextLLMService = createLlmService(formatTextPrompt, 'editorAdvancedTools');
-    improveWritingLLMService = createLlmService(improveWritingPrompt, 'editorBasicTools');
-    makeShorterLLMService = createLlmService(makeShorterPrompt, 'editorBasicTools');
-    makeLongerLLMService = createLlmService(makeLongerPrompt, 'editorBasicTools');
-    simplifyLanguageLLMService = createLlmService(simplifyLanguagePrompt, 'editorBasicTools');
-    getTopicService = createLlmService(getTopicPrompt, 'editorBasicTools');
-} catch (error) {
-    console.error('Error initializing LLM services:', error);
-}
-
-// Init list with supported tones for change tone tool
-const supportedTones = [
-{ key: 'professional', icon: 'mdi-briefcase', label: 'Professional' },
-{ key: 'friendly', icon: 'mdi-emoticon-happy', label: 'Friendly' },
-{ key: 'empathetic', icon: 'mdi-handshake', label: 'Empathetic' },
-{ key: 'persuasive', icon: 'mdi-creation', label: 'Persuasive' },
-{ key: 'casual', icon: 'mdi-emoticon-cool', label: 'Casual' }
-]
-
-// Init list with supported languages for translation tool
-const supportedLanguages = [
-{ key: 'english', icon: '🇺🇸', label: 'English' },
-{ key: 'italian', icon: '🇮🇹', label: 'Italian' },
-{ key: 'spanish', icon: '🇪🇸', label: 'Spanish' },
-{ key: 'french', icon: '🇫🇷', label: 'French' },
-{ key: 'german', icon: '🇩🇪', label: 'German' },
-{ key: 'portuguese', icon: '🇧🇷', label: 'Portuguese' },
-]
-
-// Reactive variables for dialogs
-const renameNoteDialog = computed({
-    get: () => store.renameNoteDialog,
-    set: (val) => store.renameNoteDialog = val
-})
-const moveToFolderDialog = computed({
-    get: () => store.moveToFolderDialog,
-    set: (val) => store.moveToFolderDialog = val
-})
-const deleteNoteDialog = computed({
-    get: () => store.deleteNoteDialog,
-    set: (val) => store.deleteNoteDialog = val
-})
-
-const confirmationDialogTitle = computed(() => store.confirmationDialogTitle)
-const confirmationDialogText = computed(() => store.confirmationDialogText)
-const confirmationDialogButtonColor = computed(() => store.confirmationDialogButtonColor)
-
-const generateWithAIDialog = ref(false)
-const askAIDialog = ref(false)
-const askAISidebar = ref(false)
-const sidebarWidth = ref(400) // Default sidebar width in pixels
-const isResizing = ref(false)
-
-// Resize functionality
-const startResize = (e) => {
-    isResizing.value = true
-    document.addEventListener('mousemove', handleResize)
-    document.addEventListener('mouseup', stopResize)
-    e.preventDefault()
-}
-
-const handleResize = (e) => {
-    if (!isResizing.value) return
+    import RenameNoteDialog from '../components/navbar/RenameNoteDialog.vue'
+    import MoveToFolderDialog from '../components/navbar/MoveToFolderDialog.vue'
+    import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDialog.vue'
+    import GenerateAIDialog from '../components/editor/GenerateAIDialog.vue'
     
-    const container = document.querySelector('.editor-layout')
-    if (!container) return
+    import { createLlmService } from '../services/llmService';
+    import fixGrammarPrompt from '../prompts/fixGrammarPrompt'
+    import formatTextPrompt from '../prompts/formatTextPrompt';
+    import improveWritingPrompt from '../prompts/improveWritingPrompt'
+    import makeShorterPrompt from '../prompts/makeShorterPrompt'
+    import makeLongerPrompt from '../prompts/makeLongerPrompt'
+    import simplifyLanguagePrompt from '../prompts/simplifyLanguagePrompt';
+    import changeTonePrompt from '../prompts/changeTonePrompt';
+    import translateToPrompt from '../prompts/translateToPrompt';
+    import getTopicPrompt from '../prompts/getTopicPrompt';
     
-    const containerRect = container.getBoundingClientRect()
-    const newWidth = containerRect.right - e.clientX
+    import { useRouter } from 'vue-router'
+    import { useFoldersStore } from '../stores/foldersStore'
+    import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
+    import StarterKit from '@tiptap/starter-kit'
+    import {
+        BubbleMenu,
+        Editor,
+        EditorContent,
+        FloatingMenu,
+    } from '@tiptap/vue-3'
+    import Underline from '@tiptap/extension-underline'
+    import Placeholder from '@tiptap/extension-placeholder'
+    import Subscript from '@tiptap/extension-subscript'
+    import Superscript from '@tiptap/extension-superscript'
+    import Highlight from '@tiptap/extension-highlight'
+    import Blockquote from '@tiptap/extension-blockquote'
+    import BulletList from '@tiptap/extension-bullet-list'
+    import OrderedList from '@tiptap/extension-ordered-list'
+    import ListItem from '@tiptap/extension-list-item'
+    import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+    import TaskList from '@tiptap/extension-task-list'
+    import TaskItem from '@tiptap/extension-task-item'
+    import HorizontalRule from '@tiptap/extension-horizontal-rule'
+    import { Color } from '@tiptap/extension-color'
+    import TextStyle from '@tiptap/extension-text-style'
+    import Table from '@tiptap/extension-table'
+    import TableCell from '@tiptap/extension-table-cell'
+    import TableHeader from '@tiptap/extension-table-header'
+    import TableRow from '@tiptap/extension-table-row'
     
-    // Set minimum and maximum sidebar width
-    const minWidth = 300
-    const maxWidth = containerRect.width * 0.6 // Max 60% of container width
+    // Code block highlighting: load all languages with "all" and common languages with "common"
+    import { all, createLowlight } from 'lowlight'
     
-    sidebarWidth.value = Math.max(minWidth, Math.min(maxWidth, newWidth))
-}
-
-const stopResize = () => {
-    isResizing.value = false
-    document.removeEventListener('mousemove', handleResize)
-    document.removeEventListener('mouseup', stopResize)
-}
-
-const note = ref(null)
-const selectedText = ref('')
-
-const backgroudColor = computed(() => {
-    // Softer surfaces for menus consistent with app theme
-    return props.theme === 'dark' ? '#232428' : '#ffffff'
-})
-
-// Create a lowlight instance
-const lowlight = createLowlight(all)
-
-const editor = ref(null)
-const content = ref('')
-
-const isLoading = ref(false)
-
-const highlightColors = [
-{ name: 'Default', value: 'default' },
-{ name: 'Yellow', value: '#FFF8E1' },
-{ name: 'Green', value: '#E0F2F1' },
-{ name: 'Red', value: '#FFCDD2' },
-{ name: 'Orange', value: '#FFF3E0' },
-{ name: 'Blue', value: '#E8EAF6' },
-{ name: 'Purple', value: '#F3E5F5' },
-{ name: 'Pink', value: '#F3E5F5' },
-]
-
-const textColors = [
-{ name: 'Default', value: '#212121' },
-{ name: 'Red', value: '#F44336' },
-{ name: 'Blue', value: '#3F51B5' },
-{ name: 'Green', value: '#009688' },
-{ name: 'Orange', value: '#FF9800' },
-{ name: 'Yellow', value: '#FFC107' },
-{ name: 'Purple', value: '#673AB7' },
-{ name: 'Pink', value: '#E91E63' },
-]
-
-const handleHighlight = (colorValue) => {
-    if (!editor.value) return;
-    
-    if (colorValue === 'default') {
-        editor.value.chain().focus().unsetHighlight().run();
-    } else {
-        editor.value.chain().focus().setHighlight({ color: colorValue }).run();
-    }
-}
-
-const handleTextColor = (colorValue) => {
-    if (!editor.value) return;
-    
-    if (colorValue === '#212121') {
-        editor.value.chain().focus().unsetColor().run();
-    } else {
-        editor.value.chain().focus().setColor(colorValue).run();
-    }
-}
-
-const getNote = async (id) => {
-    // Get note from the database
-    const noteInfo = await window.api.getNote(id)
-    note.value = noteInfo
-    
-    // Get note folder from the database
-    const folderInfo = await window.api.getFolder(noteInfo.folder_id)
-    note.value.folderName = folderInfo.name
-    
-    if (note.value && editor.value && note.value.content_json != '{}') {
-        editor.value.commands.setContent(note.value.content_json)
-    }
-}
-
-const saveNoteManually = async () => {
-    try {       
-        // Enable loading state
-        isLoading.value = 'primary'
-        
-        // Extract the topic from note content using AI service
-        const topic = await getTopicService.generate(editor.value.getText());
-        
-        // Save the content
-        const payload = {
-            id: note.value.id,
-            contentJson: editor.value.getJSON(),
-            contentText: editor.value.getText(),
-            topic: topic,
+    const props = defineProps({
+        theme: {
+            type: String,
+            default: 'light',
+        },
+        noteId: {
+            type: Number,
+            mandatory: true,
         }
-        await window.api.updateNote(payload)
-        
-        // Stop loading state
-        isLoading.value = false
-    } catch (error) {
-        const errorMsg = 'Failed to save note'
-        console.error(errorMsg, error)
-    }
-}
-
-const handleKeyDown = (event) => {
-    // For Mac, event.metaKey is Command; fallback to Ctrl for others
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
-        event.preventDefault()
-        saveNoteManually()
-    }
-}
-
-const handleRenameNote = (noteId, newTitle) => {
-    note.value.title = newTitle
-    store.renameNote(noteId, newTitle)
-}
-
-const toggleFavorite = async (noteId) => {
-    store.toggleNoteFavorite(noteId)
-    note.value.favorite = note.value.favorite === 0 ? 1 : 0
-}
-
-const handleMoveNote = (noteId, newFolderId) => {
-    store.moveNote(noteId, newFolderId)
-    
-    // Update note's folder id and name
-    note.value.folder_id = newFolderId
-    const folderInfo = store.folders.find(folder => folder.id === newFolderId)
-    if (folderInfo) {
-        note.value.folderName = folderInfo.name
-    }
-}
-
-const handleDeleteNote = (noteId) => {
-    store.deleteNote(noteId)
-    // Go back to home page using router
-    router.push({ name: 'home' })
-}
-
-const aiEdit = () => {
-    if (!editor.value) {
-        console.error('Editor not ready');
-        return;
-    }
-    
-    const { state } = editor.value.view;
-    const { from, to } = state.selection;
-    if (from === to) {
-        console.error('No text selected');
-        return;
-    }
-    
-    // Immediately hide bubble menu
-    editor.value.commands.blur();
-    
-    // Get selected text
-    selectedText.value = state.doc.textBetween(from, to, ' ');
-    
-    // Show AI sidebar
-    askAISidebar.value = true;
-}
-
-const aiFixGrammar = async () => {
-    if (!editor.value) {
-        console.error('Editor not ready');
-        return;
-    }
-    
-    // Immediately hide bubble menu
-    editor.value.commands.blur();
-    
-    // Turn on skeleton
-    isLoading.value = true;
-    
-    try {
-        const { state } = editor.value.view;
-        const { from, to } = state.selection;
-        
-        let selectedText = '';
-        let isTextSelected = false;
-        if (from === to) {
-            // No text selected, use all content
-            selectedText = state.doc.textContent;
-        } else {
-            // Use the selected text
-            selectedText = state.doc.textBetween(from, to, ' ');
-            isTextSelected = true;
-        }
-        
-        let streamedText = '';
-        let firstChunk = true;
-        const stream = await fixGrammarLLMService.stream(selectedText);
-        
-        for await (const chunk of stream) {
-            streamedText += chunk;
-            if (firstChunk) {
-                if (isTextSelected) {
-                    // Delete the range and insert the first chunk
-                    editor.value
-                    .chain()
-                    .focus()
-                    .deleteRange({ from, to })
-                    .insertContent(streamedText)
-                    .run();
-                }
-                else {
-                    // Delete the entire note content insert the first chunk
-                    editor.value
-                    .chain()
-                    .focus()
-                    .deleteRange({ from: 0, to: state.doc.content.size })
-                    .insertContent(streamedText)
-                    .run();
-                }
-                firstChunk = false;
-            } else {
-                // Only append the new chunk
-                editor.value.chain().focus().insertContent(chunk).run();
-            }
-        }
-    } catch (error) {
-        console.error('Failed to get response:', error);
-    } finally {
-        // Turn off skeleton
-        isLoading.value = false;
-    }
-}
-
-const aiFormatText = async () => {
-    if (!editor.value) {
-        console.error('Editor not ready');
-        return;
-    }
-    
-    // Immediately hide bubble menu
-    editor.value.commands.blur();
-    
-    // Turn on skeleton
-    isLoading.value = true;
-    
-    try {
-        const { state } = editor.value.view;
-        const { from, to } = state.selection;
-        
-        let selectedText = '';
-        let isTextSelected = false;
-        if (from === to) {
-            // No text selected, use all content
-            selectedText = state.doc.textContent;
-        } else {
-            // Use the selected text
-            selectedText = state.doc.textBetween(from, to, ' ');
-            isTextSelected = true;
-        }
-        
-        const response = await formatTextLLMService.generate(selectedText);
-        
-        // Optional delay if needed to ensure bubble menu unmount
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Replace the selected text
-        if (isTextSelected) {
-            editor.value
-            .chain()
-            .focus()
-            .deleteRange({ from, to })
-            .insertContent(response)
-            .run();
-        }
-        // Or replace the entire note content
-        else {
-            editor.value
-            .chain()
-            .focus()
-            .deleteRange({ from: 0, to: state.doc.content.size })
-            .insertContent(response)
-            .run();
-        }
-    } catch (error) {
-        console.error('Failed to get response:', error);
-    } finally {
-        // Turn off skeleton
-        isLoading.value = false;
-    }
-}
-
-const aiImproveWriting = async () => {
-    if (!editor.value) {
-        console.error('Editor not ready');
-        return;
-    }
-    const { state } = editor.value.view;
-    const { from, to } = state.selection;
-    // Immediately hide bubble menu
-    editor.value.commands.blur();
-    isLoading.value = true;
-    try {
-        let text = '';
-        let isTextSelected = false;
-        if (from === to) {
-            text = state.doc.textContent;
-        } else {
-            text = state.doc.textBetween(from, to, ' ');
-            isTextSelected = true;
-        }
-        let streamedText = '';
-        let firstChunk = true;
-        const stream = await improveWritingLLMService.stream(text);
-        for await (const chunk of stream) {
-            streamedText += chunk;
-            if (firstChunk) {
-                if (isTextSelected) {
-                    editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
-                } else {
-                    editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
-                }
-                firstChunk = false;
-            } else {
-                editor.value.chain().focus().insertContent(chunk).run();
-            }
-        }
-    } catch (error) {
-        console.error('Failed to get response:', error);
-    } finally {
-        isLoading.value = false;
-    }
-}
-
-const aiMakeShorter = async () => {
-    if (!editor.value) {
-        console.error('Editor not ready');
-        return;
-    }
-    const { state } = editor.value.view;
-    const { from, to } = state.selection;
-    editor.value.commands.blur();
-    isLoading.value = true;
-    try {
-        let text = '';
-        let isTextSelected = false;
-        if (from === to) {
-            text = state.doc.textContent;
-        } else {
-            text = state.doc.textBetween(from, to, ' ');
-            isTextSelected = true;
-        }
-        let streamedText = '';
-        let firstChunk = true;
-        const stream = await makeShorterLLMService.stream(text);
-        for await (const chunk of stream) {
-            streamedText += chunk;
-            if (firstChunk) {
-                if (isTextSelected) {
-                    editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
-                } else {
-                    editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
-                }
-                firstChunk = false;
-            } else {
-                editor.value.chain().focus().insertContent(chunk).run();
-            }
-        }
-    } catch (error) {
-        console.error('Failed to get response:', error);
-    } finally {
-        isLoading.value = false;
-    }
-}
-
-const aiMakeLonger = async () => {
-    if (!editor.value) {
-        console.error('Editor not ready');
-        return;
-    }
-    const { state } = editor.value.view;
-    const { from, to } = state.selection;
-    editor.value.commands.blur();
-    isLoading.value = true;
-    try {
-        let text = '';
-        let isTextSelected = false;
-        if (from === to) {
-            text = state.doc.textContent;
-        } else {
-            text = state.doc.textBetween(from, to, ' ');
-            isTextSelected = true;
-        }
-        let streamedText = '';
-        let firstChunk = true;
-        const stream = await makeLongerLLMService.stream(text);
-        for await (const chunk of stream) {
-            streamedText += chunk;
-            if (firstChunk) {
-                if (isTextSelected) {
-                    editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
-                } else {
-                    editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
-                }
-                firstChunk = false;
-            } else {
-                editor.value.chain().focus().insertContent(chunk).run();
-            }
-        }
-    } catch (error) {
-        console.error('Failed to get response:', error);
-    } finally {
-        isLoading.value = false;
-    }
-}
-
-const aiSimplify = async () => {
-    if (!editor.value) {
-        console.error('Editor not ready');
-        return;
-    }
-    const { state } = editor.value.view;
-    const { from, to } = state.selection;
-    editor.value.commands.blur();
-    isLoading.value = true;
-    try {
-        let text = '';
-        let isTextSelected = false;
-        if (from === to) {
-            text = state.doc.textContent;
-        } else {
-            text = state.doc.textBetween(from, to, ' ');
-            isTextSelected = true;
-        }
-        let streamedText = '';
-        let firstChunk = true;
-        const stream = await simplifyLanguageLLMService.stream(text);
-        for await (const chunk of stream) {
-            streamedText += chunk;
-            if (firstChunk) {
-                if (isTextSelected) {
-                    editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
-                } else {
-                    editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
-                }
-                firstChunk = false;
-            } else {
-                editor.value.chain().focus().insertContent(chunk).run();
-            }
-        }
-    } catch (error) {
-        console.error('Failed to get response:', error);
-    } finally {
-        isLoading.value = false;
-    }
-}
-
-const aiChangeTone = async (tone) => {
-    if (!editor.value) {
-        console.error('Editor not ready');
-        return;
-    }
-    const { state } = editor.value.view;
-    const { from, to } = state.selection;
-    editor.value.commands.blur();
-    isLoading.value = true;
-    try {
-        // Create LLM service with the selected tone
-        const changeToneLLMService = createLlmService(changeTonePrompt(tone), 'editorBasicTools');
-        let text = '';
-        let isTextSelected = false;
-        if (from === to) {
-            text = state.doc.textContent;
-        } else {
-            text = state.doc.textBetween(from, to, ' ');
-            isTextSelected = true;
-        }
-        let streamedText = '';
-        let firstChunk = true;
-        const stream = await changeToneLLMService.stream(text);
-        for await (const chunk of stream) {
-            streamedText += chunk;
-            if (firstChunk) {
-                if (isTextSelected) {
-                    editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
-                } else {
-                    editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
-                }
-                firstChunk = false;
-            } else {
-                editor.value.chain().focus().insertContent(chunk).run();
-            }
-        }
-    } catch (error) {
-        console.error('Failed to get response:', error);
-    } finally {
-        isLoading.value = false;
-    }
-}
-
-const aiTranslateTo = async (language) => {
-    if (!editor.value) {
-        console.error('Editor not ready');
-        return;
-    }
-    const { state } = editor.value.view;
-    const { from, to } = state.selection;
-    editor.value.commands.blur();
-    isLoading.value = true;
-    try {
-        // Create LLM service with the chosen language
-        const translateToLLMService = createLlmService(translateToPrompt(language), 'editorBasicTools');
-        let text = '';
-        let isTextSelected = false;
-        if (from === to) {
-            text = state.doc.textContent;
-        } else {
-            text = state.doc.textBetween(from, to, ' ');
-            isTextSelected = true;
-        }
-        let streamedText = '';
-        let firstChunk = true;
-        const stream = await translateToLLMService.stream(text);
-        for await (const chunk of stream) {
-            streamedText += chunk;
-            if (firstChunk) {
-                if (isTextSelected) {
-                    editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
-                } else {
-                    editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
-                }
-                firstChunk = false;
-            } else {
-                editor.value.chain().focus().insertContent(chunk).run();
-            }
-        }
-    } catch (error) {
-        console.error('Failed to get response:', error);
-    } finally {
-        isLoading.value = false;
-    }
-}
-
-onMounted(() => {
-    editor.value = new Editor({
-        extensions: [
-        StarterKit,
-        Underline,
-        Subscript,
-        Superscript,
-        Blockquote,
-        BulletList,
-        OrderedList,
-        ListItem,
-        TaskList,
-        HorizontalRule,
-        TextStyle,
-        Highlight.configure({
-            multicolor: true,
-        }),
-        Placeholder.configure({
-            // Use a placeholder:
-            placeholder: 'Write something here...',
-        }),
-        CodeBlockLowlight.configure({
-            lowlight,
-        }),
-        TaskItem.configure({
-            nested: true,
-        }),
-        Color.configure({
-            types: ['textStyle', 'heading', 'paragraph'],
-        }),
-        Table.configure({
-            resizable: true,
-        }),
-        TableRow,
-        TableHeader,
-        TableCell,
-        ],
     })
     
-    getNote(props.noteId)
-    window.addEventListener('keydown', handleKeyDown)
-})
-
-onBeforeUnmount(() => {
-    if (editor.value) {
-        editor.value.destroy()
-    }
-    window.removeEventListener('keydown', handleKeyDown)
+    const router = useRouter()
     
-    // Clean up resize event listeners
-    document.removeEventListener('mousemove', handleResize)
-    document.removeEventListener('mouseup', stopResize)
-})
+    // Central store for folders
+    const store = useFoldersStore()
+    
+    // Init LLM services for AI features
+    var fixGrammarLLMService = null
+    var formatTextLLMService = null
+    var improveWritingLLMService = null
+    var makeShorterLLMService = null
+    var makeLongerLLMService = null
+    var simplifyLanguageLLMService = null
+    var getTopicService = null
+    try {
+        fixGrammarLLMService = createLlmService(fixGrammarPrompt, 'editorBasicTools');
+        formatTextLLMService = createLlmService(formatTextPrompt, 'editorAdvancedTools');
+        improveWritingLLMService = createLlmService(improveWritingPrompt, 'editorBasicTools');
+        makeShorterLLMService = createLlmService(makeShorterPrompt, 'editorBasicTools');
+        makeLongerLLMService = createLlmService(makeLongerPrompt, 'editorBasicTools');
+        simplifyLanguageLLMService = createLlmService(simplifyLanguagePrompt, 'editorBasicTools');
+        getTopicService = createLlmService(getTopicPrompt, 'editorBasicTools');
+    } catch (error) {
+        console.error('Error initializing LLM services:', error);
+    }
+    
+    // Init list with supported tones for change tone tool
+    const supportedTones = [
+    { key: 'professional', icon: 'mdi-briefcase', label: 'Professional' },
+    { key: 'friendly', icon: 'mdi-emoticon-happy', label: 'Friendly' },
+    { key: 'empathetic', icon: 'mdi-handshake', label: 'Empathetic' },
+    { key: 'persuasive', icon: 'mdi-creation', label: 'Persuasive' },
+    { key: 'casual', icon: 'mdi-emoticon-cool', label: 'Casual' }
+    ]
+    
+    // Init list with supported languages for translation tool
+    const supportedLanguages = [
+    { key: 'english', icon: '🇺🇸', label: 'English' },
+    { key: 'italian', icon: '🇮🇹', label: 'Italian' },
+    { key: 'spanish', icon: '🇪🇸', label: 'Spanish' },
+    { key: 'french', icon: '🇫🇷', label: 'French' },
+    { key: 'german', icon: '🇩🇪', label: 'German' },
+    { key: 'portuguese', icon: '🇧🇷', label: 'Portuguese' },
+    ]
+    
+    // Reactive variables for dialogs
+    const renameNoteDialog = computed({
+        get: () => store.renameNoteDialog,
+        set: (val) => store.renameNoteDialog = val
+    })
+    const moveToFolderDialog = computed({
+        get: () => store.moveToFolderDialog,
+        set: (val) => store.moveToFolderDialog = val
+    })
+    const deleteNoteDialog = computed({
+        get: () => store.deleteNoteDialog,
+        set: (val) => store.deleteNoteDialog = val
+    })
+    
+    const confirmationDialogTitle = computed(() => store.confirmationDialogTitle)
+    const confirmationDialogText = computed(() => store.confirmationDialogText)
+    const confirmationDialogButtonColor = computed(() => store.confirmationDialogButtonColor)
+    
+    const generateWithAIDialog = ref(false)
+    
+    const note = ref(null)
+    const selectedText = ref('')
+    
+    const backgroudColor = computed(() => {
+        // Softer surfaces for menus consistent with app theme
+        return props.theme === 'dark' ? '#232428' : '#ffffff'
+    })
+    
+    // Create a lowlight instance
+    const lowlight = createLowlight(all)
+    
+    const editor = ref(null)
+    const content = ref('')
+    
+    const isLoading = ref(false)
+    
+    const highlightColors = [
+    { name: 'Default', value: 'default' },
+    { name: 'Yellow', value: '#FFF8E1' },
+    { name: 'Green', value: '#E0F2F1' },
+    { name: 'Red', value: '#FFCDD2' },
+    { name: 'Orange', value: '#FFF3E0' },
+    { name: 'Blue', value: '#E8EAF6' },
+    { name: 'Purple', value: '#F3E5F5' },
+    { name: 'Pink', value: '#F3E5F5' },
+    ]
+    
+    const textColors = [
+    { name: 'Default', value: '#212121' },
+    { name: 'Red', value: '#F44336' },
+    { name: 'Blue', value: '#3F51B5' },
+    { name: 'Green', value: '#009688' },
+    { name: 'Orange', value: '#FF9800' },
+    { name: 'Yellow', value: '#FFC107' },
+    { name: 'Purple', value: '#673AB7' },
+    { name: 'Pink', value: '#E91E63' },
+    ]
+    
+    const handleHighlight = (colorValue) => {
+        if (!editor.value) return;
+        
+        if (colorValue === 'default') {
+            editor.value.chain().focus().unsetHighlight().run();
+        } else {
+            editor.value.chain().focus().setHighlight({ color: colorValue }).run();
+        }
+    }
+    
+    const handleTextColor = (colorValue) => {
+        if (!editor.value) return;
+        
+        if (colorValue === '#212121') {
+            editor.value.chain().focus().unsetColor().run();
+        } else {
+            editor.value.chain().focus().setColor(colorValue).run();
+        }
+    }
+    
+    const getNote = async (id) => {
+        // Get note from the database
+        const noteInfo = await window.api.getNote(id)
+        note.value = noteInfo
+        
+        // Get note folder from the database
+        const folderInfo = await window.api.getFolder(noteInfo.folder_id)
+        note.value.folderName = folderInfo.name
+        
+        if (note.value && editor.value && note.value.content_json != '{}') {
+            editor.value.commands.setContent(note.value.content_json)
+        }
+    }
+    
+    const saveNoteManually = async () => {
+        try {       
+            // Enable loading state
+            isLoading.value = 'primary'
+            
+            // Extract the topic from note content using AI service
+            const topic = await getTopicService.generate(editor.value.getText());
+            
+            // Save the content
+            const payload = {
+                id: note.value.id,
+                contentJson: editor.value.getJSON(),
+                contentText: editor.value.getText(),
+                topic: topic,
+            }
+            await window.api.updateNote(payload)
+            
+            // Stop loading state
+            isLoading.value = false
+        } catch (error) {
+            const errorMsg = 'Failed to save note'
+            console.error(errorMsg, error)
+        }
+    }
+    
+    const handleKeyDown = (event) => {
+        // For Mac, event.metaKey is Command; fallback to Ctrl for others
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+            event.preventDefault()
+            saveNoteManually()
+        }
+    }
+    
+    const handleRenameNote = (noteId, newTitle) => {
+        note.value.title = newTitle
+        store.renameNote(noteId, newTitle)
+    }
+    
+    const toggleFavorite = async (noteId) => {
+        store.toggleNoteFavorite(noteId)
+        note.value.favorite = note.value.favorite === 0 ? 1 : 0
+    }
+    
+    const handleMoveNote = (noteId, newFolderId) => {
+        store.moveNote(noteId, newFolderId)
+        
+        // Update note's folder id and name
+        note.value.folder_id = newFolderId
+        const folderInfo = store.folders.find(folder => folder.id === newFolderId)
+        if (folderInfo) {
+            note.value.folderName = folderInfo.name
+        }
+    }
+    
+    const handleDeleteNote = (noteId) => {
+        store.deleteNote(noteId)
+        // Go back to home page using router
+        router.push({ name: 'home' })
+    }
+    
+    const aiEdit = () => {
+        if (!editor.value) {
+            console.error('Editor not ready');
+            return;
+        }
+        
+        const { state } = editor.value.view;
+        const { from, to } = state.selection;
+        if (from === to) {
+            console.error('No text selected');
+            return;
+        }
+        
+        // Immediately hide bubble menu
+        editor.value.commands.blur();
+        
+        // Get selected text
+        selectedText.value = state.doc.textBetween(from, to, ' ');
+    }
+    
+    const aiFixGrammar = async () => {
+        if (!editor.value) {
+            console.error('Editor not ready');
+            return;
+        }
+        
+        // Immediately hide bubble menu
+        editor.value.commands.blur();
+        
+        // Turn on skeleton
+        isLoading.value = true;
+        
+        try {
+            const { state } = editor.value.view;
+            const { from, to } = state.selection;
+            
+            let selectedText = '';
+            let isTextSelected = false;
+            if (from === to) {
+                // No text selected, use all content
+                selectedText = state.doc.textContent;
+            } else {
+                // Use the selected text
+                selectedText = state.doc.textBetween(from, to, ' ');
+                isTextSelected = true;
+            }
+            
+            let streamedText = '';
+            let firstChunk = true;
+            const stream = await fixGrammarLLMService.stream(selectedText);
+            
+            for await (const chunk of stream) {
+                streamedText += chunk;
+                if (firstChunk) {
+                    if (isTextSelected) {
+                        // Delete the range and insert the first chunk
+                        editor.value
+                        .chain()
+                        .focus()
+                        .deleteRange({ from, to })
+                        .insertContent(streamedText)
+                        .run();
+                    }
+                    else {
+                        // Delete the entire note content insert the first chunk
+                        editor.value
+                        .chain()
+                        .focus()
+                        .deleteRange({ from: 0, to: state.doc.content.size })
+                        .insertContent(streamedText)
+                        .run();
+                    }
+                    firstChunk = false;
+                } else {
+                    // Only append the new chunk
+                    editor.value.chain().focus().insertContent(chunk).run();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to get response:', error);
+        } finally {
+            // Turn off skeleton
+            isLoading.value = false;
+        }
+    }
+    
+    const aiFormatText = async () => {
+        if (!editor.value) {
+            console.error('Editor not ready');
+            return;
+        }
+        
+        // Immediately hide bubble menu
+        editor.value.commands.blur();
+        
+        // Turn on skeleton
+        isLoading.value = true;
+        
+        try {
+            const { state } = editor.value.view;
+            const { from, to } = state.selection;
+            
+            let selectedText = '';
+            let isTextSelected = false;
+            if (from === to) {
+                // No text selected, use all content
+                selectedText = state.doc.textContent;
+            } else {
+                // Use the selected text
+                selectedText = state.doc.textBetween(from, to, ' ');
+                isTextSelected = true;
+            }
+            
+            const response = await formatTextLLMService.generate(selectedText);
+            
+            // Optional delay if needed to ensure bubble menu unmount
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Replace the selected text
+            if (isTextSelected) {
+                editor.value
+                .chain()
+                .focus()
+                .deleteRange({ from, to })
+                .insertContent(response)
+                .run();
+            }
+            // Or replace the entire note content
+            else {
+                editor.value
+                .chain()
+                .focus()
+                .deleteRange({ from: 0, to: state.doc.content.size })
+                .insertContent(response)
+                .run();
+            }
+        } catch (error) {
+            console.error('Failed to get response:', error);
+        } finally {
+            // Turn off skeleton
+            isLoading.value = false;
+        }
+    }
+    
+    const aiImproveWriting = async () => {
+        if (!editor.value) {
+            console.error('Editor not ready');
+            return;
+        }
+        const { state } = editor.value.view;
+        const { from, to } = state.selection;
+        // Immediately hide bubble menu
+        editor.value.commands.blur();
+        isLoading.value = true;
+        try {
+            let text = '';
+            let isTextSelected = false;
+            if (from === to) {
+                text = state.doc.textContent;
+            } else {
+                text = state.doc.textBetween(from, to, ' ');
+                isTextSelected = true;
+            }
+            let streamedText = '';
+            let firstChunk = true;
+            const stream = await improveWritingLLMService.stream(text);
+            for await (const chunk of stream) {
+                streamedText += chunk;
+                if (firstChunk) {
+                    if (isTextSelected) {
+                        editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                    } else {
+                        editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
+                    }
+                    firstChunk = false;
+                } else {
+                    editor.value.chain().focus().insertContent(chunk).run();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to get response:', error);
+        } finally {
+            isLoading.value = false;
+        }
+    }
+    
+    const aiMakeShorter = async () => {
+        if (!editor.value) {
+            console.error('Editor not ready');
+            return;
+        }
+        const { state } = editor.value.view;
+        const { from, to } = state.selection;
+        editor.value.commands.blur();
+        isLoading.value = true;
+        try {
+            let text = '';
+            let isTextSelected = false;
+            if (from === to) {
+                text = state.doc.textContent;
+            } else {
+                text = state.doc.textBetween(from, to, ' ');
+                isTextSelected = true;
+            }
+            let streamedText = '';
+            let firstChunk = true;
+            const stream = await makeShorterLLMService.stream(text);
+            for await (const chunk of stream) {
+                streamedText += chunk;
+                if (firstChunk) {
+                    if (isTextSelected) {
+                        editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                    } else {
+                        editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
+                    }
+                    firstChunk = false;
+                } else {
+                    editor.value.chain().focus().insertContent(chunk).run();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to get response:', error);
+        } finally {
+            isLoading.value = false;
+        }
+    }
+    
+    const aiMakeLonger = async () => {
+        if (!editor.value) {
+            console.error('Editor not ready');
+            return;
+        }
+        const { state } = editor.value.view;
+        const { from, to } = state.selection;
+        editor.value.commands.blur();
+        isLoading.value = true;
+        try {
+            let text = '';
+            let isTextSelected = false;
+            if (from === to) {
+                text = state.doc.textContent;
+            } else {
+                text = state.doc.textBetween(from, to, ' ');
+                isTextSelected = true;
+            }
+            let streamedText = '';
+            let firstChunk = true;
+            const stream = await makeLongerLLMService.stream(text);
+            for await (const chunk of stream) {
+                streamedText += chunk;
+                if (firstChunk) {
+                    if (isTextSelected) {
+                        editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                    } else {
+                        editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
+                    }
+                    firstChunk = false;
+                } else {
+                    editor.value.chain().focus().insertContent(chunk).run();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to get response:', error);
+        } finally {
+            isLoading.value = false;
+        }
+    }
+    
+    const aiSimplify = async () => {
+        if (!editor.value) {
+            console.error('Editor not ready');
+            return;
+        }
+        const { state } = editor.value.view;
+        const { from, to } = state.selection;
+        editor.value.commands.blur();
+        isLoading.value = true;
+        try {
+            let text = '';
+            let isTextSelected = false;
+            if (from === to) {
+                text = state.doc.textContent;
+            } else {
+                text = state.doc.textBetween(from, to, ' ');
+                isTextSelected = true;
+            }
+            let streamedText = '';
+            let firstChunk = true;
+            const stream = await simplifyLanguageLLMService.stream(text);
+            for await (const chunk of stream) {
+                streamedText += chunk;
+                if (firstChunk) {
+                    if (isTextSelected) {
+                        editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                    } else {
+                        editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
+                    }
+                    firstChunk = false;
+                } else {
+                    editor.value.chain().focus().insertContent(chunk).run();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to get response:', error);
+        } finally {
+            isLoading.value = false;
+        }
+    }
+    
+    const aiChangeTone = async (tone) => {
+        if (!editor.value) {
+            console.error('Editor not ready');
+            return;
+        }
+        const { state } = editor.value.view;
+        const { from, to } = state.selection;
+        editor.value.commands.blur();
+        isLoading.value = true;
+        try {
+            // Create LLM service with the selected tone
+            const changeToneLLMService = createLlmService(changeTonePrompt(tone), 'editorBasicTools');
+            let text = '';
+            let isTextSelected = false;
+            if (from === to) {
+                text = state.doc.textContent;
+            } else {
+                text = state.doc.textBetween(from, to, ' ');
+                isTextSelected = true;
+            }
+            let streamedText = '';
+            let firstChunk = true;
+            const stream = await changeToneLLMService.stream(text);
+            for await (const chunk of stream) {
+                streamedText += chunk;
+                if (firstChunk) {
+                    if (isTextSelected) {
+                        editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                    } else {
+                        editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
+                    }
+                    firstChunk = false;
+                } else {
+                    editor.value.chain().focus().insertContent(chunk).run();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to get response:', error);
+        } finally {
+            isLoading.value = false;
+        }
+    }
+    
+    const aiTranslateTo = async (language) => {
+        if (!editor.value) {
+            console.error('Editor not ready');
+            return;
+        }
+        const { state } = editor.value.view;
+        const { from, to } = state.selection;
+        editor.value.commands.blur();
+        isLoading.value = true;
+        try {
+            // Create LLM service with the chosen language
+            const translateToLLMService = createLlmService(translateToPrompt(language), 'editorBasicTools');
+            let text = '';
+            let isTextSelected = false;
+            if (from === to) {
+                text = state.doc.textContent;
+            } else {
+                text = state.doc.textBetween(from, to, ' ');
+                isTextSelected = true;
+            }
+            let streamedText = '';
+            let firstChunk = true;
+            const stream = await translateToLLMService.stream(text);
+            for await (const chunk of stream) {
+                streamedText += chunk;
+                if (firstChunk) {
+                    if (isTextSelected) {
+                        editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
+                    } else {
+                        editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
+                    }
+                    firstChunk = false;
+                } else {
+                    editor.value.chain().focus().insertContent(chunk).run();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to get response:', error);
+        } finally {
+            isLoading.value = false;
+        }
+    }
+    
+    onMounted(() => {
+        editor.value = new Editor({
+            extensions: [
+            StarterKit,
+            Underline,
+            Subscript,
+            Superscript,
+            Blockquote,
+            BulletList,
+            OrderedList,
+            ListItem,
+            TaskList,
+            HorizontalRule,
+            TextStyle,
+            Highlight.configure({
+                multicolor: true,
+            }),
+            Placeholder.configure({
+                // Use a placeholder:
+                placeholder: 'Write something here...',
+            }),
+            CodeBlockLowlight.configure({
+                lowlight,
+            }),
+            TaskItem.configure({
+                nested: true,
+            }),
+            Color.configure({
+                types: ['textStyle', 'heading', 'paragraph'],
+            }),
+            Table.configure({
+                resizable: true,
+            }),
+            TableRow,
+            TableHeader,
+            TableCell,
+            ],
+        })
+        
+        getNote(props.noteId)
+        window.addEventListener('keydown', handleKeyDown)
+    })
+    
+    onBeforeUnmount(() => {
+        if (editor.value) {
+            editor.value.destroy()
+        }
+        window.removeEventListener('keydown', handleKeyDown)
+    })
 </script>
 
 <style>
-.tiptap p.is-editor-empty:first-child::before {
-    color: #adb5bd;
-    content: attr(data-placeholder);
-    float: left;
-    height: 0;
-    pointer-events: none;
-}
-
-.ProseMirror {
-    padding: 16px;
-    height: calc(100vh - 300px);
-    overflow-y: auto;
-}
-
-/* Remove the default outline when the editor is focused */
-.ProseMirror:focus {
-    outline: none;
-}
-
-.note-title {
-    font-weight: bolder;
-}
-
-/* Highlight color style */
-.color-btn {
-    border-radius: 4px;
-    box-shadow: inset 0px 0px 0px 1px rgba(0, 0, 0, 0.3);
-}
-
-.color-btn:hover {
-    transform: scale(1.1);
-    transition: transform 0.2s;
-}
-
-/* Text color style */
-.text-color-btn {
-    border-radius: 4px;
-    box-shadow: inset 0px 0px 0px 1px rgba(0, 0, 0, 0.3);
-}
-
-.text-color-btn:hover {
-    transform: scale(1.1);
-    transition: transform 0.2s;
-}
-
-/* AI actions responsive container */
-.ai-actions {
-    gap: 8px;
-    flex-wrap: wrap;
-    overflow-x: auto;
-}
-.ai-actions .v-btn {
-    flex: 0 0 auto;
-}
-
-blockquote {
-    border-left: 3px solid #757575;
-    margin: 1.5rem 0;
-    padding-left: 1rem;
-}
-
-/* List styles */
-ul, ol {
-    padding: 0 1rem;
-    margin: 1.25rem 1rem 1.25rem 0.4rem;
-    
-    li p {
-        margin-top: 0.25em;
-        margin-bottom: 0.25em;
-    }
-}
-
-/* Code block styles */
-pre {
-    background: #212121;
-    border-radius: 0.5rem;
-    color: white;
-    font-family: 'JetBrainsMono', monospace;
-    margin: 1.5rem 0;
-    padding: 0.75rem 1rem;
-    
-    code {
-        background: none;
-        color: inherit;
-        font-size: 0.8rem;
-        padding: 0;
+    .tiptap p.is-editor-empty:first-child::before {
+        color: #adb5bd;
+        content: attr(data-placeholder);
+        float: left;
+        height: 0;
+        pointer-events: none;
     }
     
-    /* Code styling */
-    .hljs-comment,
-    .hljs-quote {
-        color: #616161;
+    .ProseMirror {
+        padding: 16px;
+        height: calc(100vh - 300px);
+        overflow-y: auto;
     }
     
-    .hljs-variable,
-    .hljs-template-variable,
-    .hljs-attribute,
-    .hljs-tag,
-    .hljs-name,
-    .hljs-regexp,
-    .hljs-link,
-    .hljs-name,
-    .hljs-selector-id,
-    .hljs-selector-class {
-        color: #f98181;
+    /* Remove the default outline when the editor is focused */
+    .ProseMirror:focus {
+        outline: none;
     }
     
-    .hljs-number,
-    .hljs-meta,
-    .hljs-built_in,
-    .hljs-builtin-name,
-    .hljs-literal,
-    .hljs-type,
-    .hljs-params {
-        color: #fbbc88;
+    .note-title {
+        font-weight: bolder;
     }
     
-    .hljs-string,
-    .hljs-symbol,
-    .hljs-bullet {
-        color: #b9f18d;
+    /* Highlight color style */
+    .color-btn {
+        border-radius: 4px;
+        box-shadow: inset 0px 0px 0px 1px rgba(0, 0, 0, 0.3);
     }
     
-    .hljs-title,
-    .hljs-section {
-        color: #faf594;
+    .color-btn:hover {
+        transform: scale(1.1);
+        transition: transform 0.2s;
     }
     
-    .hljs-keyword,
-    .hljs-selector-tag {
-        color: #70cff8;
+    /* Text color style */
+    .text-color-btn {
+        border-radius: 4px;
+        box-shadow: inset 0px 0px 0px 1px rgba(0, 0, 0, 0.3);
     }
     
-    .hljs-emphasis {
-        font-style: italic;
+    .text-color-btn:hover {
+        transform: scale(1.1);
+        transition: transform 0.2s;
     }
     
-    .hljs-strong {
-        font-weight: 700;
+    /* AI actions responsive container */
+    .ai-actions {
+        flex-wrap: wrap;
+        overflow-x: auto;
     }
-}
-
-/* Task list specific styles */
-ul[data-type="taskList"] {
-    list-style: none;
-    margin-left: 0;
-    padding: 0;
+    .ai-actions .v-btn {
+        flex: 0 0 auto;
+    }
     
-    li {
-        align-items: flex-start;
-        display: flex;
+    blockquote {
+        border-left: 3px solid #757575;
+        margin: 1.5rem 0;
+        padding-left: 1rem;
+    }
+    
+    /* List styles */
+    ul, ol {
+        padding: 0 1rem;
+        margin: 1.25rem 1rem 1.25rem 0.4rem;
         
-        > label {
-            flex: 0 0 auto;
-            margin-right: 0.5rem;
-            user-select: none;
-        }
-        
-        > div {
-            flex: 1 1 auto;
+        li p {
+            margin-top: 0.25em;
+            margin-bottom: 0.25em;
         }
     }
     
-    input[type="checkbox"] {
-        cursor: pointer;
-        margin-top: 10px;
+    /* Code block styles */
+    pre {
+        background: #212121;
+        border-radius: 0.5rem;
+        color: white;
+        font-family: 'JetBrainsMono', monospace;
+        margin: 1.5rem 0;
+        padding: 0.75rem 1rem;
+        
+        code {
+            background: none;
+            color: inherit;
+            font-size: 0.8rem;
+            padding: 0;
+        }
+        
+        /* Code styling */
+        .hljs-comment,
+        .hljs-quote {
+            color: #616161;
+        }
+        
+        .hljs-variable,
+        .hljs-template-variable,
+        .hljs-attribute,
+        .hljs-tag,
+        .hljs-name,
+        .hljs-regexp,
+        .hljs-link,
+        .hljs-name,
+        .hljs-selector-id,
+        .hljs-selector-class {
+            color: #f98181;
+        }
+        
+        .hljs-number,
+        .hljs-meta,
+        .hljs-built_in,
+        .hljs-builtin-name,
+        .hljs-literal,
+        .hljs-type,
+        .hljs-params {
+            color: #fbbc88;
+        }
+        
+        .hljs-string,
+        .hljs-symbol,
+        .hljs-bullet {
+            color: #b9f18d;
+        }
+        
+        .hljs-title,
+        .hljs-section {
+            color: #faf594;
+        }
+        
+        .hljs-keyword,
+        .hljs-selector-tag {
+            color: #70cff8;
+        }
+        
+        .hljs-emphasis {
+            font-style: italic;
+        }
+        
+        .hljs-strong {
+            font-weight: 700;
+        }
     }
     
+    /* Task list specific styles */
     ul[data-type="taskList"] {
+        list-style: none;
+        margin-left: 0;
+        padding: 0;
+        
+        li {
+            align-items: flex-start;
+            display: flex;
+            
+            > label {
+                flex: 0 0 auto;
+                margin-right: 0.5rem;
+                user-select: none;
+            }
+            
+            > div {
+                flex: 1 1 auto;
+            }
+        }
+        
+        input[type="checkbox"] {
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        ul[data-type="taskList"] {
+            margin: 0;
+        }
+    }
+    
+    /* Table styles */
+    /* Table-specific styling */
+    table {
+        border-collapse: collapse;
         margin: 0;
+        overflow: hidden;
+        table-layout: fixed;
+        width: 100%;
+        
+        td,
+        th {
+            border: 1px solid var(--gray-3);
+            box-sizing: border-box;
+            min-width: 1em;
+            padding: 6px 8px;
+            position: relative;
+            vertical-align: top;
+            
+            > * {
+                margin-bottom: 0;
+            }
+        }
+        
+        th {
+            background-color: var(--gray-1);
+            font-weight: bold;
+            text-align: left;
+        }
+        
+        .selectedCell:after {
+            background: var(--gray-2);
+            content: "";
+            left: 0; right: 0; top: 0; bottom: 0;
+            pointer-events: none;
+            position: absolute;
+            z-index: 2;
+        }
+        
+        .column-resize-handle {
+            background-color: var(--purple);
+            bottom: -2px;
+            pointer-events: none;
+            position: absolute;
+            right: -2px;
+            top: 0;
+            width: 4px;
+        }
     }
-}
-
-/* Table styles */
-/* Table-specific styling */
-table {
-    border-collapse: collapse;
-    margin: 0;
-    overflow: hidden;
-    table-layout: fixed;
-    width: 100%;
     
-    td,
-    th {
-        border: 1px solid var(--gray-3);
-        box-sizing: border-box;
-        min-width: 1em;
-        padding: 6px 8px;
+    .tableWrapper {
+        margin: 1.5rem 0;
+        overflow-x: auto;
+    }
+    
+    &.resize-cursor {
+        cursor: ew-resize;
+        cursor: col-resize;
+    }
+    
+    /* Editor layout styles */
+    .editor-layout {
+        display: flex;
+        height: calc(100vh - 240px); /* Adjust based on your header height */
         position: relative;
-        vertical-align: top;
-        
-        > * {
-            margin-bottom: 0;
-        }
     }
     
-    th {
-        background-color: var(--gray-1);
-        font-weight: bold;
-        text-align: left;
+    .editor-content {
+        flex: 1;
+        transition: width 0.3s ease;
+        overflow: hidden;
     }
     
-    .selectedCell:after {
-        background: var(--gray-2);
-        content: "";
-        left: 0; right: 0; top: 0; bottom: 0;
-        pointer-events: none;
-        position: absolute;
-        z-index: 2;
-    }
-    
-    .column-resize-handle {
-        background-color: var(--purple);
-        bottom: -2px;
-        pointer-events: none;
-        position: absolute;
-        right: -2px;
-        top: 0;
+    .resize-divider {
         width: 4px;
+        height: calc(100vh - 300px + 32px);
+        margin: 12px 0;
+        background-color: #e0e0e0;
+        cursor: ew-resize;
+        position: relative;
+        flex-shrink: 0;
+        align-self: flex-start;
     }
-}
-
-.tableWrapper {
-    margin: 1.5rem 0;
-    overflow-x: auto;
-}
-
-&.resize-cursor {
-    cursor: ew-resize;
-    cursor: col-resize;
-}
-
-/* Editor layout styles */
-.editor-layout {
-    display: flex;
-    height: calc(100vh - 240px); /* Adjust based on your header height */
-    position: relative;
-}
-
-.editor-content {
-    flex: 1;
-    transition: width 0.3s ease;
-    overflow: hidden;
-}
-
-.resize-divider {
-    width: 4px;
-    height: calc(100vh - 300px + 32px);
-    margin: 12px 0;
-    background-color: #e0e0e0;
-    cursor: ew-resize;
-    position: relative;
-    flex-shrink: 0;
-    align-self: flex-start;
-}
-
-.resize-divider:hover {
-    background-color: #2196f3;
-}
-
-.resize-divider::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -2px;
-    right: -2px;
-    bottom: 0;
-    background: transparent;
-}
-
-.sidebar-container {
-    flex-shrink: 0;
-    height: 100%;
-    overflow: hidden;
-}
-
-/* Dark theme support for resize divider */
-[data-theme="dark"] .resize-divider {
-    background-color: #424242;
-}
-
-[data-theme="dark"] .resize-divider:hover {
-    background-color: #2196f3;
-}
-
-/* Floating menu */
-.floating-menu {
-    display: flex;
-    background-color: gray;
-    padding: 0.1rem;
-    border-radius: 0.5rem;
     
-    button {
-        background-color: unset;
-        padding: 0.275rem 0.425rem;
-        border-radius: 0.3rem;
+    .resize-divider:hover {
+        background-color: #2196f3;
+    }
+    
+    .resize-divider::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -2px;
+        right: -2px;
+        bottom: 0;
+        background: transparent;
+    }
+    
+    .sidebar-container {
+        flex-shrink: 0;
+        height: 100%;
+        overflow: hidden;
+    }
+    
+    /* Dark theme support for resize divider */
+    [data-theme="dark"] .resize-divider {
+        background-color: #424242;
+    }
+    
+    [data-theme="dark"] .resize-divider:hover {
+        background-color: #2196f3;
+    }
+    
+    /* Floating menu */
+    .floating-menu {
+        display: flex;
+        background-color: gray;
+        padding: 0.1rem;
+        border-radius: 0.5rem;
         
-        &:hover {
-            background-color: gray;
-        }
-        
-        &.is-active {
-            background-color: white;
-            color: purple;
+        button {
+            background-color: unset;
+            padding: 0.275rem 0.425rem;
+            border-radius: 0.3rem;
             
             &:hover {
-                color: darkmagenta;
+                background-color: gray;
+            }
+            
+            &.is-active {
+                background-color: white;
+                color: purple;
+                
+                &:hover {
+                    color: darkmagenta;
+                }
             }
         }
     }
-}
 </style>

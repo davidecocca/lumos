@@ -3,7 +3,7 @@
     <v-card
     @click="openNote(props.note.id)"
     style="height: 220px"
-    elevation="1"
+    elevation="0"
     class="rounded-md border pa-2"
     rounded="lg"
     >

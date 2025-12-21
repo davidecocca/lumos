@@ -6,6 +6,13 @@
     :class="['drag', { 'pl-16': !isFullscreen }]"
     >
     <v-app-bar-nav-icon variant="text" @click.stop="toggleNavbar" class="no-drag"/>
+    <v-spacer></v-spacer>
+    <v-btn
+    :icon="isChatOpen ? 'mdi-chat-remove-outline' : 'mdi-chat-plus-outline'"
+    variant="text"
+    class="no-drag mr-2"
+    @click="toggleChat"
+    />
 </v-app-bar>
 
 <!-- Navigation drawer -->
@@ -31,10 +38,24 @@ class="drawer-overlay"
         />
     </v-container>
 </v-main>
+
+<!-- Chat sidebar -->
+<v-navigation-drawer
+v-model="isChatOpen"
+location="right"
+:width="isChatExpanded ? 800 : 450"
+:expanded="isChatExpanded"
+>
+<LumosChatSidebar 
+:isChatExpanded="isChatExpanded"
+@update:isChatExpanded="isChatExpanded = $event"
+/>
+</v-navigation-drawer>
 </template>
 
 <script setup>
     import NavigationDrawer from '../components/navbar/NavDrawer.vue';
+    import LumosChatSidebar from '../components/chat/LumosChatSidebar.vue';
     
     import { aiPreferencesStore } from '../stores/aiPreferencesStore';
     import LlmService from '../services/llmService';
@@ -46,6 +67,10 @@ class="drawer-overlay"
     const { api } = window;
     
     const isDrawerOpen = ref(true);
+    
+    // State for chat sidebar
+    const isChatOpen = ref(false);
+    const isChatExpanded = ref(false);
     
     // State to manage fullscreen mode
     const isFullscreen = ref(false);
@@ -76,6 +101,16 @@ class="drawer-overlay"
     // Function to toggle the navigation drawer
     const toggleNavbar = () => {
         isDrawerOpen.value = !isDrawerOpen.value;
+    }
+    
+    // Function to toggle chat sidebar
+    const toggleChat = () => {
+        isChatOpen.value = !isChatOpen.value;
+    }
+    
+    // Function to toggle chat expansion
+    const toggleChatExpansion = () => {
+        isChatExpanded.value = !isChatExpanded.value;
     }
     
     // Media query to detect OS theme changes
@@ -148,7 +183,6 @@ class="drawer-overlay"
     watch(() => isSmallScreen.value, () => {
         updateDrawerForScreenSize();
     }, { immediate: true });
-    
 </script>
 
 <style>

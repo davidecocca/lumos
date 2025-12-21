@@ -7,37 +7,37 @@
     >
     <div v-if="props.message.sources !== null && props.message.sources.length > 0">
         <v-card-actions
-        style="flex-wrap: wrap;"
+        style="flex-direction: column; align-items: flex-start; gap: 8px;"
         >
-        <v-btn
+        <v-chip
         v-for="(note, index) in message.sources"
         :key="index"
         variant="outlined"
         prepend-icon="mdi-file-document-outline"
         @click="openNote(note.id)"
-        class="text-none text-subtitle-2 mr-2"
+        class="text-none text-subtitle-2"
         >
         {{ note.folderName }} / {{ note.title }}
-    </v-btn>
+    </v-chip>
 </v-card-actions>
 </div>
 </v-card>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-const props = defineProps({
-    message: {
-        type: Object,
-        required: true
+    import { useRouter } from 'vue-router'
+    
+    const router = useRouter()
+    
+    const props = defineProps({
+        message: {
+            type: Object,
+            required: true
+        }
+    })
+    
+    // Open the note when the user clicks on the citing
+    const openNote = (nodeId) => {
+        router.push({ name: 'notes', params: { noteId: nodeId } })
     }
-})
-
-// Open the note when the user clicks on the citing
-const openNote = (nodeId) => {
-    router.push({ name: 'notes', params: { noteId: nodeId } })
-}
 </script>

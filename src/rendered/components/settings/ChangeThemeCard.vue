@@ -5,6 +5,7 @@
         title="Theme"
         subtitle="Customize how Lumos looks on your device."
         rounded="lg"
+        elevation="0"
         >
         <v-card-text>
             <v-btn-toggle v-model="localTheme" mandatory color="primary" divided>
