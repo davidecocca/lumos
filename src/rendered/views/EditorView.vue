@@ -87,22 +87,22 @@
 <div class="d-flex justify-left align-center pa-2 mt-2 ai-actions">
     <v-tooltip text="Generate with AI" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="generateWithAIDialog = !generateWithAIDialog" class="ma-2" variant="outlined" prepend-icon="mdi-lightbulb" rounded="lg" color="primary">Generate</v-btn>
+            <v-btn v-bind="props" @click="generateWithAIDialog = !generateWithAIDialog" class="ma-2" variant="outlined" prepend-icon="mdi-lightbulb" rounded="lg" :color="theme === 'dark' ? 'amber' : 'orange-darken-4'">Generate</v-btn>
         </template>
     </v-tooltip>
     <v-tooltip text="Edit with AI" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiEdit()" class="ma-2" variant="outlined" prepend-icon="mdi-pencil" rounded="lg" :color="theme === 'dark' ? 'amber' : 'orange-darken-4'">Edit</v-btn>
+            <v-btn v-bind="props" @click="aiEdit" class="ma-2" variant="outlined" prepend-icon="mdi-pencil" rounded="lg" color="primary">Edit</v-btn>
         </template>
     </v-tooltip>
     <v-tooltip text="Fix spelling & grammar" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiFixGrammar()" class="ma-2" variant="outlined" prepend-icon="mdi-spellcheck" rounded="lg" :color="theme === 'dark' ? 'teal' : 'teal-darken-4'">Fix</v-btn>
+            <v-btn v-bind="props" @click="aiFixGrammar()" class="ma-2" variant="outlined" prepend-icon="mdi-spellcheck" rounded="lg" :color="theme === 'dark' ? 'teal-lighten-1' : 'teal-darken-4'">Fix</v-btn>
         </template>
     </v-tooltip>
     <v-tooltip text="Format text with AI" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiFormatText()" class="ma-2" variant="outlined" prepend-icon="mdi-format-letter-case-lower" rounded="lg" :color="theme === 'dark' ? 'blue-grey-lighten-1' : 'blue-grey-darken-4'">Format</v-btn>
+            <v-btn v-bind="props" @click="aiFormatText()" class="ma-2" variant="outlined" prepend-icon="mdi-format-letter-case-lower" rounded="lg" :color="theme === 'dark' ? 'blue-grey-lighten-3' : 'blue-grey-darken-4'">Format</v-btn>
         </template>
     </v-tooltip>
     <v-menu>
@@ -196,7 +196,7 @@
     :editor="editor"
     >
     
-    <div class="d-flex flex-column rounded-lg pa-2 elevation-4" :style="{ width: '465px', backgroundColor: backgroudColor }">
+    <div class="d-flex flex-column rounded-lg pa-2 elevation-4" :style="{ width: '465px', backgroundColor: backgroundColor }">
         <!-- First row with text formatting buttons -->
         <div class="d-flex flex-row align-center justify-center mb-2">
             <v-btn-toggle
@@ -365,7 +365,7 @@
         </v-btn>
     </template>
     <!-- Card with all color to highlight -->
-    <v-card class="pa-2 rounded-lg elevation-4" max-width="340" :style="{ backgroundColor: backgroudColor }">
+    <v-card class="pa-2 rounded-lg elevation-4" max-width="340" :style="{ backgroundColor: backgroundColor }">
         <v-row dense>
             <v-col v-for="(color, index) in highlightColors" :key="index" cols="3">
                 <v-btn
@@ -397,7 +397,7 @@
     </v-btn>
 </template>
 <!-- Card with all color for the text -->
-<v-card class="pa-2 rounded-lg elevation-4" max-width="340" :style="{ backgroundColor: backgroudColor }">
+<v-card class="pa-2 rounded-lg elevation-4" max-width="340" :style="{ backgroundColor: backgroundColor }">
     <v-row dense>
         <v-col v-for="(color, index) in textColors" :key="index" cols="3">
             <v-btn
@@ -482,6 +482,12 @@
     <GenerateAIDialog
     v-model="generateWithAIDialog"
     />
+    
+    <EditAIDialog
+    v-model="editWithAIDialog"
+    :selectedText="selectedText"
+    @apply="handleApply"
+    />
 </div>
 </template>
 
@@ -490,6 +496,7 @@
     import MoveToFolderDialog from '../components/navbar/MoveToFolderDialog.vue'
     import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDialog.vue'
     import GenerateAIDialog from '../components/editor/GenerateAIDialog.vue'
+    import EditAIDialog from '../components/editor/EditAIDialog.vue'
     
     import { createLlmService } from '../services/llmService';
     import fixGrammarPrompt from '../prompts/fixGrammarPrompt'
@@ -609,13 +616,16 @@
     const confirmationDialogButtonColor = computed(() => store.confirmationDialogButtonColor)
     
     const generateWithAIDialog = ref(false)
+    const editWithAIDialog = ref(false)
     
     const note = ref(null)
     const selectedText = ref('')
+    const selectionFrom = ref(0)
+    const selectionTo = ref(0)
     
-    const backgroudColor = computed(() => {
+    const backgroundColor = computed(() => {
         // Softer surfaces for menus consistent with app theme
-        return props.theme === 'dark' ? '#232428' : '#ffffff'
+        return props.theme === 'dark' ? '#212121' : '#ffffff'
     })
     
     // Create a lowlight instance
@@ -750,16 +760,30 @@
         
         const { state } = editor.value.view;
         const { from, to } = state.selection;
+        
+        selectionFrom.value = from;
+        selectionTo.value = to;
+        
+        // Get selected text
         if (from === to) {
-            console.error('No text selected');
+            // No text selected, use all content
+            selectedText.value = state.doc.textContent;
+        } else {
+            // Use the selected text
+            selectedText.value = state.doc.textBetween(from, to, '\n');
+        }
+        
+        // Show Edit with AI dialog
+        editWithAIDialog.value = true;
+    }
+    
+    const handleApply = (aiText) => {
+        if (!editor.value) {
+            console.error('Editor not ready');
             return;
         }
         
-        // Immediately hide bubble menu
-        editor.value.commands.blur();
-        
-        // Get selected text
-        selectedText.value = state.doc.textBetween(from, to, ' ');
+        editor.value.chain().focus().setTextSelection({ from: selectionFrom.value, to: selectionTo.value }).insertContent(aiText).run();
     }
     
     const aiFixGrammar = async () => {

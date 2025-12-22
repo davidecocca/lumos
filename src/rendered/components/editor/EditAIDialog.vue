@@ -6,12 +6,12 @@
     >
     <v-card rounded="xl" elevation="8">
         <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-            <v-avatar color="orange-lighten-4" size="36" class="mr-3">
-                <v-icon size="24" color="orange-darken-2">mdi-lightbulb</v-icon>
+            <v-avatar color="blue-lighten-4" size="36" class="mr-3">
+                <v-icon size="24" color="blue-darken-2">mdi-pencil</v-icon>
             </v-avatar>
             <div>
-                <div class="text-h6">Generate with AI</div>
-                <div class="text-subtitle-2 text-medium-emphasis">Type your idea and watch it come alive.</div>
+                <div class="text-h6">Edit with AI</div>
+                <div class="text-subtitle-2 text-medium-emphasis">Describe what to change and watch it happen.</div>
             </div>
             <v-spacer />
         </v-card-title>
@@ -19,14 +19,25 @@
         <v-card-text class="px-6 pb-4">
             <div class="d-flex flex-column align-center">
                 <v-textarea
-                placeholder="Type your idea..."
+                :model-value="props.selectedText"
+                width="100%"
+                rows="6"
+                auto-grow
+                no-resize
+                readonly
+                class="mt-2"
+                variant="outlined"
+                />
+                
+                <v-textarea
+                placeholder="Describe what to change..."
                 width="100%"
                 rows="3"
                 clearable
                 auto-grow
                 no-resize
                 v-model="userText"
-                class="mt-2"
+                class="mt-4"
                 variant="outlined"
                 @keydown="onPromptKeydown"
                 />
@@ -65,11 +76,19 @@
     <v-spacer />
     <v-btn variant="text" @click="closeDialog">Close</v-btn>
     <v-btn
+    color="success"
+    prepend-icon="mdi-check"
+    :disabled="!aiText || isAITextLoading"
+    @click="applyText"
+    >
+    Apply
+</v-btn>
+    <v-btn
     color="primary"
     prepend-icon="mdi-creation"
     :disabled="!userText || isAITextLoading"
     :loading="isAITextLoading"
-    @click="generateWithAI"
+    @click="editWithAI"
     >
     Generate
 </v-btn>
@@ -80,24 +99,20 @@
 
 <script setup>
     import { createLlmService } from '../../services/llmService';
-    import generateWithAIPrompt from '../../prompts/generateWithAIPrompt';
+    import editWithAIPrompt from '../../prompts/editWithAIPrompt';
     
-    import { ref, reactive, computed, nextTick } from 'vue'
+    import { ref, reactive, computed, nextTick, watch } from 'vue'
     
     const props = defineProps({
         modelValue: {
             type: Boolean,
             default: false
         },
+        selectedText: {
+            type: String,
+            default: ''
+        }
     })
-    
-    // Init the LLM service for the generate with AI service
-    var generateWithAILLMService = null
-    try {
-        generateWithAILLMService = createLlmService(generateWithAIPrompt, 'editorChatTools');
-    } catch (error) {
-        console.error("Error creating LLM service:", error);
-    }
     
     const userText = ref('')
     const aiText = ref('')
@@ -109,7 +124,7 @@
         animate: false
     })
     
-    const emit = defineEmits(['update:modelValue'])
+    const emit = defineEmits(['update:modelValue', 'apply'])
     
     // Forward internal dialog updates to parent v-model
     const onDialogModelUpdate = (val) => {
@@ -125,13 +140,15 @@
         emit('update:modelValue', false)
     }
     
-    const generateWithAI = async () => {
+    const editWithAI = async () => {
         try {
+            // Create LLM service with the selected tone
+            const editWithAILLMService = createLlmService(editWithAIPrompt(props.selectedText), 'editorChatTools');
             isAITextLoading.value = true
             aiText.value = "Generating..."
             
             let isFirstChunk = true
-            const stream = generateWithAILLMService.stream(userText.value)
+            const stream = editWithAILLMService.stream(userText.value)
             for await (const chunk of stream) {
                 if (isFirstChunk) {
                     aiText.value = ''
@@ -158,7 +175,7 @@
     const onPromptKeydown = (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && userText.value && !isAITextLoading.value) {
             e.preventDefault()
-            generateWithAI()
+            editWithAI()
         }
     }
     
@@ -184,6 +201,11 @@
         }).catch(err => {
             console.error('Error copying text: ', err)
         })
+    }
+    
+    const applyText = () => {
+        emit('apply', aiText.value)
+        closeDialog()
     }
 </script>
 
