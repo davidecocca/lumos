@@ -2,16 +2,8 @@ import { defineStore } from 'pinia'
 
 export const aiPreferencesStore = defineStore('aiPreferences', {
     state: () => ({
-        // Provider selections for different features
-        editorBasicTools: {
-            provider: null,
-            model: null
-        },
-        editorAdvancedTools: {
-            provider: null,
-            model: null
-        },
-        editorChatTools: {
+        // Provider selection for different features
+        editor: {
             provider: null,
             model: null
         },
@@ -64,9 +56,7 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
                 const preferences = JSON.parse(savedPrefs)
                 
                 // Load provider and model selections
-                this.editorBasicTools = preferences.editorBasicTools || this.editorBasicTools
-                this.editorAdvancedTools = preferences.editorAdvancedTools || this.editorAdvancedTools
-                this.editorChatTools = preferences.editorChatTools || this.editorChatTools
+                this.editor = preferences.editor || this.editor
                 this.chat = preferences.chat || this.chat
                 
                 // Load API keys
@@ -77,9 +67,7 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
         // Save preferences to localStorage
         savePreferences() {
             const preferences = {
-                editorBasicTools: this.editorBasicTools,
-                editorAdvancedTools: this.editorAdvancedTools,
-                editorChatTools: this.editorChatTools,
+                editor: this.editor,
                 chat: this.chat,
                 apiKeys: this.apiKeys
             }

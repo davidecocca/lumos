@@ -567,13 +567,13 @@
     var simplifyLanguageLLMService = null
     var getTopicService = null
     try {
-        fixGrammarLLMService = createLlmService(fixGrammarPrompt, 'editorBasicTools');
-        formatTextLLMService = createLlmService(formatTextPrompt, 'editorAdvancedTools');
-        improveWritingLLMService = createLlmService(improveWritingPrompt, 'editorBasicTools');
-        makeShorterLLMService = createLlmService(makeShorterPrompt, 'editorBasicTools');
-        makeLongerLLMService = createLlmService(makeLongerPrompt, 'editorBasicTools');
-        simplifyLanguageLLMService = createLlmService(simplifyLanguagePrompt, 'editorBasicTools');
-        getTopicService = createLlmService(getTopicPrompt, 'editorBasicTools');
+        fixGrammarLLMService = createLlmService(fixGrammarPrompt, 'editor');
+        formatTextLLMService = createLlmService(formatTextPrompt, 'editor');
+        improveWritingLLMService = createLlmService(improveWritingPrompt, 'editor');
+        makeShorterLLMService = createLlmService(makeShorterPrompt, 'editor');
+        makeLongerLLMService = createLlmService(makeLongerPrompt, 'editor');
+        simplifyLanguageLLMService = createLlmService(simplifyLanguagePrompt, 'editor');
+        getTopicService = createLlmService(getTopicPrompt, 'editor');
     } catch (error) {
         console.error('Error initializing LLM services:', error);
     }
@@ -1086,7 +1086,7 @@
         isLoading.value = true;
         try {
             // Create LLM service with the selected tone
-            const changeToneLLMService = createLlmService(changeTonePrompt(tone), 'editorBasicTools');
+            const changeToneLLMService = createLlmService(changeTonePrompt(tone), 'editor');
             let text = '';
             let isTextSelected = false;
             if (from === to) {
@@ -1129,7 +1129,7 @@
         isLoading.value = true;
         try {
             // Create LLM service with the chosen language
-            const translateToLLMService = createLlmService(translateToPrompt(language), 'editorBasicTools');
+            const translateToLLMService = createLlmService(translateToPrompt(language), 'editor');
             let text = '';
             let isTextSelected = false;
             if (from === to) {

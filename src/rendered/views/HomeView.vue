@@ -2,7 +2,7 @@
     <div class="d-flex flex-column">
         <!-- Page title -->
         <div class="d-flex flex-column align-center mt-2 mb-4">
-            <p class="text-h4 font-weight-medium">{{ userName ? 'Welcome back, ' + userName + '!' : 'Welcome back!' }}</p>
+            <p class="text-h4 font-weight-medium">Welcome back!</p>
             <p class="text-h6 font-weight-light">{{ subtitle }}</p>
         </div>
         
@@ -93,10 +93,8 @@ import EmptyState from '../components/home/EmptyState.vue';
 import { computed, onMounted, ref } from 'vue';
 
 import { useFoldersStore } from '../stores/foldersStore.js';
-import { userInfoStore } from '../stores/userInfoStore.js';
 
 const store = useFoldersStore()
-const userStore = userInfoStore()
 
 // Map store state to local computed refs
 const favoriteNotes = computed(() => store.favoriteNotes)
@@ -106,9 +104,6 @@ const recentNotes = computed(() => store.recentNotes.slice(0, 9))      // Limit 
 const favoritesTab = 'favoritesTab'
 const recentsTab = 'recentsTab'
 const tab = ref(favoritesTab)
-
-// User name for welcome message
-const userName = ref('')
 
 const subtitles = ref([
     'Your thoughts, all in one place.',
@@ -129,9 +124,6 @@ onMounted(async () => {
     await store.fetchFavoriteNotes()
     // Fetch recent notes
     await store.fetchLastViewedNotes()
-    // Fetch user name from store
-    const userInfo = userStore.loadUserInfo()
-    userName.value = userInfo?.userName ?? userStore.userName ?? ''
     // Set a random subtitle
     subtitle.value = subtitles.value[Math.floor(Math.random() * subtitles.value.length)]
 })

@@ -11,16 +11,11 @@
         color="primary"
         class="mb-4"
         >
-        <v-tab :value="profileTab">Profile</v-tab>
         <v-tab :value="appearanceTab">Appearance</v-tab>
         <v-tab :value="lumosAITab">Lumos AI</v-tab>
     </v-tabs>
     
     <v-tabs-window v-model="tab">
-        <!-- Profile settings -->
-        <v-tabs-window-item>
-            <ProfileCard />
-        </v-tabs-window-item>
         <!-- Appearance settings -->
         <v-tabs-window-item>
             <ChangeThemeCard
@@ -37,7 +32,6 @@
 </template>
 
 <script setup>
-import ProfileCard from '../components/settings/ProfileCard.vue';
 import ChangeThemeCard from '../components/settings/ChangeThemeCard.vue';
 import LumosAICard from '../components/settings/LumosAICard.vue';
 
