@@ -61,7 +61,7 @@ elevation="0"
     <div class="d-flex flex-column">
         <div class="d-flex align-top">
             <v-text-field
-            label="Groq API Key"
+            label="Groq"
             :type="showGroqKey ? 'text' : 'password'"
             class="flex-grow-1 mr-4"
             v-model="groqApiKey"
@@ -84,7 +84,7 @@ elevation="0"
 <div class="d-flex flex-column">
     <div class="d-flex align-top">
         <v-text-field
-        label="OpenAI API Key"
+        label="OpenAI"
         :type="showOpenAIKey ? 'text' : 'password'"
         class="flex-grow-1 mr-4"
         v-model="openaiApiKey" 

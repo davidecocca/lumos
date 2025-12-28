@@ -20,7 +20,7 @@
                 ></v-btn>
             </template>
         </v-tooltip>
-
+        
         <!-- Expand / Collapse button -->
         <v-tooltip :text="isChatExpanded ? 'Collapse' : 'Expand'" location="bottom">
             <template v-slot:activator="{ props }">
@@ -114,7 +114,7 @@
     hide-details
     min-width="fit-content"
     ></v-select>
-
+    
     <v-icon
     icon="mdi-robot"
     size="x-small"
@@ -129,7 +129,11 @@
     placeholder="Model"
     :menu-props="{ maxHeight: 'none' }"
     hide-details
-    ></v-select>
+    >
+    <template v-slot:item="{ props: itemProps, item }">
+        <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle"></v-list-item>
+    </template>
+</v-select>
 </v-card-actions>
 </v-card>
 
@@ -144,10 +148,11 @@
     
     import { createLlmService } from '../../services/llmService'
     import { aiPreferencesStore } from '../../stores/aiPreferencesStore';
+    import { useFoldersStore } from '../../stores/foldersStore';
     import chatRagPrompt from '../../prompts/chatRagPrompt';
     
-    import { ref, nextTick, computed, onMounted } from 'vue'
-
+    import { ref, nextTick, computed, onMounted, watch } from 'vue'
+    
     const props = defineProps({
         "isChatExpanded": {
             type: Boolean,
@@ -155,19 +160,24 @@
         },
     })
     
-    // AI preferences store
+    // Store for AI preferences
     const aiStore = aiPreferencesStore();
+    
+    // Store for folders and notes
+    const store = useFoldersStore()
     
     // Tabs for switching between favorite and recent notes
     const chatTab = 'chatTab'
     const tab = ref(chatTab)
     
-    const scopes = ref(
-    [
-    { title: 'All notes', value: 'all' },
-    { title: 'Current note', value: 'current' },
-    ]
-    )
+    // Scopes for chat context
+    const scopes = computed(() => {
+        const baseScopes = [{ title: 'All notes', value: 'all' }]
+        if (store.activeNoteId) {
+            baseScopes.push({ title: 'Current note', value: 'current' })
+        }
+        return baseScopes
+    })
     const currentScope = ref('all')
     
     const userInput = ref('')
@@ -188,32 +198,44 @@
         sources: [],
     }
     const messages = ref([defaultBotMessage])
-    const notes = ref([])
-    const menu = ref(false)
-    const filterNotes = ref([])
     
     const chatContainer = ref(null)
     
-    // Available models for chat based on selected provider
+    // Available models for chat from all providers
     const availableChatModels = computed(() => {
-        const provider = aiStore.chat.provider;
-        if (!provider) return [];
-        const models = aiStore.getProviderModels(provider);
-        return models.map(model => ({
+        return aiStore.availableProviders.flatMap(provider => 
+        aiStore.getProviderModels(provider).map(model => ({
             title: model,
-            value: model
-        }));
+            subtitle: provider,
+            value: { provider, model }
+        }))
+        );
     });
     
     // Selected model for chat
     const selectedModel = computed({
-        get: () => aiStore.chat.model,
-        set: (value) => aiStore.setModel('chat', value)
+        get: () => ({ 
+            provider: aiStore.chat.provider, 
+            model: aiStore.chat.model 
+        }),
+        set: (value) => {
+            if (value) {
+                aiStore.setProvider('chat', value.provider);
+                aiStore.setModel('chat', value.model);
+            }
+        }
     });
     
     // Load AI preferences on mount
     onMounted(() => {
         aiStore.loadPreferences();
+    });
+    
+    // Watch for activeNoteId changes and reset scope if necessary
+    watch(() => store.activeNoteId, (newActiveNoteId) => {
+        if (!newActiveNoteId && currentScope.value === 'current') {
+            currentScope.value = 'all';
+        }
     });
     
     const resetChat = () => {
@@ -243,16 +265,22 @@
             userInput.value = ''
             
             // Search for similar notes
-            var sources = []
-            if (filterNotes.value.length > 0) {
-                filterNotes.value.forEach((note) => {
-                    sources.push(note.id)
-                })
+            var filter = {}
+            
+            console.log('Current scope:', currentScope.value)
+            console.log('Active note ID:', store.activeNoteId)
+            
+            if (currentScope.value === 'current' && store.activeNoteId) {
+                filter = { source: store.activeNoteId.toString() }
             }
+            
             const payload = {
                 query: userMessage,
-                sources: sources,
+                limit: 3,
+                filter: filter,
             }
+            console.log('Search payload:', payload)
+            
             const results = await window.api.searchSimilarNotes(payload)
             console.log('Search results:', results)
             

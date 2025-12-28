@@ -130,11 +130,12 @@ class VectorStore {
     /**
     * Search for similar notes based on a query.
     * @param {string} query - The query to search for.
-    * @param {number} limit - The maximum number of results to return.
+    * @param {number} limit - The maximum number of results to return. Defaults to maxResults.
+    * @param {object} filter - Optional filter to further refine search results.
     * @returns {Promise<object[]>} - The search results.
     * @throws {Error} If there is an error searching the vector store.
     */
-    async searchSimilarNotes(query, sources, limit = maxResults) {
+    async searchSimilarNotes(query, limit = maxResults, filter = {}) {
         try {
             // Search for similar notes
             const results = await this.vectorStore.similaritySearch(
@@ -142,24 +143,20 @@ class VectorStore {
                 limit,
             );
             
+            // Apply metadata filter if provided
+            let filteredResults = results;
+            if (filter && Object.keys(filter).length > 0) {
+                filteredResults = results.filter(result => {
+                    return Object.keys(filter).every(key => result.metadata[key] === filter[key]);
+                });
+            }
+            
             // Filter out results with similarity scores above threshold
             // Lower _distance values indicate higher similarity
-            const filteredResults = results.filter(result => {
+            const finalResults = filteredResults.filter(result => {
                 const similarityScore = result.metadata._distance || 0;
                 return similarityScore < similarityThreshold;
             });
-            
-            let finalResults;
-            // Filter out results based on sources (if provided)
-            if (sources && sources.length > 0) {
-                finalResults = filteredResults.filter(result => {
-                    const noteSource = result.metadata.source;
-                    return sources.includes(noteSource);
-                });
-            } else {
-                // If no sources specified, return all filtered results
-                finalResults = filteredResults;
-            }
             
             return finalResults;
             

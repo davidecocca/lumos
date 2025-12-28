@@ -143,7 +143,7 @@
     const editWithAI = async () => {
         try {
             // Create LLM service with the selected tone
-            const editWithAILLMService = createLlmService(editWithAIPrompt(props.selectedText), 'editorChatTools');
+            const editWithAILLMService = createLlmService(editWithAIPrompt(props.selectedText), 'editor');
             isAITextLoading.value = true
             aiText.value = "Generating..."
             

@@ -8,7 +8,7 @@
                 color="primary"
                 variant="tonal"
                 >
-                {{ note.folder_name }}
+                {{ currentFolderName }}
             </v-chip>
         </div>
     </div>
@@ -369,7 +369,7 @@
         <v-row dense>
             <v-col v-for="(color, index) in highlightColors" :key="index" cols="3">
                 <v-btn
-                :style="{ backgroundColor: color.value }"
+                :style="{ backgroundColor: color.displayedColor }"
                 class="color-btn ma-1"
                 variant="flat"
                 width="20px" 
@@ -401,7 +401,7 @@
     <v-row dense>
         <v-col v-for="(color, index) in textColors" :key="index" cols="3">
             <v-btn
-            :style="{ backgroundColor: color.value }"
+            :style="{ backgroundColor: color.displayedColor }"
             class="text-color-btn ma-1"
             variant="flat"
             width="20px" 
@@ -628,6 +628,12 @@
         return props.theme === 'dark' ? '#212121' : '#ffffff'
     })
     
+    const currentFolderName = computed(() => {
+        if (!note.value) return ''
+        const folder = store.folders.find(f => f.id === note.value.folder_id)
+        return folder ? folder.name : note.value.folder_name || ''
+    })
+    
     // Create a lowlight instance
     const lowlight = createLowlight(all)
     
@@ -637,25 +643,25 @@
     const isLoading = ref(false)
     
     const highlightColors = [
-    { name: 'Default', value: 'default' },
-    { name: 'Yellow', value: '#FFF8E1' },
-    { name: 'Green', value: '#E0F2F1' },
-    { name: 'Red', value: '#FFCDD2' },
-    { name: 'Orange', value: '#FFF3E0' },
-    { name: 'Blue', value: '#E8EAF6' },
-    { name: 'Purple', value: '#F3E5F5' },
-    { name: 'Pink', value: '#F3E5F5' },
+    { name: 'Default', value: 'default', displayedColor: 'default'},
+    { name: 'Cyan', value: '#4477bb', displayedColor: '#4477bb' },
+    { name: 'Yellow', value: '#aa6600', displayedColor: '#aa6600' },
+    { name: 'Green', value: '#008811', displayedColor: '#008811' },
+    { name: 'Red', value: '#dd3311', displayedColor: '#dd3311' },
+    { name: 'Magenta', value: '#8866bb', displayedColor: '#8866bb' },
+    { name: 'Blue', value: '#5566ee', displayedColor: '#5566ee' },
+    { name: 'Purple', value: '#cc22bb', displayedColor: '#cc22bb' },
     ]
     
     const textColors = [
-    { name: 'Default', value: '#212121' },
-    { name: 'Red', value: '#F44336' },
-    { name: 'Blue', value: '#3F51B5' },
-    { name: 'Green', value: '#009688' },
-    { name: 'Orange', value: '#FF9800' },
-    { name: 'Yellow', value: '#FFC107' },
-    { name: 'Purple', value: '#673AB7' },
-    { name: 'Pink', value: '#E91E63' },
+    { name: 'Default', value: '#212121', displayedColor: props.theme === 'dark' ? '#E0E0E0' : '#212121' },
+    { name: 'Red', value: '#F44336', displayedColor: '#F44336' },
+    { name: 'Blue', value: '#3F51B5', displayedColor: '#3F51B5' },
+    { name: 'Green', value: '#009688', displayedColor: '#009688' },
+    { name: 'Orange', value: '#FF9800', displayedColor: '#FF9800' },
+    { name: 'Yellow', value: '#FFC107', displayedColor: '#FFC107' },
+    { name: 'Purple', value: '#673AB7', displayedColor: '#673AB7' },
+    { name: 'Pink', value: '#E91E63', displayedColor: '#E91E63' },
     ]
     
     const handleHighlight = (colorValue) => {
@@ -686,6 +692,11 @@
         // Get note folder from the database
         const folderInfo = await window.api.getFolder(noteInfo.folder_id)
         note.value.folderName = folderInfo.name
+        
+        // Set active note in the store
+        store.activeNoteId = noteInfo.id
+        store.activeNoteTitle = noteInfo.title
+        store.activeNoteCurrentFolderId = noteInfo.folder_id
         
         if (note.value && editor.value && note.value.content_json != '{}') {
             editor.value.commands.setContent(note.value.content_json)
@@ -742,7 +753,7 @@
         note.value.folder_id = newFolderId
         const folderInfo = store.folders.find(folder => folder.id === newFolderId)
         if (folderInfo) {
-            note.value.folderName = folderInfo.name
+            note.value.folder_name = folderInfo.name
         }
     }
     

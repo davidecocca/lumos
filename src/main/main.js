@@ -248,9 +248,9 @@ function setupIPC() {
         });
     });
     
-    ipcMain.handle('search-similar-notes', async (event, { query, sources }) => {
+    ipcMain.handle('search-similar-notes', async (event, { query, limit, filter }) => {
         return new Promise((resolve, reject) => {
-            vectorStore.searchSimilarNotes(query, sources)
+            vectorStore.searchSimilarNotes(query, limit, filter)
             .then(results => resolve(results))
             .catch(err => reject(err));
         });

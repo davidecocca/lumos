@@ -27,6 +27,8 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
+
 const props = defineProps({
     modelValue: {
         type: Boolean,
@@ -52,11 +54,19 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'delete-folder'])
 
+const folderIdToDelete = ref(null)
+
+watch(() => props.modelValue, (newVal) => {
+    if (newVal) {
+        folderIdToDelete.value = props.folderId
+    }
+})
+
 const closeDialog = () => {
     emit('update:modelValue', false)
 }
 
 const deleteFolder = () => {
-    emit('delete-folder', props.folderId)
+    emit('delete-folder', folderIdToDelete.value)
 }
 </script>

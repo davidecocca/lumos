@@ -52,11 +52,11 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'create-note'])
 
-const noteTitle = ref('')
+const noteTitle = ref('Untitled')
 
 const closeDialog = () => {
     emit('update:modelValue', false)
-    noteTitle.value = ''
+    noteTitle.value = 'Untitled'
 }
 
 const handleClear = () => {
@@ -66,7 +66,7 @@ const handleClear = () => {
 const saveNote = () => {
     if (noteTitle.value.trim()) {
         emit('create-note', props.folderId, noteTitle.value.trim())
-        noteTitle.value = ''
+        noteTitle.value = 'Untitled'
     }
 }
 

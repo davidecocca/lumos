@@ -94,7 +94,7 @@
     // Init the LLM service for the generate with AI service
     var generateWithAILLMService = null
     try {
-        generateWithAILLMService = createLlmService(generateWithAIPrompt, 'editorChatTools');
+        generateWithAILLMService = createLlmService(generateWithAIPrompt, 'editor');
     } catch (error) {
         console.error("Error creating LLM service:", error);
     }

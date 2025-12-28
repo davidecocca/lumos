@@ -48,11 +48,11 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'create-folder'])
 
-const folderName = ref('')
+const folderName = ref('New Folder')
 
 const closeDialog = () => {
     emit('update:modelValue', false)
-    folderName.value = ''
+    folderName.value = 'New Folder'
 }
 
 const handleClear = () => {
@@ -62,7 +62,7 @@ const handleClear = () => {
 const saveFolder = () => {
     if (folderName.value.trim()) {
         emit('create-folder', folderName.value.trim())
-        folderName.value = ''
+        folderName.value = 'New Folder'
     }
 }
 

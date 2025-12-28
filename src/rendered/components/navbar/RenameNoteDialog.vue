@@ -39,8 +39,6 @@
 <script setup>
 import { ref } from 'vue'
 
-const noteTitle = ref('')
-
 const props = defineProps({
     modelValue: {
         type: Boolean,
@@ -55,6 +53,8 @@ const props = defineProps({
         mandatory: true
     }
 })
+
+const noteTitle = ref(props.currentNoteTitle)
 
 const emit = defineEmits(['update:modelValue', 'rename-note'])
 

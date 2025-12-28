@@ -37,10 +37,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-
-// TODO: Set the initial value of folderName to the old folder name
-const folderName = ref('')
+import { ref, watch } from 'vue'
 
 const props = defineProps({
     modelValue: {
@@ -51,11 +48,13 @@ const props = defineProps({
         type: Number,
         mandatory: true
     },
-    oldfolderName: {
+    oldFolderName: {
         type: String,
         mandatory: true
     }
 })
+
+const folderName = ref(props.oldFolderName)
 
 const emit = defineEmits(['update:modelValue', 'rename-folder'])
 
@@ -78,4 +77,8 @@ const handleEnter = () => {
         renameFolder()
     }
 }
+
+watch(() => props.oldFolderName, (newVal) => {
+    folderName.value = newVal
+})
 </script>

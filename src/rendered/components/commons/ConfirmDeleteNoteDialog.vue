@@ -27,6 +27,8 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
+
 const props = defineProps({
     modelValue: {
         type: Boolean,
@@ -52,11 +54,19 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'delete-note'])
 
+const noteIdToDelete = ref(null)
+
+watch(() => props.modelValue, (newVal) => {
+    if (newVal) {
+        noteIdToDelete.value = props.noteId
+    }
+})
+
 const closeDialog = () => {
     emit('update:modelValue', false)
 }
 
 const deleteNote = () => {
-    emit('delete-note', props.noteId)
+    emit('delete-note', noteIdToDelete.value)
 }
 </script>

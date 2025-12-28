@@ -58,10 +58,12 @@ location="right"
     import LumosChatSidebar from '../components/chat/LumosChatSidebar.vue';
     
     import { aiPreferencesStore } from '../stores/aiPreferencesStore';
+    import { useFoldersStore } from '../stores/foldersStore';
     import LlmService from '../services/llmService';
     
     import { watch, ref, onMounted, onBeforeUnmount, computed } from 'vue';
     import { useTheme, useDisplay } from 'vuetify'
+    import { useRoute } from 'vue-router'
     
     // Import the API from the Electron context
     const { api } = window;
@@ -80,6 +82,10 @@ location="right"
     
     // Store for AI preferences
     const aiStore = aiPreferencesStore();
+
+    // Store for folders and notes
+    const foldersStore = useFoldersStore();
+
     const llmService = new LlmService();
     
     // Add display utilities for responsive behavior
@@ -87,6 +93,9 @@ location="right"
     
     // Compute whether we're on a small screen
     const isSmallScreen = computed(() => smAndDown.value);
+
+    // Get the current route
+    const route = useRoute();
     
     // Handler to update fullscreen state based on IPC messages
     const updateFullscreen = (event, isFs) => {
@@ -183,6 +192,15 @@ location="right"
     watch(() => isSmallScreen.value, () => {
         updateDrawerForScreenSize();
     }, { immediate: true });
+
+    // Watch for route changes and reset activeNoteId if not on notes page
+    watch(() => route.name, (newRouteName) => {
+        if (newRouteName !== 'notes') {
+            foldersStore.activeNoteId = null;
+            foldersStore.activeNoteTitle = '';
+            foldersStore.activeNoteCurrentFolderId = null;
+        }
+    });
 </script>
 
 <style>
