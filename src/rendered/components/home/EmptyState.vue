@@ -4,6 +4,7 @@
             :text="props.text"
             class="rounded-xl border pa-8 text-center"
             rounded="xl"
+            width="400px"
         >
         <template #media>
             <v-avatar size="72" variant="tonal" color="primary" class="mb-4">

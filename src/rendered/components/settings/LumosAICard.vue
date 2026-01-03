@@ -14,10 +14,10 @@
             <v-select
             label="Editor"
             :items="providers.flatMap(provider => 
-            getProviderModels(provider).map(model => ({
-                title: model,
+            getProviderModels(provider).map(item => ({
+                title: item.label,
                 subtitle: provider,
-                value: { provider, model }
+                value: { provider, model: item.value }
             }))
             )"
             v-model="editorSelection"
@@ -33,10 +33,10 @@
         <v-select
         label="Chat"
         :items="providers.flatMap(provider => 
-        getProviderModels(provider).map(model => ({
-            title: model,
+        getProviderModels(provider).map(item => ({
+            title: item.label,
             subtitle: provider,
-            value: { provider, model }
+            value: { provider, model: item.value }
         }))
         )"
         v-model="chatSelection"

@@ -24,8 +24,8 @@
                     <v-row justify="center">
                         <v-col cols="12" md="8" class="d-flex justify-center">
                             <EmptyState
-                                title="No favorites yet"
-                                text="Mark notes as favorites to find them quickly here."
+                                title="No favorite notes yet"
+                                text="Mark a note as favorite and it will appear here."
                                 icon="mdi-heart-outline"
                             />
                         </v-col>
@@ -57,8 +57,8 @@
                 <v-row justify="center">
                     <v-col cols="12" md="8" class="d-flex justify-center">
                         <EmptyState
-                            title="No recently viewed notes"
-                            text="Open a note to see it listed here."
+                            title="No recently viewed notes yet"
+                            text="Open a note and it will appear here."
                             icon="mdi-history"
                         />
                     </v-col>

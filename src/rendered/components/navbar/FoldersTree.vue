@@ -14,7 +14,6 @@
         prepend-icon="mdi-file-document-outline"
         @click="store.openNote(note.id, router)"
         class="pr-1"
-        rounded="lg"
         >
         <template v-slot:append>
             <!-- Note action menu -->
@@ -26,20 +25,20 @@
                         </template>
                     </v-tooltip>
                 </template>
-                <v-list density="compact" class="pl-1 pr-1">
-                    <v-list-item @click="store.toggleNoteFavorite(note.id)" rounded="lg">
+                <v-list density="compact">
+                    <v-list-item @click="store.toggleNoteFavorite(note.id)">
                         <template v-slot:append>
                             <v-icon icon="mdi-heart-broken"></v-icon>
                         </template>
                         <v-list-item-title>Unfavorite</v-list-item-title>
                     </v-list-item>
-                    <v-list-item @click="store.openRenameNoteDialog(note.id, note.title)" rounded="lg">
+                    <v-list-item @click="store.openRenameNoteDialog(note.id, note.title)">
                         <template v-slot:append>
                             <v-icon icon="mdi-rename"></v-icon>
                         </template>
                         <v-list-item-title>Rename</v-list-item-title>
                     </v-list-item>
-                    <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)" rounded="lg">
+                    <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)">
                         <template v-slot:append>
                             <v-icon icon="mdi-delete"></v-icon>
                         </template>
@@ -64,7 +63,7 @@
     </div>
     <v-list-group v-for="folder in folders" :key="folder.id" :prepend-icon="folder.isOpen ? 'mdi-folder-open-outline' : 'mdi-folder-outline'" class="notes-indent-tight">
         <template v-slot:activator="{ props, isOpen }">
-            <v-list-item v-bind="props" class="pe-0" @click="store.toggleFolderOpen(folder)" rounded="lg">
+            <v-list-item v-bind="props" class="pe-0" @click="store.toggleFolderOpen(folder)">
                 <template v-slot:append>
                     <div v-if="folder.loading" class="mr-2">
                         <v-progress-circular size="20" indeterminate></v-progress-circular>
@@ -83,14 +82,14 @@
                                     </template>
                                 </v-tooltip>
                             </template>
-                            <v-list density="compact" class="pl-1 pr-1">
-                                <v-list-item @click="store.openRenameFolderDialog(folder.id, folder.name)" rounded="lg">
+                            <v-list density="compact">
+                                <v-list-item @click="store.openRenameFolderDialog(folder.id, folder.name)">
                                     <template v-slot:append>
                                         <v-icon icon="mdi-rename"></v-icon>
                                     </template>
                                     <v-list-item-title>Rename</v-list-item-title>
                                 </v-list-item>
-                                <v-list-item @click="store.openDeleteFolderConfirmationDialog(folder.id)" rounded="lg">
+                                <v-list-item @click="store.openDeleteFolderConfirmationDialog(folder.id)">
                                     <template v-slot:append>
                                         <v-icon icon="mdi-delete"></v-icon>
                                     </template>
@@ -103,7 +102,7 @@
                 <v-list-item-title>{{ folder.name }}</v-list-item-title>
             </v-list-item>
         </template>
-        <v-list-item v-for="(note, k) in folder.notes" :key="k" :title="note.title" prepend-icon="mdi-file-document-outline" @click="store.openNote(note.id, router)" class="pr-1" rounded="lg">
+        <v-list-item v-for="(note, k) in folder.notes" :key="k" :title="note.title" prepend-icon="mdi-file-document-outline" @click="store.openNote(note.id, router)" class="pr-1">
             <template v-slot:append>
                 <v-menu>
                     <template v-slot:activator="{ props }">
@@ -113,26 +112,26 @@
                             </template>
                         </v-tooltip>
                     </template>
-                    <v-list density="compact" class="pl-1 pr-1">
-                        <v-list-item @click="store.toggleNoteFavorite(note.id)" rounded="lg">
+                    <v-list density="compact">
+                        <v-list-item @click="store.toggleNoteFavorite(note.id)">
                             <template v-slot:append>
                                 <v-icon :icon="note.favorite == 1 ? 'mdi-heart-broken' : 'mdi-heart'"></v-icon>
                             </template>
                             <v-list-item-title>{{ note.favorite == 1 ? 'Unfavorite' : 'Favorite' }}</v-list-item-title>
                         </v-list-item>
-                        <v-list-item @click="store.openRenameNoteDialog(note.id, note.title)" rounded="lg">
+                        <v-list-item @click="store.openRenameNoteDialog(note.id, note.title)">
                             <template v-slot:append>
                                 <v-icon icon="mdi-rename"></v-icon>
                             </template>
                             <v-list-item-title>Rename</v-list-item-title>
                         </v-list-item>
-                        <v-list-item @click="store.openMoveNoteDialog(note.id, folder.id)" rounded="lg">
+                        <v-list-item @click="store.openMoveNoteDialog(note.id, folder.id)">
                             <template v-slot:append>
                                 <v-icon icon="mdi-file-move"></v-icon>
                             </template>
                             <v-list-item-title>Move</v-list-item-title>
                         </v-list-item>
-                        <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)" rounded="lg">
+                        <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)">
                             <template v-slot:append>
                                 <v-icon icon="mdi-delete"></v-icon>
                             </template>
@@ -142,11 +141,11 @@
                 </v-menu>
             </template>
         </v-list-item>
-        <v-list-item v-if="folder.notes.length === 0" prepend-icon="mdi-package-variant" rounded="lg">
+        <v-list-item v-if="folder.notes.length === 0" prepend-icon="mdi-package-variant">
             <v-list-item-subtitle>No notes in this folder.</v-list-item-subtitle>
         </v-list-item>
     </v-list-group>
-    <v-list-item v-if="folders.length === 0" prepend-icon="mdi-package-variant" rounded="lg">
+    <v-list-item v-if="folders.length === 0" prepend-icon="mdi-package-variant">
         <v-list-item-subtitle>No folders.</v-list-item-subtitle>
         <v-list-item-subtitle>Create a new folder to get started!</v-list-item-subtitle>
     </v-list-item>

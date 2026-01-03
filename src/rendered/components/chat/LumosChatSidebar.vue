@@ -21,7 +21,7 @@
             </template>
         </v-tooltip>
         
-        <!-- Fullscreen / Close button -->
+        <!-- Expand / Collapse button -->
         <v-tooltip :text="isChatFullscreen ? 'Collapse' : 'Expand'" location="bottom">
             <template v-slot:activator="{ props }">
                 <v-btn
@@ -110,7 +110,6 @@
     density="compact"
     variant="text"
     placeholder="Scope"
-    :menu-props="{ maxHeight: 'none' }"
     hide-details
     min-width="fit-content"
     ></v-select>
@@ -127,7 +126,7 @@
     density="compact"
     variant="text"
     placeholder="Model"
-    :menu-props="{ maxHeight: 'none' }"
+    :menu-props="{ maxHeight: '500px' }"
     hide-details
     >
     <template v-slot:item="{ props: itemProps, item }">
@@ -199,10 +198,10 @@
     // Available models for chat from all providers
     const availableChatModels = computed(() => {
         return aiStore.availableProviders.flatMap(provider => 
-        aiStore.getProviderModels(provider).map(model => ({
-            title: model,
+        aiStore.getProviderModels(provider).map(item => ({
+            title: item.label,
             subtitle: provider,
-            value: { provider, model }
+            value: { provider, model: item.value }
         }))
         );
     });

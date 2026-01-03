@@ -81,7 +81,7 @@ class LlmService {
                 throw new Error("Network response was not ok");
             }
             const models = await response.json();
-            const modelNames = models.models.map(model => model.name);
+            const modelNames = models.models.map(model => ({ "name": model.name, "size": model.details.parameter_size }));
             return modelNames;
         } catch (error) {
             console.error("Error fetching models:", error);

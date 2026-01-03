@@ -49,7 +49,7 @@
                                 <v-icon>mdi-dots-horizontal</v-icon>
                             </v-btn>
                         </template>
-                        <v-list>
+                        <v-list density="compact">
                             <v-list-item @click="toggleFavorite(note.id)">
                                 <template v-slot:prepend>
                                     <v-icon :icon="note.favorite === 1 ? 'mdi-heart-broken' : 'mdi-heart'"></v-icon>
@@ -417,23 +417,6 @@
 </div>
 </bubble-menu>
 </div>
-
-<!-- Floating menu -->
-<!--
-<floating-menu :editor="editor" :tippy-options="{ duration: 100 }" v-if="editor">
-    <div class="floating-menu">
-        <button @click="editor.chain().focus().toggleHeading({ level: 1 }).run()" :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }">
-            H1
-        </button>
-        <button @click="editor.chain().focus().toggleHeading({ level: 2 }).run()" :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }">
-            H2
-        </button>
-        <button @click="editor.chain().focus().toggleBulletList().run()" :class="{ 'is-active': editor.isActive('bulletList') }">
-            Bullet list
-        </button>
-    </div>
-</floating-menu> -->
-
 
 <!-- Main content area with resizable layout -->
 <div class="editor-layout">
