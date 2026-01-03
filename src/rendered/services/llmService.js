@@ -12,7 +12,7 @@ const ollamaListModelsUrl = `${ollamaBaseUrl}/api/tags`;
 class LlmService {
     constructor() {
         this.llm = new ChatOllama({
-            model: "gemma3:4b",
+            model: "llama3.2:3b",
             temperature: 0,
             maxRetries: 2,
         });

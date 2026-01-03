@@ -45,7 +45,7 @@ v-model="isChatOpen"
 location="right"
 :width="chatWidth"
 :expanded="isChatFullscreen"
-class="chat-drawer"
+:class="['chat-drawer', { 'no-transition': isResizing }]"
 >
 <div class="chat-resizer" @mousedown="startResize"></div>
 <LumosChatSidebar 
@@ -138,7 +138,6 @@ class="chat-drawer"
     
     // Resize functionality
     const isResizing = ref(false);
-    let resizePending = false;
     
     const startResize = (e) => {
         isResizing.value = true;
@@ -147,13 +146,9 @@ class="chat-drawer"
     };
     
     const resize = (e) => {
-        if (!isResizing.value || resizePending) return;
-        resizePending = true;
-        requestAnimationFrame(() => {
-            const newWidth = window.innerWidth - e.clientX;
-            chatWidth.value = Math.max(300, Math.min(800, newWidth));
-            resizePending = false;
-        });
+        if (!isResizing.value) return;
+        const newWidth = window.innerWidth - e.clientX;
+        chatWidth.value = Math.max(300, Math.min(800, newWidth));
     };
     
     const stopResize = () => {
@@ -291,5 +286,10 @@ class="chat-drawer"
     .chat-drawer {
         position: relative;
         will-change: width;
+        transition: width 0.2s ease;
+    }
+    
+    .chat-drawer.no-transition {
+        transition: none;
     }
 </style>
