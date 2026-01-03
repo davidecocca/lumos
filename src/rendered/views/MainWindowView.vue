@@ -57,7 +57,7 @@ class="chat-drawer"
 </v-navigation-drawer>
 
 <!-- Fullscreen chat dialog -->
-<v-dialog v-model="isChatFullscreen" persistent max-width="1200">
+<v-dialog v-model="isChatFullscreen" max-width="1200">
     <v-card>
         <v-card-text>
             <LumosChatSidebar 
