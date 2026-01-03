@@ -22,12 +22,12 @@
         </v-tooltip>
         
         <!-- Fullscreen / Close button -->
-        <v-tooltip :text="isChatFullscreen ? 'Close' : 'Fullscreen'" location="bottom">
+        <v-tooltip :text="isChatFullscreen ? 'Collapse' : 'Expand'" location="bottom">
             <template v-slot:activator="{ props }">
                 <v-btn
                 v-bind="props"
                 variant="text"
-                :icon="isChatFullscreen ? 'mdi-close' : 'mdi-arrow-expand'"
+                :icon="isChatFullscreen ? 'mdi-arrow-collapse' : 'mdi-arrow-expand'"
                 @click="toggleChatExpansion"
                 ></v-btn>
             </template>
@@ -39,11 +39,11 @@
             <div class="chat-container" ref="chatContainer" :style="{ height: chatContainerHeight }">
                 <v-list
                 lines="one"
-                v-if="messages.length > 0"
+                v-if="chatStore.messages.length > 0"
                 style="background-color: transparent;"
                 >
                 <v-list-item
-                v-for="(message, index) in messages"
+                v-for="(message, index) in chatStore.messages"
                 :key="index"
                 class="mb-2"
                 >
@@ -71,7 +71,7 @@
     >
     <v-card-item>
         <v-textarea
-        v-model="userInput"
+        v-model="chatStore.userInput"
         placeholder="Ask something"
         variant="text"
         hide-details
@@ -103,7 +103,7 @@
     class="ml-3"
     />
     <v-select
-    v-model="currentScope"
+    v-model="chatStore.currentScope"
     :items="scopes"
     item-title="title"
     item-value="value"
@@ -149,6 +149,7 @@
     import { createLlmService } from '../../services/llmService'
     import { aiPreferencesStore } from '../../stores/aiPreferencesStore';
     import { useFoldersStore } from '../../stores/foldersStore';
+    import { useChatStore } from '../../stores/chatStore';
     import chatRagPrompt from '../../prompts/chatRagPrompt';
     
     import { ref, nextTick, computed, onMounted, watch } from 'vue'
@@ -157,7 +158,11 @@
         "isChatFullscreen": {
             type: Boolean,
             default: false,
-        }
+        },
+        "isChatOpen": {
+            type: Boolean,
+            default: false,
+        },
     })
     
     const emit = defineEmits(['update:isChatFullscreen', 'update:isChatOpen']);
@@ -167,6 +172,9 @@
     
     // Store for folders and notes
     const store = useFoldersStore()
+    
+    // Chat store
+    const chatStore = useChatStore()
     
     // Tabs for switching between favorite and recent notes
     const chatTab = 'chatTab'
@@ -180,26 +188,6 @@
         }
         return baseScopes
     })
-    const currentScope = ref('all')
-    
-    const userInput = ref('')
-    const defaultBotMessageText = 'Smart notes. Smarter you. What are we working on today?'
-    const defaultBotMessage = {
-        text: defaultBotMessageText,
-        user: 'bot',
-        bgColor: 'transparent',
-        variant: 'flat',
-        sources: [],
-    }
-    const generatingBotMessageText = 'Generating...'
-    const generatingBotMessage = {
-        text: generatingBotMessageText,
-        user: 'bot',
-        bgColor: 'transparent',
-        variant: 'flat',
-        sources: [],
-    }
-    const messages = ref([defaultBotMessage])
     
     const chatContainer = ref(null)
     
@@ -240,19 +228,18 @@
     
     // Watch for activeNoteId changes and reset scope if necessary
     watch(() => store.activeNoteId, (newActiveNoteId) => {
-        if (!newActiveNoteId && currentScope.value === 'current') {
-            currentScope.value = 'all';
+        if (!newActiveNoteId && chatStore.currentScope === 'current') {
+            chatStore.currentScope = 'all';
         }
     });
     
     const resetChat = () => {
-        messages.value = []
-        messages.value.push(defaultBotMessage)
+        chatStore.resetChat()
     }
     
     // Function to toggle chat expansion
     const toggleChatExpansion = () => {
-        emit('update:isChatOpen', false)
+        emit('update:isChatOpen', !props.isChatOpen)
         emit('update:isChatFullscreen', !props.isChatFullscreen)
     }
     
@@ -260,10 +247,10 @@
     
     const sendMessage = async () => {
         try {
-            if (userInput.value.trim() === '') return
+            if (chatStore.userInput.trim() === '') return
             
-            messages.value.push({
-                text: userInput.value,
+            chatStore.addMessage({
+                text: chatStore.userInput,
                 user: 'user',
                 bgColor: '',
                 variant: 'tonal',
@@ -274,16 +261,16 @@
             await nextTick()
             chatContainer.value.scrollTop = chatContainer.value.scrollHeight
             
-            const userMessage = userInput.value
-            userInput.value = ''
+            const userMessage = chatStore.userInput
+            chatStore.userInput = ''
             
             // Search for similar notes
             var filter = {}
             
-            console.log('Current scope:', currentScope.value)
+            console.log('Current scope:', chatStore.currentScope)
             console.log('Active note ID:', store.activeNoteId)
             
-            if (currentScope.value === 'current' && store.activeNoteId) {
+            if (chatStore.currentScope === 'current' && store.activeNoteId) {
                 filter = { source: store.activeNoteId.toString() }
             }
             
@@ -317,9 +304,12 @@
             const ragChatLLMService = createLlmService(chatRagPrompt(context), 'chat');
             
             // Add initial empty bot message
-            const botMessageIndex = messages.value.length
-            messages.value.push({ 
-                ...generatingBotMessage,
+            const botMessageIndex = chatStore.messages.length
+            chatStore.addMessage({ 
+                text: 'Generating...',
+                user: 'bot',
+                bgColor: 'transparent',
+                variant: 'flat',
                 sources: []
             })
             
@@ -329,7 +319,10 @@
             
             for await (const chunk of stream) {
                 accumulatedText += chunk
-                messages.value[botMessageIndex].text = accumulatedText
+                chatStore.updateMessage(botMessageIndex, {
+                    ...chatStore.messages[botMessageIndex],
+                    text: accumulatedText
+                })
                 
                 // Scroll to the bottom of the chat container
                 await nextTick()
@@ -338,7 +331,7 @@
             
             // Add citing information to the bot message
             notesForCiting.forEach((note) => {
-                messages.value[botMessageIndex].sources.push({
+                chatStore.messages[botMessageIndex].sources.push({
                     title: note.title,
                     id: note.id,
                     folderName: note.folder_name,
@@ -351,7 +344,7 @@
             
         } catch (error) {
             console.error('Error:', error)
-            messages.value.push({
+            chatStore.addMessage({
                 text: 'Error: ' + error.message,
                 user: 'bot',
                 bgColor: 'red',

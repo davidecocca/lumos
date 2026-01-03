@@ -50,6 +50,7 @@ class="chat-drawer"
 <div class="chat-resizer" @mousedown="startResize"></div>
 <LumosChatSidebar 
 :isChatFullscreen="isChatFullscreen"
+:isChatOpen="isChatOpen"
 @update:isChatFullscreen="isChatFullscreen = $event"
 @update:isChatOpen="isChatOpen = $event"
 />
@@ -61,6 +62,7 @@ class="chat-drawer"
         <v-card-text>
             <LumosChatSidebar 
             :isChatFullscreen="isChatFullscreen"
+            :isChatOpen="isChatOpen"
             @update:isChatFullscreen="isChatFullscreen = $event"
             @update:isChatOpen="isChatOpen = $event"
             />
