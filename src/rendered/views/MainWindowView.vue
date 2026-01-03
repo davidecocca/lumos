@@ -43,14 +43,30 @@ class="drawer-overlay"
 <v-navigation-drawer
 v-model="isChatOpen"
 location="right"
-:width="isChatExpanded ? 800 : 450"
-:expanded="isChatExpanded"
+:width="chatWidth"
+:expanded="isChatFullscreen"
+class="chat-drawer"
 >
+<div class="chat-resizer" @mousedown="startResize"></div>
 <LumosChatSidebar 
-:isChatExpanded="isChatExpanded"
-@update:isChatExpanded="isChatExpanded = $event"
+:isChatFullscreen="isChatFullscreen"
+@update:isChatFullscreen="isChatFullscreen = $event"
+@update:isChatOpen="isChatOpen = $event"
 />
 </v-navigation-drawer>
+
+<!-- Fullscreen chat dialog -->
+<v-dialog v-model="isChatFullscreen" persistent max-width="1200">
+    <v-card>
+        <v-card-text>
+            <LumosChatSidebar 
+            :isChatFullscreen="isChatFullscreen"
+            @update:isChatFullscreen="isChatFullscreen = $event"
+            @update:isChatOpen="isChatOpen = $event"
+            />
+        </v-card-text>
+    </v-card>
+</v-dialog>
 </template>
 
 <script setup>
@@ -72,7 +88,8 @@ location="right"
     
     // State for chat sidebar
     const isChatOpen = ref(false);
-    const isChatExpanded = ref(false);
+    const isChatFullscreen = ref(false);
+    const chatWidth = ref(450);
     
     // State to manage fullscreen mode
     const isFullscreen = ref(false);
@@ -82,10 +99,10 @@ location="right"
     
     // Store for AI preferences
     const aiStore = aiPreferencesStore();
-
+    
     // Store for folders and notes
     const foldersStore = useFoldersStore();
-
+    
     const llmService = new LlmService();
     
     // Add display utilities for responsive behavior
@@ -93,7 +110,7 @@ location="right"
     
     // Compute whether we're on a small screen
     const isSmallScreen = computed(() => smAndDown.value);
-
+    
     // Get the current route
     const route = useRoute();
     
@@ -117,10 +134,31 @@ location="right"
         isChatOpen.value = !isChatOpen.value;
     }
     
-    // Function to toggle chat expansion
-    const toggleChatExpansion = () => {
-        isChatExpanded.value = !isChatExpanded.value;
-    }
+    // Resize functionality
+    const isResizing = ref(false);
+    let resizePending = false;
+    
+    const startResize = (e) => {
+        isResizing.value = true;
+        document.addEventListener('mousemove', resize);
+        document.addEventListener('mouseup', stopResize);
+    };
+    
+    const resize = (e) => {
+        if (!isResizing.value || resizePending) return;
+        resizePending = true;
+        requestAnimationFrame(() => {
+            const newWidth = window.innerWidth - e.clientX;
+            chatWidth.value = Math.max(300, Math.min(800, newWidth));
+            resizePending = false;
+        });
+    };
+    
+    const stopResize = () => {
+        isResizing.value = false;
+        document.removeEventListener('mousemove', resize);
+        document.removeEventListener('mouseup', stopResize);
+    };
     
     // Media query to detect OS theme changes
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -172,6 +210,9 @@ location="right"
         // Load AI preferences once at app startup
         aiStore.loadPreferences();
         fetchAllModels();
+        
+        // Load chat width
+        chatWidth.value = parseInt(localStorage.getItem('chatWidth')) || 450;
     });
     
     onBeforeUnmount(() => {
@@ -192,7 +233,7 @@ location="right"
     watch(() => isSmallScreen.value, () => {
         updateDrawerForScreenSize();
     }, { immediate: true });
-
+    
     // Watch for route changes and reset activeNoteId if not on notes page
     watch(() => route.name, (newRouteName) => {
         if (newRouteName !== 'notes') {
@@ -200,6 +241,11 @@ location="right"
             foldersStore.activeNoteTitle = '';
             foldersStore.activeNoteCurrentFolderId = null;
         }
+    });
+    
+    // Watch for chat width changes and persist
+    watch(chatWidth, (newVal) => {
+        localStorage.setItem('chatWidth', newVal);
     });
 </script>
 
@@ -221,5 +267,27 @@ location="right"
         bottom: 0;
         background-color: rgba(0, 0, 0, 0.5);
         z-index: 5; /* Make sure this is below the drawer but above content */
+    }
+    
+    /* Chat resizer */
+    .chat-resizer {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 5px;
+        cursor: ew-resize;
+        background-color: transparent;
+        z-index: 10;
+        user-select: none;
+    }
+    
+    .chat-resizer:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+    
+    .chat-drawer {
+        position: relative;
+        will-change: width;
     }
 </style>

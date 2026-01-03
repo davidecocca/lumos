@@ -21,14 +21,14 @@
             </template>
         </v-tooltip>
         
-        <!-- Expand / Collapse button -->
-        <v-tooltip :text="isChatExpanded ? 'Collapse' : 'Expand'" location="bottom">
+        <!-- Fullscreen / Close button -->
+        <v-tooltip :text="isChatFullscreen ? 'Close' : 'Fullscreen'" location="bottom">
             <template v-slot:activator="{ props }">
                 <v-btn
                 v-bind="props"
                 variant="text"
-                :icon="isChatExpanded ? 'mdi-arrow-collapse' : 'mdi-arrow-expand'"
-                @click="$emit('update:isChatExpanded', !isChatExpanded)"
+                :icon="isChatFullscreen ? 'mdi-close' : 'mdi-arrow-expand'"
+                @click="toggleChatExpansion"
                 ></v-btn>
             </template>
         </v-tooltip>
@@ -36,7 +36,7 @@
     
     <v-tabs-window v-model="tab">
         <v-tabs-window-item :value="chatTab">
-            <div class="chat-container" ref="chatContainer">
+            <div class="chat-container" ref="chatContainer" :style="{ height: chatContainerHeight }">
                 <v-list
                 lines="one"
                 v-if="messages.length > 0"
@@ -154,11 +154,13 @@
     import { ref, nextTick, computed, onMounted, watch } from 'vue'
     
     const props = defineProps({
-        "isChatExpanded": {
+        "isChatFullscreen": {
             type: Boolean,
             default: false,
-        },
+        }
     })
+    
+    const emit = defineEmits(['update:isChatFullscreen', 'update:isChatOpen']);
     
     // Store for AI preferences
     const aiStore = aiPreferencesStore();
@@ -201,6 +203,11 @@
     
     const chatContainer = ref(null)
     
+    // Computed height for chat container based on fullscreen state
+    const chatContainerHeight = computed(() => {
+        return props.isChatFullscreen ? 'calc(100vh - 380px)' : 'calc(100vh - 350px)'
+    })
+    
     // Available models for chat from all providers
     const availableChatModels = computed(() => {
         return aiStore.availableProviders.flatMap(provider => 
@@ -241,6 +248,12 @@
     const resetChat = () => {
         messages.value = []
         messages.value.push(defaultBotMessage)
+    }
+    
+    // Function to toggle chat expansion
+    const toggleChatExpansion = () => {
+        emit('update:isChatOpen', false)
+        emit('update:isChatFullscreen', !props.isChatFullscreen)
     }
     
     const chunkDivederText = '\n\n-------\n\n'
@@ -352,7 +365,6 @@
 <style scoped>
     .chat-container {
         width: 100%;
-        height: calc(100vh - 350px);
         overflow-y: auto;
         margin-bottom: 38px;
     }
