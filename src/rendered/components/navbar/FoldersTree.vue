@@ -14,6 +14,7 @@
         prepend-icon="mdi-file-document-outline"
         @click="store.openNote(note.id, router)"
         class="pr-1"
+        :active="note.id === activeNoteId"
         >
         <template v-slot:append>
             <!-- Note action menu -->
@@ -51,7 +52,7 @@
 </v-list>
 
 <!-- List of folders and notes -->
-<v-list>
+<v-list indent="16px">
     <!-- Notes header -->
     <div class="d-flex align-center mr-1">
         <v-list-subheader class="flex-grow-1">Notes</v-list-subheader>
@@ -61,7 +62,7 @@
             </template>
         </v-tooltip>
     </div>
-    <v-list-group v-for="folder in folders" :key="folder.id" :prepend-icon="folder.isOpen ? 'mdi-folder-open-outline' : 'mdi-folder-outline'" class="notes-indent-tight">
+    <v-list-group v-for="folder in folders" :key="folder.id" :prepend-icon="folder.isOpen ? 'mdi-folder-open-outline' : 'mdi-folder-outline'">
         <template v-slot:activator="{ props, isOpen }">
             <v-list-item v-bind="props" class="pe-0" @click="store.toggleFolderOpen(folder)">
                 <template v-slot:append>
@@ -102,7 +103,7 @@
                 <v-list-item-title>{{ folder.name }}</v-list-item-title>
             </v-list-item>
         </template>
-        <v-list-item v-for="(note, k) in folder.notes" :key="k" :title="note.title" prepend-icon="mdi-file-document-outline" @click="store.openNote(note.id, router)" class="pr-1">
+        <v-list-item v-for="(note, k) in folder.notes" :key="k" :title="note.title" prepend-icon="mdi-file-document-outline" @click="store.openNote(note.id, router)" class="pr-1" :active="note.id === activeNoteId">
             <template v-slot:append>
                 <v-menu>
                     <template v-slot:activator="{ props }">
@@ -232,21 +233,3 @@
         await store.fetchFavoriteNotes()
     })
 </script>
-
-<style scoped>
-    /* Reduce the left indentation of notes inside folders */
-    .notes-indent-tight :deep(.v-list-group__items) {
-        padding-left: 32px !important;
-    }
-    
-    /* Reduce the prepend icon margin if needed */
-    /* .notes-indent-tight :deep(.v-list-group__items .v-list-item__prepend) {
-    margin-left: 0px;
-    margin-right: 0px;
-    } */
-    
-    /* Remove any additional left padding from the list items themselves */
-    .notes-indent-tight :deep(.v-list-group__items .v-list-item) {
-        padding-left: 0px !important;
-    }
-</style>

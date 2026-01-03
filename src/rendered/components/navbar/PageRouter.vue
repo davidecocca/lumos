@@ -1,26 +1,39 @@
 <template>
-    <!-- Home menu -->
+    <!-- Logo with app title -->
     <v-list-item
-    :active="currentRoute.name === 'home'"
-    class="ma-1"
-    rounded="lg"
-    @click="openHome()"
+    class="mb-1"
     >
     <template v-slot:prepend>
-        <v-icon 
-        :icon="currentRoute.name === 'home' ? 'mdi-home' : 'mdi-home-outline'"
-        ></v-icon>
+        <v-avatar
+        image="../assets/lumos_logo.png"
+        rounded="0"
+        size="24"
+        />
     </template>
     <template v-slot:title>
-        <span :class="{ 'font-weight-bold': currentRoute.name === 'home' }">Home</span>
+        <span class="font-weight-medium text-h5">Lumos</span>
     </template>
+</v-list-item>
+
+<!-- Home menu -->
+<v-list-item
+:active="currentRoute.name === 'home'"
+class="mb-1"
+@click="openHome()"
+>
+<template v-slot:prepend>
+    <v-icon 
+    :icon="currentRoute.name === 'home' ? 'mdi-home' : 'mdi-home-outline'"
+    ></v-icon>
+</template>
+<template v-slot:title>
+    <span :class="{ 'font-weight-bold': currentRoute.name === 'home' }">Home</span>
+</template>
 </v-list-item>
 
 <!-- Settings menu -->
 <v-list-item
 :active="currentRoute.name === 'settings'"
-class="ma-1"
-rounded="lg"
 @click="openSettings()"
 >
 <template v-slot:prepend>

@@ -136,8 +136,8 @@
                 </template>
                 <v-list-item-title>Simplify language</v-list-item-title>
             </v-list-item>
-            <!-- Change tone submenu -->
-            <v-list-subheader>Change tone</v-list-subheader>
+            <!-- Tone submenu -->
+            <v-list-subheader>Tone</v-list-subheader>
             <v-menu open-on-hover location="end" offset="-10">
                 <template v-slot:activator="{ props }">
                     <v-list-item v-bind="props">

@@ -7,18 +7,8 @@
         <div class="sidebar-box">
             <!-- Fixed header section with app logo, title and page router -->
             <div class="nav-header">
-                <!-- App logo with title-->
-                <div class="d-flex align-center ml-8 mr-8 mb-6 mt-6">
-                    <v-img
-                    src="../assets/lumos_logo.png"
-                    max-height="32"
-                    max-width="32"
-                    />
-                    <p class="ml-6 font-weight-medium text-h5">Lumos</p>
-                </div>
-                
                 <!-- Page Router -->
-                <div class="ma-4">
+                <div class="ma-3">
                     <PageRouter />
                 </div>
                 

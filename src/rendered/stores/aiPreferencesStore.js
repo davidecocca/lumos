@@ -30,7 +30,7 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
                 { label: 'GPT OSS 120B', value: 'openai/gpt-oss-120b' },
                 { label: 'GPT OSS 20B', value: 'openai/gpt-oss-20b' },
                 { label: 'Llama 3.1 8B', value: 'llama-3.1-8b-instant' },
-                { label: 'Llama 3 70B', value: 'llama3-70b-8192' },
+                { label: 'Llama 3.3 70B', value: 'llama-3.3-70b-versatile' },
                 { label: 'Llama 4 Scout', value: 'meta-llama/llama-4-scout-17b-16e-instruct' },
                 { label: 'Llama 4 Maverick', value: 'meta-llama/llama-4-maverick-17b-128e-instruct' },
                 { label: 'Groq Compound', value: 'groq/compound' },
