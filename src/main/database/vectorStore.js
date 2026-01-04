@@ -7,12 +7,12 @@ const path = require("path");
 const os = require("os");
 
 const ollamaBaseUrl = "http://127.0.0.1:11434";
-const defaultEmbeddingModel = "snowflake-arctic-embed2";
+const defaultEmbeddingModel = "embeddinggemma:300m";
 const tableName = "notes_embeddings";
-const chunkSize = 2000;
-const chunkOverlap = 200;
-const similarityThreshold = 1.0;
-const maxResults = 3;
+const chunkSize = 512;
+const chunkOverlap = 64;
+const similarityThreshold = 0.75;
+const maxResults = 5;
 const dbPath = path.join(os.homedir(), "lancedb");
 
 /**
@@ -151,11 +151,10 @@ class VectorStore {
                 });
             }
             
-            // Filter out results with similarity scores above threshold
-            // Lower _distance values indicate higher similarity
+            // Filter out results with similarity scores below threshold or empty content
             const finalResults = filteredResults.filter(result => {
                 const similarityScore = result.metadata._distance || 0;
-                return similarityScore < similarityThreshold;
+                return similarityScore > similarityThreshold && result.pageContent.trim().length > 0;
             });
             
             return finalResults;
