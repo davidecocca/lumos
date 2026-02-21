@@ -11,8 +11,9 @@ const defaultEmbeddingModel = "embeddinggemma:300m";
 const tableName = "notes_embeddings";
 const chunkSize = 512;
 const chunkOverlap = 64;
-const similarityThreshold = 0.75;
+const maxDistance = 0.70;
 const maxResults = 5;
+const oversamplingFactor = 3;
 const dbPath = path.join(os.homedir(), "lancedb");
 
 /**
@@ -131,36 +132,56 @@ class VectorStore {
     * Search for similar notes based on a query.
     * @param {string} query - The query to search for.
     * @param {number} limit - The maximum number of results to return. Defaults to maxResults.
-    * @param {object} filter - Optional filter to further refine search results.
+    * @param {object} filter - Optional filter to further refine search results. For now only supports filtering by source (e.g. { source: "0" }).
     * @returns {Promise<object[]>} - The search results.
     * @throws {Error} If there is an error searching the vector store.
-    */
-    async searchSimilarNotes(query, limit = maxResults, filter = {}) {
+    */    
+    async searchSimilarNotes(query, limit = maxResults, filter = null) {
         try {
-            // Search for similar notes
-            const results = await this.vectorStore.similaritySearch(
-                query, 
-                limit,
-            );
-            
-            // Apply metadata filter if provided
-            let filteredResults = results;
-            if (filter && Object.keys(filter).length > 0) {
-                filteredResults = results.filter(result => {
-                    return Object.keys(filter).every(key => result.metadata[key] === filter[key]);
-                });
+            if (!this.table) {
+                throw new Error("Vector store not initialized");
             }
             
-            // Filter out results with similarity scores below threshold or empty content
-            const finalResults = filteredResults.filter(result => {
-                const similarityScore = result.metadata._distance || 0;
-                return similarityScore > similarityThreshold && result.pageContent.trim().length > 0;
-            });
+            // 1. Build query embedding
+            const queryEmbedding = await this.embeddings.embedQuery(query);
             
-            return finalResults;
+            // 2. Search for similar notes using LanceDB's query builder
+            let q = this.table.search(queryEmbedding).distanceType("cosine");
+            
+            // 3. If provided, apply filter
+            if (filter) {
+                // For now, only support filtering by source (note ID).
+                if (filter.source != null) {
+                    const sourceValue = String(filter.source).replace(/'/g, "''");
+                    q = q.where(`source = '${sourceValue}'`);
+                }
+            }
+            
+            // 4. Limit results and execute query
+            const rows = await q.limit(limit * oversamplingFactor).toArray();
+            
+            // 5. Map results to desired format
+            const docs = rows.map((r) => {
+                const pageContent = r.text ?? r.pageContent ?? "";
+                const metadata = {
+                    ...(r.metadata ?? {}),
+                    ...(r.source !== undefined ? { source: String(r.source) } : {}),
+                    ...(r._distance !== undefined ? { _distance: r._distance } : {}),
+                };
+                
+                return { pageContent, metadata };
+            })
+            .filter((d) => d.pageContent.trim().length > 0)
+            .filter((d) => {
+                const dist = d.metadata?._distance;
+                return typeof dist === "number" && dist <= maxDistance;
+            })
+            .slice(0, limit);
+            
+            return docs;
             
         } catch (err) {
-            console.error('Error searching vector store:', err);
+            console.error("Error searching vector store:", err);
             throw err;
         }
     }

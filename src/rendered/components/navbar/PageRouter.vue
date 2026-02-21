@@ -1,24 +1,24 @@
 <template>
-    <!-- Logo with app title -->
     <v-list-item
-    class="mb-1"
+    class="mb-1 pl-3"
+    height="48"
     >
     <template v-slot:prepend>
         <v-avatar
         image="../assets/lumos_logo.png"
         rounded="0"
-        size="24"
+        size="36"
         />
     </template>
     <template v-slot:title>
-        <span class="font-weight-medium text-h5">Lumos</span>
+        <span class="font-weight-medium text-h5 ml-1">Lumos</span>
     </template>
 </v-list-item>
 
 <!-- Home menu -->
 <v-list-item
 :active="currentRoute.name === 'home'"
-class="mb-1"
+height="48"
 @click="openHome()"
 >
 <template v-slot:prepend>
@@ -34,6 +34,7 @@ class="mb-1"
 <!-- Settings menu -->
 <v-list-item
 :active="currentRoute.name === 'settings'"
+height="48"
 @click="openSettings()"
 >
 <template v-slot:prepend>
@@ -48,16 +49,16 @@ class="mb-1"
 </template>
 
 <script setup>
-    import { useRouter, useRoute } from 'vue-router'
-    
-    const router = useRouter()
-    const currentRoute = useRoute()
-    
-    const openHome = () => {
-        router.push({ name: 'home' })
-    }
-    
-    const openSettings = () => {
-        router.push({ name: 'settings' })
-    }
+import { useRouter, useRoute } from 'vue-router'
+
+const router = useRouter()
+const currentRoute = useRoute()
+
+const openHome = () => {
+    router.push({ name: 'home' })
+}
+
+const openSettings = () => {
+    router.push({ name: 'settings' })
+}
 </script>

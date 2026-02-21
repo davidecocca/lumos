@@ -2,7 +2,7 @@
     <div class="d-flex flex-column">
         <!-- Page title -->
         <div class="d-flex flex-column align-center mt-2 mb-4">
-            <p class="text-h4 font-weight-medium">Welcome back!</p>
+            <p class="text-h4 font-weight-medium">Welcome to <b>Lumos</b></p>
             <p class="text-h6 font-weight-light">{{ subtitle }}</p>
         </div>
         
@@ -24,9 +24,9 @@
                     <v-row justify="center">
                         <v-col cols="12" md="8" class="d-flex justify-center">
                             <EmptyState
-                                title="No favorite notes yet"
-                                text="Mark a note as favorite and it will appear here."
-                                icon="mdi-heart-outline"
+                            title="No favorite notes yet"
+                            text="Mark a note as favorite and it will appear here."
+                            icon="mdi-heart-outline"
                             />
                         </v-col>
                     </v-row>
@@ -34,21 +34,21 @@
                 <template v-else>
                     <v-row>
                         <v-col
-                            v-for="note in favoriteNotes"
-                            :key="note.id"
-                            cols="12"
-                            md="4"
+                        v-for="note in favoriteNotes"
+                        :key="note.id"
+                        cols="12"
+                        md="4"
                         >
-                            <NoteCard
-                                :note="note"
-                                :showAccessedAt="false"
-                                :showUpdatedAt="true"
-                            />
-                        </v-col>
-                    </v-row>
-                </template>
-            </v-container>
-        </v-tabs-window-item>
+                        <NoteCard
+                        :note="note"
+                        :showAccessedAt="false"
+                        :showUpdatedAt="true"
+                        />
+                    </v-col>
+                </v-row>
+            </template>
+        </v-container>
+    </v-tabs-window-item>
     
     <!-- Recent notes -->
     <v-tabs-window-item :value="recentsTab">
@@ -57,9 +57,9 @@
                 <v-row justify="center">
                     <v-col cols="12" md="8" class="d-flex justify-center">
                         <EmptyState
-                            title="No recently viewed notes yet"
-                            text="Open a note and it will appear here."
-                            icon="mdi-history"
+                        title="No recently viewed notes yet"
+                        text="Open a note and it will appear here."
+                        icon="mdi-history"
                         />
                     </v-col>
                 </v-row>
@@ -67,21 +67,21 @@
             <template v-else>
                 <v-row>
                     <v-col
-                        v-for="note in recentNotes"
-                        :key="note.id"
-                        cols="12"
-                        md="4"
+                    v-for="note in recentNotes"
+                    :key="note.id"
+                    cols="12"
+                    md="4"
                     >
-                        <NoteCard
-                            :note="note"
-                            :showAccessedAt="true"
-                            :showUpdatedAt="false"
-                        />
-                    </v-col>
-                </v-row>
-            </template>
-        </v-container>
-    </v-tabs-window-item>
+                    <NoteCard
+                    :note="note"
+                    :showAccessedAt="true"
+                    :showUpdatedAt="false"
+                    />
+                </v-col>
+            </v-row>
+        </template>
+    </v-container>
+</v-tabs-window-item>
 </v-tabs-window>
 </div>
 </template>
@@ -106,16 +106,16 @@ const recentsTab = 'recentsTab'
 const tab = ref(favoritesTab)
 
 const subtitles = ref([
-    'Your thoughts, all in one place.',
-    'Capture. Organize. Remember.',
-    'From quick scribbles to big ideas.',
-    'Your second brain, ready to go.',
-    'Find it fast, remember it forever.',
-    'Because great ideas deserve a safe home.',
-    'Notes that work as hard as you do.',
-    'Your day, neatly organized.',
-    'Where your ideas come to life.',
-    'Search less, do more.',
+'Your thoughts, all in one place.',
+'Capture. Organize. Remember.',
+'From quick scribbles to big ideas.',
+'Your second brain, ready to go.',
+'Find it fast, remember it forever.',
+'Because great ideas deserve a safe home.',
+'Notes that work as hard as you do.',
+'Your day, neatly organized.',
+'Where your ideas come to life.',
+'Search less, do more.',
 ])
 const subtitle = ref('')
 
