@@ -2,16 +2,8 @@ import { defineStore } from 'pinia'
 
 export const aiPreferencesStore = defineStore('aiPreferences', {
     state: () => ({
-        // Provider selections for different features
-        editorBasicTools: {
-            provider: null,
-            model: null
-        },
-        editorAdvancedTools: {
-            provider: null,
-            model: null
-        },
-        editorChatTools: {
+        // Provider selection for different features
+        editor: {
             provider: null,
             model: null
         },
@@ -33,25 +25,30 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
         availableModels: {
             ollama: [],
             groq: [
-                'llama-3.1-8b-instant',
-                'llama3-70b-8192',
-                'llama3-8b-8192',
-                'llama-3.3-70b-versatile',
-                'meta-llama/llama-4-scout-17b-16e-instruct',
-                'meta-llama/llama-4-maverick-17b-128e-instruct',
-                'deepseek-r1-distill-llama-70b',
-                'gemma2-9b-it',
-                'qwen-qwq-32b'
+                { label: 'Kimi K2', value: 'moonshotai/kimi-k2-instruct' },
+                { label: 'Kimi K2 (0905)', value: 'moonshotai/kimi-k2-instruct-0905' },
+                { label: 'GPT OSS 120B', value: 'openai/gpt-oss-120b' },
+                { label: 'GPT OSS 20B', value: 'openai/gpt-oss-20b' },
+                { label: 'Llama 3.1 8B', value: 'llama-3.1-8b-instant' },
+                { label: 'Llama 3.3 70B', value: 'llama-3.3-70b-versatile' },
+                { label: 'Llama 4 Scout', value: 'meta-llama/llama-4-scout-17b-16e-instruct' },
+                { label: 'Llama 4 Maverick', value: 'meta-llama/llama-4-maverick-17b-128e-instruct' },
+                { label: 'Groq Compound', value: 'groq/compound' },
+                { label: 'Groq Compound Mini', value: 'groq/compound-mini' },
+                { label: 'Qwen3 32B', value: 'qwen-qwq-32b' }
             ],
             openai: [
-                'gpt-4o',
-                'gpt-4o-mini',
-                'gpt-4.1',
-                'gpt-4.1-mini',
-                'gpt-4.1-nano',
-                'o4-mini'
+                { label: 'GPT-5.2', value: 'gpt-5.2' },
+                { label: 'GPT-5.1', value: 'gpt-5.1' },
+                { label: 'GPT-5', value: 'gpt-5' },
+                { label: 'GPT-5 Mini', value: 'gpt-5-mini' },
+                { label: 'GPT-5 Nano', value: 'gpt-5-nano' },
+                { label: 'GPT-5.1 Codex', value: 'gpt-5.1-codex' },
+                { label: 'GPT-4.1', value: 'gpt-4.1' },
+                { label: 'GPT-4.1 Mini', value: 'gpt-4.1-mini' },
+                { label: 'GPT-4.1 Nano', value: 'gpt-4.1-nano' },
             ]
-        }
+        },
     }),
     
     actions: {
@@ -62,9 +59,7 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
                 const preferences = JSON.parse(savedPrefs)
                 
                 // Load provider and model selections
-                this.editorBasicTools = preferences.editorBasicTools || this.editorBasicTools
-                this.editorAdvancedTools = preferences.editorAdvancedTools || this.editorAdvancedTools
-                this.editorChatTools = preferences.editorChatTools || this.editorChatTools
+                this.editor = preferences.editor || this.editor
                 this.chat = preferences.chat || this.chat
                 
                 // Load API keys
@@ -75,9 +70,7 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
         // Save preferences to localStorage
         savePreferences() {
             const preferences = {
-                editorBasicTools: this.editorBasicTools,
-                editorAdvancedTools: this.editorAdvancedTools,
-                editorChatTools: this.editorChatTools,
+                editor: this.editor,
                 chat: this.chat,
                 apiKeys: this.apiKeys
             }
@@ -111,10 +104,22 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
             }
         },
         
+        // Generate label for Ollama models
+        generateOllamaLabel(model) {
+            const fullName = model.name
+            const size = model.size
+            const [name, tag] = fullName.split(':')
+            return `${name} (${size})`
+        },
+        
         // Update available models for a provider
         updateAvailableModels(provider, models) {
             if (this.availableModels.hasOwnProperty(provider)) {
-                this.availableModels[provider] = models
+                if (provider === 'ollama') {
+                    this.availableModels[provider] = models.map(model => ({ label: this.generateOllamaLabel(model), value: model }))
+                } else {
+                    this.availableModels[provider] = models
+                }
             }
         },
         

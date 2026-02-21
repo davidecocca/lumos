@@ -34,10 +34,6 @@
   <p align="center">
     <img src="images/dark_theme.png" alt="Note View (Dark Theme)" width="600" />
   </p>
-  <h3 align="center">Brainstorm with AI Tool</h3>
-  <p align="center">
-    <img src="images/brainstorm_with_ai.gif" alt="Brainstorm with AI Tool" width="550" style="margin-top: 20px"/>
-  </p>
 </p>
 
 
@@ -49,7 +45,7 @@
 - **Rich Formatting**  
   Format and style your notes to make them truly yours.
 
-- **AI Brainstorming**  
+- **Generate with AI**  
   Stuck on an idea? Let Lumos AI suggest topics or expand your thoughts.
 
 - **AI Editing & Explanations**  
@@ -98,9 +94,9 @@ Notion and other modern note apps are great, but they often tie your data to the
 ## 🖥️ Prerequisites
 
 1. **Install [Ollama](https://ollama.com/download)**
-2. Pull the `snowflake-arctic-embed2` embeddings model with:  
+2. Pull the `embeddinggemma:300m` embeddings model with:  
    ```bash
-   ollama pull snowflake-arctic-embed2
+   ollama pull embeddinggemma:300m
    ```
     > This is needed to locally generate embeddings for your notes.
 

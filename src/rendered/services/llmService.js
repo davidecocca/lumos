@@ -12,7 +12,7 @@ const ollamaListModelsUrl = `${ollamaBaseUrl}/api/tags`;
 class LlmService {
     constructor() {
         this.llm = new ChatOllama({
-            model: "gemma3:4b",
+            model: "llama3.2:3b",
             temperature: 0,
             maxRetries: 2,
         });
@@ -81,7 +81,7 @@ class LlmService {
                 throw new Error("Network response was not ok");
             }
             const models = await response.json();
-            const modelNames = models.models.map(model => model.name);
+            const modelNames = models.models.map(model => ({ "name": model.name, "size": model.details.parameter_size }));
             return modelNames;
         } catch (error) {
             console.error("Error fetching models:", error);

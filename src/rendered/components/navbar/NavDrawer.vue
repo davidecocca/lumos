@@ -3,48 +3,165 @@
     v-model="drawerOpen"
     width="350"
     >
-    <!-- Search bar -->
-    <v-text-field
-    append-inner-icon="mdi-magnify"
-    density="compact"
-    label="Search"
-    variant="text"
-    hide-details
-    single-line
-    @click:append-inner="onClick"
-    class="ma-1"
-    ></v-text-field>
-    
-    <!-- Page Router -->
-    <PageRouter />
-    
-    <!-- Divider -->
-    <v-divider class="mt-3"></v-divider>
-    
-    <!-- Folders and notes -->
-    <FoldersTree />
+    <div class="drawer-container">
+        <div class="sidebar-box">
+            <!-- Fixed header section with app logo, title and page router -->
+            <div class="nav-header">
+                <!-- Page Router -->
+                <div class="ma-3">
+                    <PageRouter />
+                </div>
+                
+                <!-- Divider shown only when the scrollable content overflows AND the content has been scrolled -->
+                <transition name="divider-fade">
+                    <div v-if="hasScrollbar && hasScrolled" class="divider-container">
+                        <v-divider></v-divider>
+                    </div>
+                </transition>
+            </div>
+            
+            <!-- Scrollable content section with favorite notes and folders -->
+            <div ref="navContent" class="nav-content">
+                <FoldersTree />
+            </div>
+        </div>
+    </div>
 </v-navigation-drawer>
 </template>
 
 <script setup>
-import FoldersTree from './FoldersTree.vue'
-import PageRouter from './PageRouter.vue'
-
-import { computed } from 'vue'
-
-const props = defineProps({
-    isDrawerOpen: {
-        type: Boolean,
-        default: true
+    import FoldersTree from './FoldersTree.vue'
+    import PageRouter from './PageRouter.vue'
+    
+    import { computed } from 'vue'
+    import { ref, onMounted, onBeforeUnmount } from 'vue'
+    
+    const props = defineProps({
+        isDrawerOpen: {
+            type: Boolean,
+            default: true
+        }
+    })
+    
+    const emit = defineEmits(['update:isDrawerOpen'])
+    
+    const drawerOpen = computed({
+        get: () => props.isDrawerOpen,
+        set: (value) => {
+            emit('update:isDrawerOpen', value)
+        }
+    })
+    
+    // Detect whether the scrollable nav content currently shows a vertical scrollbar
+    const navContent = ref(null)
+    const hasScrollbar = ref(false)
+    const hasScrolled = ref(false)
+    
+    function updateHasScrollbar() {
+        const el = navContent.value
+        if (!el) return
+        // Compare scrollHeight to clientHeight for vertical overflow
+        hasScrollbar.value = el.scrollHeight > el.clientHeight + 1
+        // Update scrolled state in case scroll position changed
+        hasScrolled.value = el.scrollTop > 0
     }
-})
-
-const emit = defineEmits(['update:isDrawerOpen'])
-
-const drawerOpen = computed({
-    get: () => props.isDrawerOpen,
-    set: (value) => {
-        emit('update:isDrawerOpen', value)
+    
+    function onScroll() {
+        const el = navContent.value
+        if (!el) return
+        hasScrolled.value = el.scrollTop > 0
     }
-})
+    
+    let ro = null
+    let mo = null
+    onMounted(() => {
+        updateHasScrollbar()
+        if (navContent.value) {
+            // Scroll listener to detect when top content moves under header
+            navContent.value.addEventListener('scroll', onScroll, { passive: true })
+        }
+        if (navContent.value && typeof ResizeObserver !== 'undefined') {
+            ro = new ResizeObserver(updateHasScrollbar)
+            ro.observe(navContent.value)
+        }
+        // MutationObserver to catch content changes (items added/removed)
+        if (navContent.value && typeof MutationObserver !== 'undefined') {
+            mo = new MutationObserver(updateHasScrollbar)
+            mo.observe(navContent.value, { childList: true, subtree: true })
+        }
+    })
+    
+    onBeforeUnmount(() => {
+        if (navContent.value) navContent.value.removeEventListener('scroll', onScroll)
+        if (ro && navContent.value) ro.unobserve(navContent.value)
+        if (mo) mo.disconnect()
+    })
 </script>
+
+<style scoped>
+    .drawer-container {
+        height: 100vh;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .nav-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        flex-shrink: 0;
+    }
+    
+    .nav-content {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
+    }
+    
+    /* Hide the default v-navigation-drawer scrollbar */
+    :deep(.v-navigation-drawer__content) {
+        overflow: hidden !important;
+    }
+    
+    /* Sidebar container */
+    .sidebar-box {
+        height: calc(100vh - 60px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* keep rounded corners when scrolling */
+    }
+    
+    .sidebar-box .nav-header {
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(10px);
+    }
+    
+    .v-theme--dark .sidebar-box .nav-header {
+        background: rgba(33,33,33,0.85);
+    }
+    
+    .sidebar-box .nav-content {
+        padding: 8px 12px 16px 12px;
+        overflow-y: auto;
+    }
+    
+    /* Transition for the conditional divider: subtle fade and slide */
+    .divider-container {
+        z-index: 9; /* sit under the sticky header */
+    }
+    .divider-fade-enter-active,
+    .divider-fade-leave-active {
+        transition: opacity 120ms ease, transform 120ms ease;
+    }
+    .divider-fade-enter-from,
+    .divider-fade-leave-to {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    .divider-fade-enter-to,
+    .divider-fade-leave-from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>

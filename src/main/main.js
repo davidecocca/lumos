@@ -176,9 +176,9 @@ function setupIPC() {
         });
     });
     
-    ipcMain.handle('update-note', async (event, { id, contentJson, contentText }) => {
+    ipcMain.handle('update-note', async (event, { id, topic, contentJson, contentText }) => {
         return new Promise((resolve, reject) => {
-            updateNote(id, contentJson, contentText, (err, changes) => {
+            updateNote(id, topic, contentJson, contentText, (err, changes) => {
                 if (err) reject(err);
                 else resolve(changes);
             });
@@ -248,9 +248,9 @@ function setupIPC() {
         });
     });
     
-    ipcMain.handle('search-similar-notes', async (event, { query, sources }) => {
+    ipcMain.handle('search-similar-notes', async (event, { query, limit, filter }) => {
         return new Promise((resolve, reject) => {
-            vectorStore.searchSimilarNotes(query, sources)
+            vectorStore.searchSimilarNotes(query, limit, filter)
             .then(results => resolve(results))
             .catch(err => reject(err));
         });

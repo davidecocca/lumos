@@ -7,12 +7,13 @@ const path = require("path");
 const os = require("os");
 
 const ollamaBaseUrl = "http://127.0.0.1:11434";
-const defaultEmbeddingModel = "snowflake-arctic-embed2";
+const defaultEmbeddingModel = "embeddinggemma:300m";
 const tableName = "notes_embeddings";
-const chunkSize = 2000;
-const chunkOverlap = 200;
-const similarityThreshold = 1.0;
-const maxResults = 3;
+const chunkSize = 512;
+const chunkOverlap = 64;
+const maxDistance = 0.70;
+const maxResults = 5;
+const oversamplingFactor = 3;
 const dbPath = path.join(os.homedir(), "lancedb");
 
 /**
@@ -130,41 +131,57 @@ class VectorStore {
     /**
     * Search for similar notes based on a query.
     * @param {string} query - The query to search for.
-    * @param {number} limit - The maximum number of results to return.
+    * @param {number} limit - The maximum number of results to return. Defaults to maxResults.
+    * @param {object} filter - Optional filter to further refine search results. For now only supports filtering by source (e.g. { source: "0" }).
     * @returns {Promise<object[]>} - The search results.
     * @throws {Error} If there is an error searching the vector store.
-    */
-    async searchSimilarNotes(query, sources, limit = maxResults) {
+    */    
+    async searchSimilarNotes(query, limit = maxResults, filter = null) {
         try {
-            // Search for similar notes
-            const results = await this.vectorStore.similaritySearch(
-                query, 
-                limit,
-            );
-            
-            // Filter out results with similarity scores above threshold
-            // Lower _distance values indicate higher similarity
-            const filteredResults = results.filter(result => {
-                const similarityScore = result.metadata._distance || 0;
-                return similarityScore < similarityThreshold;
-            });
-            
-            let finalResults;
-            // Filter out results based on sources (if provided)
-            if (sources && sources.length > 0) {
-                finalResults = filteredResults.filter(result => {
-                    const noteSource = result.metadata.source;
-                    return sources.includes(noteSource);
-                });
-            } else {
-                // If no sources specified, return all filtered results
-                finalResults = filteredResults;
+            if (!this.table) {
+                throw new Error("Vector store not initialized");
             }
             
-            return finalResults;
+            // 1. Build query embedding
+            const queryEmbedding = await this.embeddings.embedQuery(query);
+            
+            // 2. Search for similar notes using LanceDB's query builder
+            let q = this.table.search(queryEmbedding).distanceType("cosine");
+            
+            // 3. If provided, apply filter
+            if (filter) {
+                // For now, only support filtering by source (note ID).
+                if (filter.source != null) {
+                    const sourceValue = String(filter.source).replace(/'/g, "''");
+                    q = q.where(`source = '${sourceValue}'`);
+                }
+            }
+            
+            // 4. Limit results and execute query
+            const rows = await q.limit(limit * oversamplingFactor).toArray();
+            
+            // 5. Map results to desired format
+            const docs = rows.map((r) => {
+                const pageContent = r.text ?? r.pageContent ?? "";
+                const metadata = {
+                    ...(r.metadata ?? {}),
+                    ...(r.source !== undefined ? { source: String(r.source) } : {}),
+                    ...(r._distance !== undefined ? { _distance: r._distance } : {}),
+                };
+                
+                return { pageContent, metadata };
+            })
+            .filter((d) => d.pageContent.trim().length > 0)
+            .filter((d) => {
+                const dist = d.metadata?._distance;
+                return typeof dist === "number" && dist <= maxDistance;
+            })
+            .slice(0, limit);
+            
+            return docs;
             
         } catch (err) {
-            console.error('Error searching vector store:', err);
+            console.error("Error searching vector store:", err);
             throw err;
         }
     }

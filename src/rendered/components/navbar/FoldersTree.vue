@@ -14,12 +14,13 @@
         prepend-icon="mdi-file-document-outline"
         @click="store.openNote(note.id, router)"
         class="pr-1"
+        :active="note.id === activeNoteId"
         >
         <template v-slot:append>
             <!-- Note action menu -->
             <v-menu>
                 <template v-slot:activator="{ props }">
-                    <v-tooltip text="Unfavorite, rename, ..." location="top">
+                    <v-tooltip text="More" location="top">
                         <template v-slot:activator="{ props: tooltipProps }">
                             <v-btn v-bind="{ ...props, ...tooltipProps }" icon="mdi-dots-horizontal" size="small" variant="text"></v-btn>
                         </template>
@@ -28,20 +29,19 @@
                 <v-list density="compact">
                     <v-list-item @click="store.toggleNoteFavorite(note.id)">
                         <template v-slot:append>
-                            <v-icon icon="mdi-heart-broken-outline"></v-icon>
+                            <v-icon icon="mdi-heart-broken"></v-icon>
                         </template>
                         <v-list-item-title>Unfavorite</v-list-item-title>
                     </v-list-item>
-                    <v-divider></v-divider>
                     <v-list-item @click="store.openRenameNoteDialog(note.id, note.title)">
                         <template v-slot:append>
-                            <v-icon icon="mdi-rename-outline"></v-icon>
+                            <v-icon icon="mdi-rename"></v-icon>
                         </template>
                         <v-list-item-title>Rename</v-list-item-title>
                     </v-list-item>
                     <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)">
                         <template v-slot:append>
-                            <v-icon icon="mdi-delete-outline"></v-icon>
+                            <v-icon icon="mdi-delete"></v-icon>
                         </template>
                         <v-list-item-title>Delete</v-list-item-title>
                     </v-list-item>
@@ -51,19 +51,17 @@
     </v-list-item>
 </v-list>
 
-<v-divider></v-divider>
-
 <!-- List of folders and notes -->
-<v-list>
+<v-list indent="16px">
+    <!-- Notes header -->
     <div class="d-flex align-center mr-1">
         <v-list-subheader class="flex-grow-1">Notes</v-list-subheader>
         <v-tooltip text="New folder" location="top">
             <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" icon="mdi-folder-plus-outline" variant="text" size="small" @click="store.openCreateFolderDialog()" title="New folder"></v-btn>
+                <v-btn v-bind="props" icon="mdi-folder-plus-outline" size="small" variant="text" @click="store.openCreateFolderDialog()"></v-btn>
             </template>
         </v-tooltip>
     </div>
-    
     <v-list-group v-for="folder in folders" :key="folder.id" :prepend-icon="folder.isOpen ? 'mdi-folder-open-outline' : 'mdi-folder-outline'">
         <template v-slot:activator="{ props, isOpen }">
             <v-list-item v-bind="props" class="pe-0" @click="store.toggleFolderOpen(folder)">
@@ -79,7 +77,7 @@
                     <div class="d-flex align-center mr-1">
                         <v-menu>
                             <template v-slot:activator="{ props }">
-                                <v-tooltip text="Delete, rename, ..." location="top">
+                                <v-tooltip text="More" location="top">
                                     <template v-slot:activator="{ props: tooltipProps }">
                                         <v-btn v-bind="{ ...props, ...tooltipProps }" icon="mdi-dots-horizontal" size="small" variant="text"></v-btn>
                                     </template>
@@ -88,35 +86,28 @@
                             <v-list density="compact">
                                 <v-list-item @click="store.openRenameFolderDialog(folder.id, folder.name)">
                                     <template v-slot:append>
-                                        <v-icon icon="mdi-rename-outline"></v-icon>
+                                        <v-icon icon="mdi-rename"></v-icon>
                                     </template>
                                     <v-list-item-title>Rename</v-list-item-title>
                                 </v-list-item>
                                 <v-list-item @click="store.openDeleteFolderConfirmationDialog(folder.id)">
                                     <template v-slot:append>
-                                        <v-icon icon="mdi-delete-outline"></v-icon>
+                                        <v-icon icon="mdi-delete"></v-icon>
                                     </template>
                                     <v-list-item-title>Delete</v-list-item-title>
                                 </v-list-item>
                             </v-list>
                         </v-menu>
-                        <!-- <div style="min-width: 40px; min-height: 40px;" class="d-flex align-center justify-center">
-                            <v-tooltip :text="isOpen ? 'Collapse' : 'Expand'" location="top">
-                                <template v-slot:activator="{ props }">
-                                    <v-icon :icon="isOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'" v-bind="props"></v-icon>
-                                </template>
-                            </v-tooltip>
-                        </div> -->
                     </div>
                 </template>
                 <v-list-item-title>{{ folder.name }}</v-list-item-title>
             </v-list-item>
         </template>
-        <v-list-item v-for="(note, k) in folder.notes" :key="k" :title="note.title" prepend-icon="mdi-file-document-outline" @click="store.openNote(note.id, router)" class="pr-1">
+        <v-list-item v-for="(note, k) in folder.notes" :key="k" :title="note.title" prepend-icon="mdi-file-document-outline" @click="store.openNote(note.id, router)" class="pr-1" :active="note.id === activeNoteId">
             <template v-slot:append>
                 <v-menu>
                     <template v-slot:activator="{ props }">
-                        <v-tooltip text="Rename, move, ..." location="top">
+                        <v-tooltip text="More" location="top">
                             <template v-slot:activator="{ props: tooltipProps }">
                                 <v-btn v-bind="{ ...props, ...tooltipProps }" icon="mdi-dots-horizontal" size="small" variant="text"></v-btn>
                             </template>
@@ -125,26 +116,25 @@
                     <v-list density="compact">
                         <v-list-item @click="store.toggleNoteFavorite(note.id)">
                             <template v-slot:append>
-                                <v-icon :icon="note.favorite == 1 ? 'mdi-heart-broken-outline' : 'mdi-heart-outline'"></v-icon>
+                                <v-icon :icon="note.favorite == 1 ? 'mdi-heart-broken' : 'mdi-heart'"></v-icon>
                             </template>
                             <v-list-item-title>{{ note.favorite == 1 ? 'Unfavorite' : 'Favorite' }}</v-list-item-title>
                         </v-list-item>
-                        <v-divider></v-divider>
                         <v-list-item @click="store.openRenameNoteDialog(note.id, note.title)">
                             <template v-slot:append>
-                                <v-icon icon="mdi-rename-outline"></v-icon>
+                                <v-icon icon="mdi-rename"></v-icon>
                             </template>
                             <v-list-item-title>Rename</v-list-item-title>
                         </v-list-item>
                         <v-list-item @click="store.openMoveNoteDialog(note.id, folder.id)">
                             <template v-slot:append>
-                                <v-icon icon="mdi-file-move-outline"></v-icon>
+                                <v-icon icon="mdi-file-move"></v-icon>
                             </template>
                             <v-list-item-title>Move</v-list-item-title>
                         </v-list-item>
                         <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)">
                             <template v-slot:append>
-                                <v-icon icon="mdi-delete-outline"></v-icon>
+                                <v-icon icon="mdi-delete"></v-icon>
                             </template>
                             <v-list-item-title>Delete</v-list-item-title>
                         </v-list-item>
@@ -174,72 +164,72 @@
 </template>
 
 <script setup>
-import CreateFolderDialog from './CreateFolderDialog.vue'
-import RenameFolderDialog from './RenameFolderDialog.vue'
-import ConfirmDeleteFolderDialog from './ConfirmDeleteFolderDialog.vue'
-import CreateNoteDialog from './CreateNoteDialog.vue'
-import RenameNoteDialog from './RenameNoteDialog.vue'
-import MoveToFolderDialog from './MoveToFolderDialog.vue'
-import ConfirmDeleteNoteDialog from './../commons/ConfirmDeleteNoteDialog.vue'
-import ErrorDialog from '../commons/ErrorDialog.vue'
-
-import { useRouter } from 'vue-router'
-import { useFoldersStore } from '../../stores/foldersStore'
-import { computed, onMounted } from 'vue'
-
-// Get the router and the Pinia store instance
-const router = useRouter()
-const store = useFoldersStore()
-
-// Map store state to local computed refs
-const folders = computed(() => store.folders)
-const favoriteNotes = computed(() => store.favoriteNotes)
-
-const addFolderDialog = computed({
-    get: () => store.addFolderDialog,
-    set: (val) => store.addFolderDialog = val
-})
-const renameFolderDialog = computed({
-    get: () => store.renameFolderDialog,
-    set: (val) => store.renameFolderDialog = val
-})
-const deleteFolderDialog = computed({
-    get: () => store.deleteFolderDialog,
-    set: (val) => store.deleteFolderDialog = val
-})
-const createNoteDialog = computed({
-    get: () => store.createNoteDialog,
-    set: (val) => store.createNoteDialog = val
-})
-const renameNoteDialog = computed({
-    get: () => store.renameNoteDialog,
-    set: (val) => store.renameNoteDialog = val
-})
-const moveToFolderDialog = computed({
-    get: () => store.moveToFolderDialog,
-    set: (val) => store.moveToFolderDialog = val
-})
-const deleteNoteDialog = computed({
-    get: () => store.deleteNoteDialog,
-    set: (val) => store.deleteNoteDialog = val
-})
-const activeFolderId = computed(() => store.activeFolderId)
-const activeFolderName = computed(() => store.activeFolderName)
-const activeNoteId = computed(() => store.activeNoteId)
-const activeNoteTitle = computed(() => store.activeNoteTitle)
-const activeNoteCurrentFolderId = computed(() => store.activeNoteCurrentFolderId)
-const confirmationDialogTitle = computed(() => store.confirmationDialogTitle)
-const confirmationDialogText = computed(() => store.confirmationDialogText)
-const confirmationDialogButtonColor = computed(() => store.confirmationDialogButtonColor)
-const isErrorDialogVisible = computed(() => store.isErrorDialogVisible)
-const errorDialogTitle = computed(() => store.errorDialogTitle)
-const errorDialogText = computed(() => store.errorDialogText)
-const errorDialogDetails = computed(() => store.errorDialogDetails)
-
-onMounted(async () => {
-    // Lazy load folders; only fetch notes when a folder is expanded.
-    await store.fetchFolders()
-    // Also fetch favorite notes so they’re available from the start.
-    await store.fetchFavoriteNotes()
-})
+    import CreateFolderDialog from './CreateFolderDialog.vue'
+    import RenameFolderDialog from './RenameFolderDialog.vue'
+    import ConfirmDeleteFolderDialog from './ConfirmDeleteFolderDialog.vue'
+    import CreateNoteDialog from './CreateNoteDialog.vue'
+    import RenameNoteDialog from './RenameNoteDialog.vue'
+    import MoveToFolderDialog from './MoveToFolderDialog.vue'
+    import ConfirmDeleteNoteDialog from './../commons/ConfirmDeleteNoteDialog.vue'
+    import ErrorDialog from '../commons/ErrorDialog.vue'
+    
+    import { useRouter } from 'vue-router'
+    import { useFoldersStore } from '../../stores/foldersStore'
+    import { computed, onMounted } from 'vue'
+    
+    // Get the router and the Pinia store instance
+    const router = useRouter()
+    const store = useFoldersStore()
+    
+    // Map store state to local computed refs
+    const folders = computed(() => store.folders)
+    const favoriteNotes = computed(() => store.favoriteNotes)
+    
+    const addFolderDialog = computed({
+        get: () => store.addFolderDialog,
+        set: (val) => store.addFolderDialog = val
+    })
+    const renameFolderDialog = computed({
+        get: () => store.renameFolderDialog,
+        set: (val) => store.renameFolderDialog = val
+    })
+    const deleteFolderDialog = computed({
+        get: () => store.deleteFolderDialog,
+        set: (val) => store.deleteFolderDialog = val
+    })
+    const createNoteDialog = computed({
+        get: () => store.createNoteDialog,
+        set: (val) => store.createNoteDialog = val
+    })
+    const renameNoteDialog = computed({
+        get: () => store.renameNoteDialog,
+        set: (val) => store.renameNoteDialog = val
+    })
+    const moveToFolderDialog = computed({
+        get: () => store.moveToFolderDialog,
+        set: (val) => store.moveToFolderDialog = val
+    })
+    const deleteNoteDialog = computed({
+        get: () => store.deleteNoteDialog,
+        set: (val) => store.deleteNoteDialog = val
+    })
+    const activeFolderId = computed(() => store.activeFolderId)
+    const activeFolderName = computed(() => store.activeFolderName)
+    const activeNoteId = computed(() => store.activeNoteId)
+    const activeNoteTitle = computed(() => store.activeNoteTitle)
+    const activeNoteCurrentFolderId = computed(() => store.activeNoteCurrentFolderId)
+    const confirmationDialogTitle = computed(() => store.confirmationDialogTitle)
+    const confirmationDialogText = computed(() => store.confirmationDialogText)
+    const confirmationDialogButtonColor = computed(() => store.confirmationDialogButtonColor)
+    const isErrorDialogVisible = computed(() => store.isErrorDialogVisible)
+    const errorDialogTitle = computed(() => store.errorDialogTitle)
+    const errorDialogText = computed(() => store.errorDialogText)
+    const errorDialogDetails = computed(() => store.errorDialogDetails)
+    
+    onMounted(async () => {
+        // Lazy load folders; only fetch notes when a folder is expanded.
+        await store.fetchFolders()
+        // Also fetch favorite notes so they’re available from the start.
+        await store.fetchFavoriteNotes()
+    })
 </script>

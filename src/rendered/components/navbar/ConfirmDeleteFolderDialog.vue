@@ -1,32 +1,34 @@
 <template>
     <v-dialog
-    :model-value="modelValue"
-    @update:model-value="$emit('update:isConfirmationDialogVisible', $event)"
-    max-width="500"
+        :model-value="modelValue"
+        @update:model-value="$emit('update:isConfirmationDialogVisible', $event)"
+        max-width="520"
     >
-    <v-card>
-        <v-card-title class="text-h6 d-flex align-center mt-2">
-            <v-icon class="mr-2" icon="mdi-alert-circle" color="warning" />
-            {{ confirmationDialogTitle }}
-        </v-card-title>
-        <v-card-text>
-            {{ confirmationDialogText }}
-        </v-card-text>
-        <v-divider></v-divider>
-        <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn @click="closeDialog">
-                No
-            </v-btn>
-            <v-btn @click="deleteFolder" :color="confirmationDialogButtonColor" variant="tonal">
-                Yes
-            </v-btn>
-        </v-card-actions>
-    </v-card>
-</v-dialog>
+        <v-card rounded="xl" elevation="8">
+            <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
+                <v-avatar color="amber-lighten-5" size="36" class="mr-3">
+                    <v-icon size="22" color="amber-darken-2">mdi-alert-circle</v-icon>
+                </v-avatar>
+                <div class="text-h6">{{ confirmationDialogTitle }}</div>
+            </v-card-title>
+
+            <v-card-text class="px-6 pb-4">
+                {{ confirmationDialogText }}
+            </v-card-text>
+
+            <v-divider />
+            <v-card-actions class="px-6 py-3">
+                <v-spacer />
+                <v-btn variant="text" @click="closeDialog">No</v-btn>
+                <v-btn :color="confirmationDialogButtonColor" variant="tonal" @click="deleteFolder">Yes</v-btn>
+            </v-card-actions>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
+
 const props = defineProps({
     modelValue: {
         type: Boolean,
@@ -52,11 +54,19 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'delete-folder'])
 
+const folderIdToDelete = ref(null)
+
+watch(() => props.modelValue, (newVal) => {
+    if (newVal) {
+        folderIdToDelete.value = props.folderId
+    }
+})
+
 const closeDialog = () => {
     emit('update:modelValue', false)
 }
 
 const deleteFolder = () => {
-    emit('delete-folder', props.folderId)
+    emit('delete-folder', folderIdToDelete.value)
 }
 </script>

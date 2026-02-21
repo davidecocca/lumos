@@ -123,13 +123,13 @@ function renameNote(id, newTitle, callback) {
 }
 
 // Update note content
-function updateNote(id, contentJson, contentText, callback) {
+function updateNote(id, topic, contentJson, contentText, callback) {
     const sql = `
     UPDATE notes 
-    SET content_json = ?, updated_at = CURRENT_TIMESTAMP 
+    SET topic = ?, content_json = ?, updated_at = CURRENT_TIMESTAMP 
     WHERE id = ?
   `;
-    db.run(sql, [JSON.stringify(contentJson), id], async function (err) {
+    db.run(sql, [topic, JSON.stringify(contentJson), id], async function (err) {
         if (err) {
             callback(err);
             return;
@@ -219,7 +219,7 @@ function updateNoteLastViewed(id, callback) {
 // Get all favorite notes
 function getFavoriteNotes(callback) {
     const sql = `
-    SELECT notes.id, notes.title, notes.favorite, notes.folder_id, notes.updated_at, folders.name AS folder_name
+    SELECT notes.id, notes.title, notes.topic, notes.favorite, notes.folder_id, notes.updated_at, folders.name AS folder_name
     FROM notes
     LEFT JOIN folders ON notes.folder_id = folders.id
     WHERE favorite = 1
@@ -233,7 +233,7 @@ function getFavoriteNotes(callback) {
 // Get all recently viewed notes (top 10)
 function getLastViewedNotes(callback) {
     const sql = `
-    SELECT notes.id, notes.title, notes.favorite, notes.folder_id, notes.updated_at, 
+    SELECT notes.id, notes.title, notes.topic, notes.favorite, notes.folder_id, notes.updated_at, 
            notes.last_viewed_at, folders.name AS folder_name
     FROM notes
     LEFT JOIN folders ON notes.folder_id = folders.id
