@@ -13,7 +13,7 @@
         v-for="(note, index) in message.sources"
         :key="index"
         variant="outlined"
-        prepend-icon="mdi-file-document-outline"
+        prepend-icon="ph-file-text"
         @click="openNote(note.id)"
         class="text-none text-label-large"
         >

@@ -30,7 +30,7 @@ const props = defineProps({
     },
     icon: {
         type: String,
-        default: 'mdi-text-box-outline'
+        default: 'ph-note'
     }
 })
 </script>

@@ -26,7 +26,7 @@
                             <EmptyState
                             title="No favorite notes yet"
                             text="Mark a note as favorite and it will appear here."
-                            icon="mdi-heart-outline"
+                            icon="ph-heart"
                             />
                         </v-col>
                     </v-row>
@@ -59,7 +59,7 @@
                         <EmptyState
                         title="No recently viewed notes yet"
                         text="Open a note and it will appear here."
-                        icon="mdi-history"
+                        icon="ph-clock-counter-clockwise"
                         />
                     </v-col>
                 </v-row>

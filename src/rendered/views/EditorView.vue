@@ -20,7 +20,7 @@
             <v-tooltip text="Undo" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().undo().run()">
-                        <v-icon>mdi-undo</v-icon>
+                        <v-icon>ph-arrow-counter-clockwise</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -28,7 +28,7 @@
             <v-tooltip text="Redo" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().redo().run()">
-                        <v-icon>mdi-redo</v-icon>
+                        <v-icon>ph-arrow-clockwise</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -36,7 +36,7 @@
             <v-tooltip text="Save" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="saveNoteManually">
-                        <v-icon>mdi-content-save</v-icon>
+                        <v-icon>ph-floppy-disk</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -46,31 +46,31 @@
                     <v-menu>
                         <template v-slot:activator="{ props: menuProps }">
                             <v-btn v-bind="{ ...tooltipProps, ...menuProps }">
-                                <v-icon>mdi-dots-horizontal</v-icon>
+                                <v-icon>ph-dots-three</v-icon>
                             </v-btn>
                         </template>
                         <v-list density="compact">
                             <v-list-item @click="toggleFavorite(note.id)">
                                 <template v-slot:prepend>
-                                    <v-icon :icon="note.favorite === 1 ? 'mdi-heart-broken' : 'mdi-heart'"></v-icon>
+                                    <v-icon :icon="note.favorite === 1 ? 'ph-heart-break' : 'ph-heart'"></v-icon>
                                 </template>
                                 <v-list-item-title>{{ note.favorite === 1 ? 'Unfavorite' : 'Favorite' }}</v-list-item-title>
                             </v-list-item>
                             <v-list-item @click="renameNoteDialog = true">
                                 <template v-slot:prepend>
-                                    <v-icon>mdi-rename</v-icon>
+                                    <v-icon>ph-pencil-line</v-icon>
                                 </template>
                                 <v-list-item-title>Rename</v-list-item-title>
                             </v-list-item>
                             <v-list-item @click="moveToFolderDialog = true">
                                 <template v-slot:prepend>
-                                    <v-icon>mdi-file-move</v-icon>
+                                    <v-icon>ph-export</v-icon>
                                 </template>
                                 <v-list-item-title>Move</v-list-item-title>
                             </v-list-item>
                             <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)">
                                 <template v-slot:prepend>
-                                    <v-icon>mdi-delete</v-icon>
+                                    <v-icon>ph-trash</v-icon>
                                 </template>
                                 <v-list-item-title>Delete</v-list-item-title>
                             </v-list-item>
@@ -87,52 +87,52 @@
 <div class="d-flex justify-left align-center pa-2 mt-2 ai-actions">
     <v-tooltip text="Generate with AI" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="generateWithAIDialog = !generateWithAIDialog" class="ma-2" variant="outlined" prepend-icon="mdi-lightbulb" rounded="lg" :color="theme === 'dark' ? 'amber' : 'orange-darken-4'">Generate</v-btn>
+            <v-btn v-bind="props" @click="generateWithAIDialog = !generateWithAIDialog" class="ma-2" variant="outlined" prepend-icon="ph-lightbulb" rounded="lg" :color="theme === 'dark' ? 'amber' : 'orange-darken-4'">Generate</v-btn>
         </template>
     </v-tooltip>
     <v-tooltip text="Edit with AI" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiEdit" class="ma-2" variant="outlined" prepend-icon="mdi-pencil" rounded="lg" color="primary">Edit</v-btn>
+            <v-btn v-bind="props" @click="aiEdit" class="ma-2" variant="outlined" prepend-icon="ph-pencil-simple" rounded="lg" color="primary">Edit</v-btn>
         </template>
     </v-tooltip>
     <v-tooltip text="Fix spelling & grammar" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiFixGrammar()" class="ma-2" variant="outlined" prepend-icon="mdi-spellcheck" rounded="lg" :color="theme === 'dark' ? 'teal-lighten-1' : 'teal-darken-4'">Fix</v-btn>
+            <v-btn v-bind="props" @click="aiFixGrammar()" class="ma-2" variant="outlined" prepend-icon="ph-text-aa" rounded="lg" :color="theme === 'dark' ? 'teal-lighten-1' : 'teal-darken-4'">Fix</v-btn>
         </template>
     </v-tooltip>
     <v-tooltip text="Format text with AI" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiFormatText()" class="ma-2" variant="outlined" prepend-icon="mdi-format-letter-case-lower" rounded="lg" :color="theme === 'dark' ? 'blue-grey-lighten-3' : 'blue-grey-darken-4'">Format</v-btn>
+            <v-btn v-bind="props" @click="aiFormatText()" class="ma-2" variant="outlined" prepend-icon="ph-text-t" rounded="lg" :color="theme === 'dark' ? 'blue-grey-lighten-3' : 'blue-grey-darken-4'">Format</v-btn>
         </template>
     </v-tooltip>
     <v-menu>
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" class="ma-2" variant="outlined" prepend-icon="mdi-chevron-down" rounded="lg">Other</v-btn>
+            <v-btn v-bind="props" class="ma-2" variant="outlined" prepend-icon="ph-caret-down" rounded="lg">Other</v-btn>
         </template>
         <v-list density="compact">
             <!-- Edit submenu (no Format here) -->
             <v-list-subheader>Edit</v-list-subheader>
             <v-list-item @click="aiImproveWriting()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-pencil"></v-icon>
+                    <v-icon icon="ph-pencil-simple"></v-icon>
                 </template>
                 <v-list-item-title>Improve writing</v-list-item-title>
             </v-list-item>
             <v-list-item @click="aiMakeShorter()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-text-short"></v-icon>
+                    <v-icon icon="ph-text-align-left"></v-icon>
                 </template>
                 <v-list-item-title>Summarize</v-list-item-title>
             </v-list-item>
             <v-list-item @click="aiMakeLonger()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-text-long"></v-icon>
+                    <v-icon icon="ph-text-align-justify"></v-icon>
                 </template>
                 <v-list-item-title>Expand</v-list-item-title>
             </v-list-item>
             <v-list-item @click="aiSimplify()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-alphabetical-variant"></v-icon>
+                    <v-icon icon="ph-text-aa"></v-icon>
                 </template>
                 <v-list-item-title>Simplify language</v-list-item-title>
             </v-list-item>
@@ -142,10 +142,10 @@
                 <template v-slot:activator="{ props }">
                     <v-list-item v-bind="props">
                         <template v-slot:prepend>
-                            <v-icon icon="mdi-tune-variant"></v-icon>
+                            <v-icon icon="ph-sliders-horizontal"></v-icon>
                         </template>
                         <template v-slot:append>
-                            <v-icon icon="mdi-chevron-right"></v-icon>
+                            <v-icon icon="ph-caret-right"></v-icon>
                         </template>
                         <v-list-item-title>Change tone to</v-list-item-title>
                     </v-list-item>
@@ -165,10 +165,10 @@
                 <template v-slot:activator="{ props }">
                     <v-list-item v-bind="props">
                         <template v-slot:prepend>
-                            <v-icon icon="mdi-translate"></v-icon>
+                            <v-icon icon="ph-translate"></v-icon>
                         </template>
                         <template v-slot:append>
-                            <v-icon icon="mdi-chevron-right"></v-icon>
+                            <v-icon icon="ph-caret-right"></v-icon>
                         </template>
                         <v-list-item-title>Translate to</v-list-item-title>
                     </v-list-item>
@@ -210,7 +210,7 @@
             <v-tooltip text="Bold (⌘B)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleBold().run()">
-                        <v-icon>mdi-format-bold</v-icon>
+                        <v-icon>ph-text-b</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -218,7 +218,7 @@
             <v-tooltip text="Italic (⌘I)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleItalic().run()">
-                        <v-icon>mdi-format-italic</v-icon>
+                        <v-icon>ph-text-italic</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -226,7 +226,7 @@
             <v-tooltip text="Underline (⌘U)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleUnderline().run()">
-                        <v-icon>mdi-format-underline</v-icon>
+                        <v-icon>ph-text-underline</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -234,7 +234,7 @@
             <v-tooltip text="Strike (⌘⇧S)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleStrike().run()">
-                        <v-icon>mdi-format-strikethrough</v-icon>
+                        <v-icon>ph-text-strikethrough</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -242,7 +242,7 @@
             <v-tooltip text="Superscript (⌘.)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleSuperscript().run()">
-                        <v-icon>mdi-format-superscript</v-icon>
+                        <v-icon>ph-text-superscript</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -250,7 +250,7 @@
             <v-tooltip text="Subscript (⌘,)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleSubscript().run()">
-                        <v-icon>mdi-format-subscript</v-icon>
+                        <v-icon>ph-text-subscript</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -258,7 +258,7 @@
             <v-tooltip text="Inline code (⌘E)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleCode().run()">
-                        <v-icon>mdi-code-tags</v-icon>
+                        <v-icon>ph-code</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -277,7 +277,7 @@
                 width="135px"
                 v-bind="props"
                 variant="text"
-                prepend-icon="mdi-chevron-down"
+                prepend-icon="ph-caret-down"
                 >
                 Style
             </v-btn>
@@ -287,63 +287,63 @@
             <!-- Paragraph -->
             <v-list-item @click="editor.commands.setParagraph()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-paragraph"></v-icon>
+                    <v-icon icon="ph-paragraph"></v-icon>
                 </template>
                 <v-list-item-title>Paragraph</v-list-item-title>
             </v-list-item>
             <!-- Heading 1 -->
             <v-list-item @click="editor.commands.toggleHeading({ level: 1 })">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-header-1"></v-icon>
+                    <v-icon icon="ph-text-h-one"></v-icon>
                 </template>
                 <v-list-item-title>Heading 1</v-list-item-title>
             </v-list-item>
             <!-- Heading 2 -->
             <v-list-item @click="editor.commands.toggleHeading({ level: 2 })">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-header-2"></v-icon>
+                    <v-icon icon="ph-text-h-two"></v-icon>
                 </template>
                 <v-list-item-title>Heading 2</v-list-item-title>
             </v-list-item>
             <!-- Heading 3 -->
             <v-list-item @click="editor.commands.toggleHeading({ level: 3 })">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-header-3"></v-icon>
+                    <v-icon icon="ph-text-h-three"></v-icon>
                 </template>
                 <v-list-item-title>Heading 3</v-list-item-title>
             </v-list-item>
             <!-- Bullet list -->
             <v-list-item @click="editor.commands.toggleBulletList()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-list-bulleted"></v-icon>
+                    <v-icon icon="ph-list-bullets"></v-icon>
                 </template>
                 <v-list-item-title>Bullet list</v-list-item-title>
             </v-list-item>
             <!-- Numbered list -->
             <v-list-item @click="editor.commands.toggleOrderedList()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-list-numbered"></v-icon>
+                    <v-icon icon="ph-list-numbers"></v-icon>
                 </template>
                 <v-list-item-title>Numbered list</v-list-item-title>
             </v-list-item>
             <!-- Task list -->
             <v-list-item @click="editor.commands.toggleTaskList()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-list-checkbox"></v-icon>
+                    <v-icon icon="ph-list-checks"></v-icon>
                 </template>
                 <v-list-item-title>Task list</v-list-item-title>
             </v-list-item>
             <!-- Blockquote -->
             <v-list-item @click="editor.commands.toggleBlockquote()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-quote-open"></v-icon>
+                    <v-icon icon="ph-quotes"></v-icon>
                 </template>
                 <v-list-item-title>Quote</v-list-item-title>
             </v-list-item>
             <!-- Code block -->
             <v-list-item @click="editor.commands.toggleCodeBlock()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-code-tags"></v-icon>
+                    <v-icon icon="ph-code"></v-icon>
                 </template>
                 <v-list-item-title>Code block</v-list-item-title>
             </v-list-item>
@@ -359,7 +359,7 @@
             width="135px"
             v-bind="props"
             variant="text"
-            prepend-icon="mdi-marker"
+            prepend-icon="ph-highlighter"
             >
             Highlight
         </v-btn>
@@ -391,7 +391,7 @@
         width="135px"
         v-bind="props"
         variant="text"
-        prepend-icon="mdi-palette"
+        prepend-icon="ph-palette"
         >
         Color
     </v-btn>
@@ -563,11 +563,11 @@
     
     // Init list with supported tones for change tone tool
     const supportedTones = [
-    { key: 'professional', icon: 'mdi-briefcase', label: 'Professional' },
-    { key: 'friendly', icon: 'mdi-emoticon-happy', label: 'Friendly' },
-    { key: 'empathetic', icon: 'mdi-handshake', label: 'Empathetic' },
-    { key: 'persuasive', icon: 'mdi-creation', label: 'Persuasive' },
-    { key: 'casual', icon: 'mdi-emoticon-cool', label: 'Casual' }
+    { key: 'professional', icon: 'ph-briefcase', label: 'Professional' },
+    { key: 'friendly', icon: 'ph-smiley', label: 'Friendly' },
+    { key: 'empathetic', icon: 'ph-handshake', label: 'Empathetic' },
+    { key: 'persuasive', icon: 'ph-sparkle', label: 'Persuasive' },
+    { key: 'casual', icon: 'ph-smiley-wink', label: 'Casual' }
     ]
     
     // Init list with supported languages for translation tool

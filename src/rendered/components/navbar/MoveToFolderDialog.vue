@@ -7,7 +7,7 @@
         <v-card rounded="xl" elevation="8">
             <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
                 <v-avatar color="teal-lighten-5" size="36" class="mr-3">
-                    <v-icon size="22" color="teal-darken-2">mdi-file-move</v-icon>
+                    <v-icon size="22" color="teal-darken-2">ph-export</v-icon>
                 </v-avatar>
                 <div>
                     <div class="text-headline-small">Move note to</div>

@@ -28,14 +28,14 @@
     
     <div class="d-flex flex-column justify-end" style="position: absolute; bottom: 16px;">
         <div class="d-flex align-center" v-if="props.showUpdatedAt">
-            <v-icon size="small" class="mr-4">mdi-clock-edit-outline</v-icon>
+            <v-icon size="small" class="mr-4">ph-clock-clockwise</v-icon>
             <div class="d-flex flex-column">
                 <span class="text-body-medium">{{ updatedAtParts.date }} {{ updatedAtParts.time }}</span>
             </div>
         </div>
         
         <div class="d-flex align-center" v-if="props.showAccessedAt">
-            <v-icon size="small" class="mr-4">mdi-eye-outline</v-icon>
+            <v-icon size="small" class="mr-4">ph-eye</v-icon>
             <div class="d-flex flex-column">
                 <span class="text-body-medium">{{ lastViewedAtParts.date }} {{ lastViewedAtParts.time }}</span>
             </div>

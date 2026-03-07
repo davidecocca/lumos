@@ -7,7 +7,7 @@
         <v-card rounded="xl" elevation="8">
             <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
                 <v-avatar color="amber-lighten-5" size="36" class="mr-3">
-                    <v-icon size="22" color="amber-darken-2">mdi-alert-circle</v-icon>
+                    <v-icon size="22" color="amber-darken-2">ph-warning-circle</v-icon>
                 </v-avatar>
                 <div class="text-headline-small">{{ confirmationDialogTitle }}</div>
             </v-card-title>

@@ -7,7 +7,7 @@
         <v-card rounded="xl" elevation="8">
             <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
                 <v-avatar color="purple-lighten-5" size="36" class="mr-3">
-                    <v-icon size="22" color="purple-darken-2">mdi-note-plus</v-icon>
+                    <v-icon size="22" color="purple-darken-2">ph-note-pencil</v-icon>
                 </v-avatar>
                 <div>
                     <div class="text-headline-small">New note</div>

@@ -7,7 +7,7 @@
     <v-card rounded="xl" elevation="8">
         <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
             <v-avatar color="blue-lighten-4" size="36" class="mr-3">
-                <v-icon size="24" color="blue-darken-2">mdi-pencil</v-icon>
+                <v-icon size="24" color="blue-darken-2">ph-pencil-simple</v-icon>
             </v-avatar>
             <div>
                 <div class="text-headline-small">Edit with AI</div>
@@ -77,7 +77,7 @@
     <v-btn variant="text" @click="closeDialog">Close</v-btn>
     <v-btn
     color="success"
-    prepend-icon="mdi-check"
+    prepend-icon="ph-check"
     :disabled="!aiText || isAITextLoading"
     @click="applyText"
     >
@@ -85,7 +85,7 @@
 </v-btn>
     <v-btn
     color="primary"
-    prepend-icon="mdi-creation"
+    prepend-icon="ph-sparkle"
     :disabled="!userText || isAITextLoading"
     :loading="isAITextLoading"
     @click="editWithAI"
@@ -119,7 +119,7 @@
     const isAITextLoading = ref(false)
     
     const copyIconState = reactive({
-        icon: 'mdi-content-copy',
+        icon: 'ph-copy',
         color: '',
         animate: false
     })
@@ -185,12 +185,12 @@
             copyIconState.animate = true
             
             // Change to checkmark icon and make it green
-            copyIconState.icon = 'mdi-check-circle'
+            copyIconState.icon = 'ph-check-circle'
             copyIconState.color = 'success'
             
             // Reset the icon after 1.5 seconds
             setTimeout(() => {
-                copyIconState.icon = 'mdi-content-copy'
+                copyIconState.icon = 'ph-copy'
                 copyIconState.color = ''
                 
                 // Remove animation class after the transition is complete

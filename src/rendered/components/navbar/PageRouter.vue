@@ -23,7 +23,7 @@ height="48"
 >
 <template v-slot:prepend>
     <v-icon 
-    :icon="currentRoute.name === 'home' ? 'mdi-home' : 'mdi-home-outline'"
+    :icon="currentRoute.name === 'home' ? 'ph-house' : 'ph-house-line'"
     ></v-icon>
 </template>
 <template v-slot:title>
@@ -39,7 +39,7 @@ height="48"
 >
 <template v-slot:prepend>
     <v-icon 
-    :icon="currentRoute.name === 'settings' ? 'mdi-cog' : 'mdi-cog-outline'"
+    :icon="currentRoute.name === 'settings' ? 'ph-gear-six' : 'ph-gear'"
     ></v-icon>
 </template>
 <template v-slot:title>

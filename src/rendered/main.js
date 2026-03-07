@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, h } from 'vue'
 import router from './router/router'
 import { createPinia } from 'pinia'
 
@@ -7,16 +7,39 @@ import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+import { aliases as vuetifyPhAliases } from 'vuetify/iconsets/ph'
 
 // Components
 import App from './App.vue'
 
 // Styles
-import '@mdi/font/css/materialdesignicons.css'
+import '@phosphor-icons/web/regular'
+
+const phAliases = Object.fromEntries(
+    Object.entries(vuetifyPhAliases).map(([name, icon]) => [
+        name,
+        typeof icon === 'string' && icon.startsWith('i-ph:')
+            ? `ph-${icon.slice('i-ph:'.length)}`
+            : icon,
+    ]),
+)
+
+const ph = {
+    component: (props) => h(props.tag, {
+        class: ['ph', props.icon],
+    }),
+}
 
 const vuetify = createVuetify({
     components,
     directives,
+    icons: {
+        defaultSet: 'ph',
+        aliases: phAliases,
+        sets: {
+            ph,
+        },
+    },
     theme: {
         defaultTheme: 'light',
     }
