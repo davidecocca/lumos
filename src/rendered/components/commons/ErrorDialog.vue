@@ -8,9 +8,9 @@
         <v-card rounded="xl" elevation="8">
             <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
                 <v-avatar color="red-lighten-5" size="36" class="mr-3">
-                    <v-icon size="22" color="red-darken-2">mdi-alert-circle</v-icon>
+                    <v-icon size="22" color="red-darken-2">ph-warning-circle</v-icon>
                 </v-avatar>
-                <div class="text-h6">{{ errorDialogTitle }}</div>
+                <div class="text-headline-small">{{ errorDialogTitle }}</div>
             </v-card-title>
 
             <v-card-text class="px-6 pb-0">

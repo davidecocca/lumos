@@ -15,7 +15,7 @@
                 <v-btn
                 v-bind="props"
                 variant="text"
-                icon="mdi-plus"
+                icon="ph-plus"
                 @click="resetChat"
                 ></v-btn>
             </template>
@@ -27,7 +27,7 @@
                 <v-btn
                 v-bind="props"
                 variant="text"
-                :icon="isChatFullscreen ? 'mdi-arrow-collapse' : 'mdi-arrow-expand'"
+                :icon="isChatFullscreen ? 'ph-arrows-in-simple' : 'ph-arrows-out-simple'"
                 @click="toggleChatExpansion"
                 ></v-btn>
             </template>
@@ -86,7 +86,7 @@
                 <template v-slot:activator="{ props }">
                     <v-icon
                     v-bind="props"
-                    icon="mdi-send"
+                    icon="ph-paper-plane-right"
                     @click="sendMessage()"
                     class="ml-2"
                     />
@@ -98,7 +98,7 @@
 
 <v-card-actions class="align-left">
     <v-icon
-    icon="mdi-filter"
+    icon="ph-funnel"
     size="x-small"
     class="ml-3"
     />
@@ -115,7 +115,7 @@
     ></v-select>
     
     <v-icon
-    icon="mdi-robot"
+    icon="ph-robot"
     size="x-small"
     />
     <v-select
@@ -129,8 +129,8 @@
     :menu-props="{ maxHeight: '500px' }"
     hide-details
     >
-    <template v-slot:item="{ props: itemProps, item }">
-        <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle"></v-list-item>
+    <template v-slot:item="{ props: itemProps, internalItem }">
+        <v-list-item v-bind="itemProps" :subtitle="internalItem.raw.subtitle"></v-list-item>
     </template>
 </v-select>
 </v-card-actions>

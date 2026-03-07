@@ -24,8 +24,8 @@
             clearable
             variant="outlined"
             >
-            <template v-slot:item="{ props: itemProps, item }">
-                <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle"></v-list-item>
+            <template v-slot:item="{ props: itemProps, internalItem }">
+                <v-list-item v-bind="itemProps" :subtitle="internalItem.raw.subtitle"></v-list-item>
             </template>
         </v-select>
         
@@ -43,8 +43,8 @@
         clearable
         variant="outlined"
         >
-        <template v-slot:item="{ props: itemProps, item }">
-            <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle"></v-list-item>
+        <template v-slot:item="{ props: itemProps, internalItem }">
+            <v-list-item v-bind="itemProps" :subtitle="internalItem.raw.subtitle"></v-list-item>
         </template>
     </v-select>
 </v-card-text>
@@ -65,7 +65,7 @@ elevation="0"
             :type="showGroqKey ? 'text' : 'password'"
             class="flex-grow-1 mr-4"
             v-model="groqApiKey"
-            :append-inner-icon="showGroqKey ? 'mdi-eye' : 'mdi-eye-off'"
+            :append-inner-icon="showGroqKey ? 'ph-eye' : 'ph-eye-slash'"
             @click:append-inner="showGroqKey = !showGroqKey"
             @keydown.enter="saveGroqApiKey"
             variant="outlined"
@@ -88,7 +88,7 @@ elevation="0"
         :type="showOpenAIKey ? 'text' : 'password'"
         class="flex-grow-1 mr-4"
         v-model="openaiApiKey" 
-        :append-inner-icon="showOpenAIKey ? 'mdi-eye' : 'mdi-eye-off'"
+        :append-inner-icon="showOpenAIKey ? 'ph-eye' : 'ph-eye-slash'"
         @click:append-inner="showOpenAIKey = !showOpenAIKey"
         @keydown.enter="saveOpenAIApiKey"
         variant="outlined"
