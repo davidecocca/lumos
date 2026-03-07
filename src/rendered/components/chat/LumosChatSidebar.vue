@@ -129,8 +129,8 @@
     :menu-props="{ maxHeight: '500px' }"
     hide-details
     >
-    <template v-slot:item="{ props: itemProps, item }">
-        <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle"></v-list-item>
+    <template v-slot:item="{ props: itemProps, internalItem }">
+        <v-list-item v-bind="itemProps" :subtitle="internalItem.raw.subtitle"></v-list-item>
     </template>
 </v-select>
 </v-card-actions>

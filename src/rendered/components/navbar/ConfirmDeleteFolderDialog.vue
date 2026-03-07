@@ -9,7 +9,7 @@
                 <v-avatar color="amber-lighten-5" size="36" class="mr-3">
                     <v-icon size="22" color="amber-darken-2">mdi-alert-circle</v-icon>
                 </v-avatar>
-                <div class="text-h6">{{ confirmationDialogTitle }}</div>
+                <div class="text-headline-small">{{ confirmationDialogTitle }}</div>
             </v-card-title>
 
             <v-card-text class="px-6 pb-4">

@@ -10,8 +10,8 @@
                     <v-icon size="22" color="blue-darken-2">mdi-folder-plus</v-icon>
                 </v-avatar>
                 <div>
-                    <div class="text-h6">New folder</div>
-                    <div class="text-subtitle-2 text-medium-emphasis">Keep your notes organized by creating a folder.</div>
+                    <div class="text-headline-small">New folder</div>
+                    <div class="text-label-large text-medium-emphasis">Keep your notes organized by creating a folder.</div>
                 </div>
             </v-card-title>
 

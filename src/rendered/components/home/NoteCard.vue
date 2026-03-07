@@ -18,7 +18,7 @@
 </v-chip>
 
 <v-card-item class="mt-2">
-    <p class="text-body-2" style="
+    <p class="text-body-medium ma-0" style="
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
@@ -30,14 +30,14 @@
         <div class="d-flex align-center" v-if="props.showUpdatedAt">
             <v-icon size="small" class="mr-4">mdi-clock-edit-outline</v-icon>
             <div class="d-flex flex-column">
-                <span class="text-body-2">{{ updatedAtParts.date }} {{ updatedAtParts.time }}</span>
+                <span class="text-body-medium">{{ updatedAtParts.date }} {{ updatedAtParts.time }}</span>
             </div>
         </div>
         
         <div class="d-flex align-center" v-if="props.showAccessedAt">
             <v-icon size="small" class="mr-4">mdi-eye-outline</v-icon>
             <div class="d-flex flex-column">
-                <span class="text-body-2">{{ lastViewedAtParts.date }} {{ lastViewedAtParts.time }}</span>
+                <span class="text-body-medium">{{ lastViewedAtParts.date }} {{ lastViewedAtParts.time }}</span>
             </div>
         </div>
     </div>

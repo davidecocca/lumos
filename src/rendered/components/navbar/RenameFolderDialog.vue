@@ -10,8 +10,8 @@
                     <v-icon size="22" color="blue-darken-2">mdi-folder-edit</v-icon>
                 </v-avatar>
                 <div>
-                    <div class="text-h6">Rename folder</div>
-                    <div class="text-subtitle-2 text-medium-emphasis">Enter a new name for the folder.</div>
+                    <div class="text-headline-small">Rename folder</div>
+                    <div class="text-label-large text-medium-emphasis">Enter a new name for the folder.</div>
                 </div>
             </v-card-title>
 

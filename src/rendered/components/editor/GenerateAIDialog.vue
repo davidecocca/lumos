@@ -10,8 +10,8 @@
                 <v-icon size="24" color="orange-darken-2">mdi-lightbulb</v-icon>
             </v-avatar>
             <div>
-                <div class="text-h6">Generate with AI</div>
-                <div class="text-subtitle-2 text-medium-emphasis">Type your idea and watch it come alive.</div>
+                <div class="text-headline-small">Generate with AI</div>
+                <div class="text-label-large text-medium-emphasis">Type your idea and watch it come alive.</div>
             </div>
             <v-spacer />
         </v-card-title>
@@ -61,7 +61,7 @@
 
 <v-divider />
 <v-card-actions class="px-6 py-3">
-    <span class="text-caption text-medium-emphasis">Tip: Press ⌘⏎ to generate</span>
+    <span class="text-body-small text-medium-emphasis">Tip: Press ⌘⏎ to generate</span>
     <v-spacer />
     <v-btn variant="text" @click="closeDialog">Close</v-btn>
     <v-btn

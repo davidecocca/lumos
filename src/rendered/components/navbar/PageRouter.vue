@@ -11,7 +11,7 @@
         />
     </template>
     <template v-slot:title>
-        <span class="font-weight-medium text-h5 ml-1">Lumos</span>
+        <span class="font-weight-medium text-headline-medium ml-1">Lumos</span>
     </template>
 </v-list-item>
 

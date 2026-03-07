@@ -10,8 +10,8 @@
                     <v-icon size="22" color="teal-darken-2">mdi-file-move</v-icon>
                 </v-avatar>
                 <div>
-                    <div class="text-h6">Move note to</div>
-                    <div class="text-subtitle-2 text-medium-emphasis">Select a folder to move the note to.</div>
+                    <div class="text-headline-small">Move note to</div>
+                    <div class="text-label-large text-medium-emphasis">Select a folder to move the note to.</div>
                 </div>
             </v-card-title>
 

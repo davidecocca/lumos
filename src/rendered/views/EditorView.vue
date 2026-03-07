@@ -2,7 +2,7 @@
     <!-- Flex container to place button toggle and text field on the same line -->
     <div v-if="note" class="d-flex align-center">
         <div class="d-flex flex-column ml-4">
-            <p class="text-h4 font-weight-medium">{{ note.title }}</p>
+            <p class="text-headline-large font-weight-medium ma-0">{{ note.title }}</p>
             <div class="d-inline-flex mt-2">
                 <v-chip
                 color="primary"
@@ -366,7 +366,7 @@
     </template>
     <!-- Card with all color to highlight -->
     <v-card class="pa-2 rounded-lg elevation-4" max-width="340" :style="{ backgroundColor: backgroundColor }">
-        <v-row dense>
+        <v-row density="compact">
             <v-col v-for="(color, index) in highlightColors" :key="index" cols="3">
                 <v-btn
                 :style="{ backgroundColor: color.displayedColor }"
@@ -398,7 +398,7 @@
 </template>
 <!-- Card with all color for the text -->
 <v-card class="pa-2 rounded-lg elevation-4" max-width="340" :style="{ backgroundColor: backgroundColor }">
-    <v-row dense>
+    <v-row density="compact">
         <v-col v-for="(color, index) in textColors" :key="index" cols="3">
             <v-btn
             :style="{ backgroundColor: color.displayedColor }"

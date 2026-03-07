@@ -15,7 +15,7 @@
         variant="outlined"
         prepend-icon="mdi-file-document-outline"
         @click="openNote(note.id)"
-        class="text-none text-subtitle-2"
+        class="text-none text-label-large"
         >
         {{ note.folderName }} / {{ note.title }}
     </v-chip>

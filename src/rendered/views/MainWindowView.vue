@@ -1,9 +1,9 @@
 <template>
     <!-- App bar -->
     <v-app-bar
-    elevation="1"
+    elevation="0"
     density="compact"
-    :class="['drag', { 'pl-16': !isFullscreen }]"
+    :class="['drag border', { 'pl-16': !isFullscreen }]"
     >
     <v-app-bar-nav-icon variant="text" @click.stop="toggleNavbar" class="no-drag"/>
     <v-spacer></v-spacer>
