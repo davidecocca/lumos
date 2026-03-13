@@ -7,7 +7,7 @@
     >
     <template v-slot:prepend>
         <v-icon 
-        icon="ph-house"
+        :icon="currentRoute.name === 'home' ? 'ph-house-fill' : 'ph-house'"
         ></v-icon>
     </template>
     <template v-slot:title>
@@ -23,7 +23,7 @@ height="48"
 >
 <template v-slot:prepend>
     <v-icon 
-    icon="ph-gear"
+    :icon="currentRoute.name === 'settings' ? 'ph-gear-fill' : 'ph-gear'"
     ></v-icon>
 </template>
 <template v-slot:title>

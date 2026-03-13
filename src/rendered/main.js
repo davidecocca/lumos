@@ -13,6 +13,7 @@ import { aliases as vuetifyPhAliases } from 'vuetify/iconsets/ph'
 import App from './App.vue'
 
 // Styles
+import '@phosphor-icons/web/fill'
 import '@phosphor-icons/web/regular'
 
 const phAliases = Object.fromEntries(
@@ -25,9 +26,14 @@ const phAliases = Object.fromEntries(
 )
 
 const ph = {
-    component: (props) => h(props.tag, {
-        class: ['ph', props.icon],
-    }),
+    component: (props) => {
+        const isFill = typeof props.icon === 'string' && props.icon.endsWith('-fill')
+        const iconClass = isFill ? props.icon.slice(0, -'-fill'.length) : props.icon
+
+        return h(props.tag, {
+            class: [isFill ? 'ph-fill' : 'ph', iconClass],
+        })
+    },
 }
 
 const vuetify = createVuetify({
