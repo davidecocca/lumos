@@ -146,7 +146,7 @@
     }
     
     .sidebar-box .nav-content {
-        padding: 8px 12px 16px 12px;
+        padding: 0px 12px 2px 12px;
         overflow-y: auto;
     }
     
