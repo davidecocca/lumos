@@ -68,7 +68,15 @@
     </div>
     <v-list-group v-for="folder in folders" :key="folder.id" :prepend-icon="folder.isOpen ? 'ph-folder-open' : 'ph-folder'">
         <template v-slot:activator="{ props, isOpen }">
-            <v-list-item v-bind="props" class="pe-0" @click="store.toggleFolderOpen(folder)">
+            <v-list-item
+                v-bind="props"
+                class="pe-0"
+                :class="{ 'drop-target-folder': dropTargetFolderId === folder.id }"
+                @click="store.toggleFolderOpen(folder)"
+                @dragenter.prevent="handleFolderDragEnter(folder.id)"
+                @dragover.prevent="handleFolderDragOver(folder.id, $event)"
+                @drop.prevent="handleFolderDrop(folder.id)"
+            >
                 <template v-slot:append>
                     <div v-if="folder.loading" class="mr-2">
                         <v-progress-circular size="20" indeterminate></v-progress-circular>
@@ -107,7 +115,17 @@
                 <v-list-item-title>{{ folder.name }}</v-list-item-title>
             </v-list-item>
         </template>
-        <v-list-item v-for="(note, k) in folder.notes" :key="k" @click="store.openNote(note.id, router)" class="pr-1" :active="note.id === activeNoteId">
+        <v-list-item
+            v-for="(note, k) in folder.notes"
+            :key="k"
+            :draggable="true"
+            class="pr-1"
+            :class="{ 'dragging-note': draggingNoteId === note.id }"
+            :active="note.id === activeNoteId"
+            @click="store.openNote(note.id, router)"
+            @dragstart="handleNoteDragStart(note.id, folder.id, $event)"
+            @dragend="handleNoteDragEnd"
+        >
             <template v-slot:prepend>
                 <v-icon :icon="note.id === activeNoteId ? 'ph-file-text-fill' : 'ph-file-text'" />
             </template>
@@ -185,7 +203,7 @@
     
     import { useRouter } from 'vue-router'
     import { useFoldersStore } from '../../stores/foldersStore'
-    import { computed, onMounted } from 'vue'
+    import { computed, onMounted, ref } from 'vue'
     
     // Get the router and the Pinia store instance
     const router = useRouter()
@@ -235,6 +253,58 @@
     const errorDialogTitle = computed(() => store.errorDialogTitle)
     const errorDialogText = computed(() => store.errorDialogText)
     const errorDialogDetails = computed(() => store.errorDialogDetails)
+    const draggingNoteId = ref(null)
+    const draggedFromFolderId = ref(null)
+    const dropTargetFolderId = ref(null)
+
+    const resetDragState = () => {
+        draggingNoteId.value = null
+        draggedFromFolderId.value = null
+        dropTargetFolderId.value = null
+    }
+
+    const isValidDropTarget = (folderId) => {
+        return draggingNoteId.value !== null && draggedFromFolderId.value !== null && draggedFromFolderId.value !== folderId
+    }
+
+    const handleNoteDragStart = (noteId, folderId, event) => {
+        draggingNoteId.value = noteId
+        draggedFromFolderId.value = folderId
+        dropTargetFolderId.value = null
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move'
+            event.dataTransfer.dropEffect = 'move'
+            event.dataTransfer.setData('text/plain', String(noteId))
+        }
+    }
+
+    const handleNoteDragEnd = () => {
+        resetDragState()
+    }
+
+    const handleFolderDragEnter = (folderId) => {
+        if (!isValidDropTarget(folderId)) return
+        dropTargetFolderId.value = folderId
+    }
+
+    const handleFolderDragOver = (folderId, event) => {
+        if (!isValidDropTarget(folderId)) return
+        dropTargetFolderId.value = folderId
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move'
+        }
+    }
+
+    const handleFolderDrop = async (folderId) => {
+        if (!isValidDropTarget(folderId)) {
+            resetDragState()
+            return
+        }
+        const noteId = draggingNoteId.value
+        const sourceFolderId = draggedFromFolderId.value
+        resetDragState()
+        await store.moveNote(noteId, folderId, sourceFolderId, { revealTarget: true })
+    }
     
     onMounted(async () => {
         // Lazy load folders; only fetch notes when a folder is expanded.
@@ -243,3 +313,21 @@
         await store.fetchFavoriteNotes()
     })
 </script>
+
+<style scoped>
+    .drop-target-folder {
+        background: rgba(15, 23, 42, 0.06);
+        border-radius: 12px;
+        outline: 2px dashed rgba(15, 23, 42, 0.2);
+        outline-offset: -2px;
+    }
+
+    .dragging-note {
+        opacity: 0.45;
+    }
+
+    .v-theme--dark .drop-target-folder {
+        background: rgba(255, 255, 255, 0.08);
+        outline-color: rgba(255, 255, 255, 0.2);
+    }
+</style>
