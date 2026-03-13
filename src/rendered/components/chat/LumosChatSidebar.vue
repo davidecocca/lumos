@@ -89,7 +89,7 @@
         <div class="d-flex align-center">
             <v-menu location="top start">
                 <template v-slot:activator="{ props: menuProps }">
-                    <v-tooltip text="Select scope" location="top">
+                    <v-tooltip text="Choose context" location="top">
                         <template v-slot:activator="{ props: tooltipProps }">
                             <v-btn
                             v-bind="mergeProps(menuProps, tooltipProps)"
@@ -121,7 +121,7 @@
     <v-spacer />
     
     <div class="d-flex align-center ga-2 justify-end" style="min-width: 0;">
-        <div class="model-trigger-wrap" style="min-width: 0;">
+        <div class="model-trigger-wrap">
             <v-menu location="top end">
                 <template v-slot:activator="{ props: menuProps }">
                     <v-tooltip text="Pick model" location="top">
@@ -143,10 +143,14 @@
                 <v-list-item
                 v-for="item in availableChatModels"
                 :key="`${item.value.provider}-${item.value.model}`"
-                :title="item.title"
-                :subtitle="item.subtitle"
                 @click="selectModel(item.value)"
                 >
+                <template v-slot:prepend>
+                    <ModelProviderMark :provider="item.value.provider" class="me-3" />
+                </template>
+                <v-list-item-title class="text-no-wrap">
+                    {{ item.title }}
+                </v-list-item-title>
                 <template v-slot:append>
                     <v-icon
                     v-if="isModelSelected(item.value)"
@@ -185,12 +189,14 @@
 
 <script setup>
 import ChatCard from './ChatCard.vue'
+import ModelProviderMark from '../ai/ModelProviderMark.vue'
 
 import { createLlmService } from '../../services/llmService'
 import { aiPreferencesStore } from '../../stores/aiPreferencesStore';
 import { useFoldersStore } from '../../stores/foldersStore';
 import { useChatStore } from '../../stores/chatStore';
 import chatRagPrompt from '../../prompts/chatRagPrompt';
+import { buildModelItems } from '../../utils/modelProviders'
 
 import { ref, nextTick, computed, onMounted, watch, mergeProps } from 'vue'
 
@@ -229,13 +235,7 @@ const chatContainerHeight = computed(() => {
 
 // Available models for chat from all providers
 const availableChatModels = computed(() => {
-    return aiStore.availableProviders.flatMap(provider => 
-    aiStore.getProviderModels(provider).map(item => ({
-        title: item.label,
-        subtitle: provider,
-        value: { provider, model: item.value }
-    }))
-    );
+    return buildModelItems(aiStore.availableProviders, aiStore.getProviderModels)
 });
 
 // Selected model for chat

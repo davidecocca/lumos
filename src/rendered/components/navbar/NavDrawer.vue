@@ -2,6 +2,7 @@
     <v-navigation-drawer
     v-model="drawerOpen"
     width="350"
+    class="nav-drawer"
     >
     <div class="drawer-container">
         <div class="sidebar-box">
@@ -99,6 +100,10 @@
 </script>
 
 <style scoped>
+    .nav-drawer.v-theme--light {
+        background: #FAFAFA;
+    }
+
     .drawer-container {
         height: 100vh;
         position: relative;
@@ -133,8 +138,7 @@
     }
     
     .sidebar-box .nav-header {
-        background: rgba(255,255,255,0.85);
-        backdrop-filter: blur(10px);
+        background: #FAFAFA;
     }
     
     .v-theme--dark .sidebar-box .nav-header {

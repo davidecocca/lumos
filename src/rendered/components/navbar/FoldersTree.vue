@@ -10,12 +10,14 @@
         <v-list-item
         v-for="(note, k) in favoriteNotes"
         :key="k"
-        :title="note.title"
         prepend-icon="ph-file-text"
         @click="store.openNote(note.id, router)"
         class="pr-1"
         :active="note.id === activeNoteId"
         >
+        <template v-slot:title>
+            <span :class="{ 'font-weight-bold': note.id === activeNoteId }">{{ note.title }}</span>
+        </template>
         <template v-slot:append>
             <!-- Note action menu -->
             <v-menu>
@@ -103,7 +105,10 @@
                 <v-list-item-title>{{ folder.name }}</v-list-item-title>
             </v-list-item>
         </template>
-        <v-list-item v-for="(note, k) in folder.notes" :key="k" :title="note.title" prepend-icon="ph-file-text" @click="store.openNote(note.id, router)" class="pr-1" :active="note.id === activeNoteId">
+        <v-list-item v-for="(note, k) in folder.notes" :key="k" prepend-icon="ph-file-text" @click="store.openNote(note.id, router)" class="pr-1" :active="note.id === activeNoteId">
+            <template v-slot:title>
+                <span :class="{ 'font-weight-bold': note.id === activeNoteId }">{{ note.title }}</span>
+            </template>
             <template v-slot:append>
                 <v-menu>
                     <template v-slot:activator="{ props }">
