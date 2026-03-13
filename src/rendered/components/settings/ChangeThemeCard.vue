@@ -11,17 +11,17 @@
             <v-btn-toggle v-model="localTheme" mandatory color="primary" divided>
                 <v-btn value="light">
                     <span class="hidden-sm-and-down">Light</span>
-                    <v-icon end>mdi-white-balance-sunny</v-icon>
+                    <v-icon end>ph-sun</v-icon>
                 </v-btn>
                 
                 <v-btn value="dark">
                     <span class="hidden-sm-and-down">Dark</span>
-                    <v-icon end>mdi-moon-waning-crescent</v-icon>
+                    <v-icon end>ph-moon-stars</v-icon>
                 </v-btn>
                 
                 <v-btn value="auto">
                     <span class="hidden-sm-and-down">Auto</span>
-                    <v-icon end>mdi-theme-light-dark</v-icon>
+                    <v-icon end>ph-circle-half-tilt</v-icon>
                 </v-btn>
             </v-btn-toggle>
         </v-card-text>

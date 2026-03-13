@@ -1,14 +1,14 @@
 <template>
     <!-- App bar -->
     <v-app-bar
-    elevation="1"
+    elevation="0"
     density="compact"
-    :class="['drag', { 'pl-16': !isFullscreen }]"
+    :class="['drag border', { 'pl-16': !isFullscreen }]"
     >
-    <v-app-bar-nav-icon variant="text" @click.stop="toggleNavbar" class="no-drag"/>
+    <v-app-bar-nav-icon variant="text" @click.stop="toggleNavbar" class="no-drag" icon="ph:ph-sidebar-simple"/>
     <v-spacer></v-spacer>
     <v-btn
-    :icon="isChatOpen ? 'mdi-chat-remove-outline' : 'mdi-chat-plus-outline'"
+    icon="ph:ph-chat"
     variant="text"
     class="no-drag mr-2"
     @click="toggleChat"
