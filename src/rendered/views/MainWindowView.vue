@@ -7,19 +7,25 @@
     >
     <v-app-bar-nav-icon variant="text" @click.stop="toggleNavbar" class="no-drag" icon="ph:ph-sidebar-simple"/>
     <v-spacer></v-spacer>
-    <v-btn
-    icon="ph:ph-chat"
-    variant="text"
-    class="no-drag mr-2"
-    @click="toggleChat"
-    />
+    <v-tooltip text="Toggle chat (⌘L)" location="bottom">
+        <template v-slot:activator="{ props }">
+            <v-btn
+            v-bind="props"
+            icon="ph:ph-chat"
+            variant="text"
+            class="no-drag mr-2"
+            @click="toggleChat"
+            />
+        </template>
+    </v-tooltip>
 </v-app-bar>
 
 <!-- Navigation drawer -->
-<NavigationDrawer 
-:isDrawerOpen="isDrawerOpen"
-@update:isDrawerOpen="isDrawerOpen = $event"
-/>
+    <NavigationDrawer 
+    :isDrawerOpen="isDrawerOpen"
+    @update:isDrawerOpen="isDrawerOpen = $event"
+    @open-search="openSearch"
+    />
 
 <!-- Overlay for small screens when drawer is open -->
 <div 
@@ -39,6 +45,8 @@ class="drawer-overlay"
     </v-container>
 </v-main>
 
+<SearchDialog v-model="isSearchOpen" />
+
 <!-- Chat sidebar -->
 <v-navigation-drawer
 v-model="isChatOpen"
@@ -49,20 +57,28 @@ location="right"
 >
 <div class="chat-resizer" @mousedown="startResize"></div>
 <LumosChatSidebar 
+class="h-100"
 :isChatFullscreen="isChatFullscreen"
 :isChatOpen="isChatOpen"
+:isVisible="isChatOpen && !isChatFullscreen"
 @update:isChatFullscreen="isChatFullscreen = $event"
 @update:isChatOpen="isChatOpen = $event"
 />
 </v-navigation-drawer>
 
 <!-- Fullscreen chat dialog -->
-<v-dialog v-model="isChatFullscreen" max-width="1200">
-    <v-card>
-        <v-card-text>
+<v-dialog
+v-model="isChatFullscreen"
+max-width="1200"
+content-class="fullscreen-chat-dialog-content"
+>
+    <v-card class="fullscreen-chat-card" rounded="xl" elevation="0">
+        <v-card-text class="pa-0 fullscreen-chat-card-content">
             <LumosChatSidebar 
+            class="h-100"
             :isChatFullscreen="isChatFullscreen"
             :isChatOpen="isChatOpen"
+            :isVisible="isChatFullscreen"
             @update:isChatFullscreen="isChatFullscreen = $event"
             @update:isChatOpen="isChatOpen = $event"
             />
@@ -74,6 +90,7 @@ location="right"
 <script setup>
     import NavigationDrawer from '../components/navbar/NavDrawer.vue';
     import LumosChatSidebar from '../components/chat/LumosChatSidebar.vue';
+    import SearchDialog from '../components/navbar/SearchDialog.vue';
     
     import { aiPreferencesStore } from '../stores/aiPreferencesStore';
     import { useFoldersStore } from '../stores/foldersStore';
@@ -87,6 +104,7 @@ location="right"
     const { api } = window;
     
     const isDrawerOpen = ref(true);
+    const isSearchOpen = ref(false);
     
     // State for chat sidebar
     const isChatOpen = ref(false);
@@ -134,6 +152,77 @@ location="right"
     // Function to toggle chat sidebar
     const toggleChat = () => {
         isChatOpen.value = !isChatOpen.value;
+    }
+
+    const openSidebarChat = () => {
+        isChatFullscreen.value = false
+        isChatOpen.value = true
+    }
+
+    const closeSidebarChat = () => {
+        isChatOpen.value = false
+    }
+
+    const toggleSidebarChat = () => {
+        if (isChatOpen.value && !isChatFullscreen.value) {
+            closeSidebarChat()
+            return
+        }
+
+        openSidebarChat()
+    }
+
+    const openFullscreenChat = () => {
+        isSearchOpen.value = false
+        isChatOpen.value = false
+        isChatFullscreen.value = true
+    }
+
+    const closeFullscreenChat = () => {
+        isChatFullscreen.value = false
+    }
+
+    const toggleFullscreenChat = () => {
+        if (isChatFullscreen.value) {
+            closeFullscreenChat()
+            return
+        }
+
+        openFullscreenChat()
+    }
+
+    const openSearch = () => {
+        if (isChatFullscreen.value) {
+            isChatFullscreen.value = false
+        }
+        isSearchOpen.value = true;
+    }
+
+    const handleWindowKeyDown = (event) => {
+        const hasCommandModifier = event.metaKey || event.ctrlKey
+        if (!hasCommandModifier) return
+
+        const normalizedKey = event.key.toLowerCase()
+
+        if (normalizedKey === 'k') {
+            event.preventDefault()
+            isSearchOpen.value = !isSearchOpen.value
+            if (isSearchOpen.value && isChatFullscreen.value) {
+                isChatFullscreen.value = false
+            }
+            return
+        }
+
+        if (normalizedKey === 'l') {
+            event.preventDefault()
+
+            if (event.shiftKey) {
+                toggleFullscreenChat()
+                return
+            }
+
+            toggleSidebarChat()
+        }
     }
     
     // Resize functionality
@@ -210,6 +299,8 @@ location="right"
         
         // Load chat width
         chatWidth.value = parseInt(localStorage.getItem('chatWidth')) || 450;
+
+        window.addEventListener('keydown', handleWindowKeyDown);
     });
     
     onBeforeUnmount(() => {
@@ -218,6 +309,7 @@ location="right"
         
         // Remove the IPC listener for fullscreen changes to prevent memory leaks
         api.removeListener('fullscreen-changed', updateFullscreen);
+        window.removeEventListener('keydown', handleWindowKeyDown);
     });
     
     // Watch for manual changes to the theme preference and persist them
@@ -239,6 +331,12 @@ location="right"
             foldersStore.activeNoteCurrentFolderId = null;
         }
     });
+
+    watch(isChatFullscreen, (newValue) => {
+        if (newValue) {
+            isSearchOpen.value = false
+        }
+    })
     
     // Watch for chat width changes and persist
     watch(chatWidth, (newVal) => {
@@ -292,4 +390,30 @@ location="right"
     .chat-drawer.no-transition {
         transition: none;
     }
+
+    .fullscreen-chat-dialog-content {
+        height: clamp(660px, 80vh, 880px);
+        max-height: calc(100vh - 72px);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .fullscreen-chat-card {
+        border: 1px solid rgba(100, 116, 139, 0.16);
+        overflow: hidden;
+        height: 100%;
+        max-height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .fullscreen-chat-card-content {
+        height: 100%;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
 </style>

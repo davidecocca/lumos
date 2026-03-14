@@ -91,8 +91,14 @@ function getNote(id, callback) {
 
 // Get notes by ids
 function getNotesByIds(ids, callback) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+        callback(null, []);
+        return;
+    }
+
     const sql = `
-    SELECT notes.id, notes.title, folders.name AS folder_name 
+    SELECT notes.id, notes.title, notes.topic, notes.favorite, notes.folder_id,
+           notes.updated_at, notes.last_viewed_at, folders.name AS folder_name
     FROM notes 
     LEFT JOIN folders ON notes.folder_id = folders.id 
     WHERE notes.id IN (${ids.join(',')})`;
@@ -246,6 +252,74 @@ function getLastViewedNotes(callback) {
     });
 }
 
+// Search notes by keyword across title, topic, content, and folder name
+function searchNotes(query, limit = 10, callback) {
+    const normalizedQuery = String(query || '').trim().toLowerCase();
+    const safeLimit = Math.max(1, Number(limit) || 10);
+
+    if (!normalizedQuery) {
+        callback(null, []);
+        return;
+    }
+
+    const searchTerms = [...new Set(normalizedQuery.split(/\s+/).filter(Boolean))].slice(0, 8);
+    const whereClauses = [];
+    const scoreClauses = [];
+    const whereParams = [];
+    const scoreParams = [];
+
+    searchTerms.forEach((term) => {
+        const exact = term;
+        const prefix = `${term}%`;
+        const contains = `%${term}%`;
+
+        whereClauses.push(`
+            lower(notes.title) LIKE ?
+            OR lower(COALESCE(notes.topic, '')) LIKE ?
+            OR lower(COALESCE(notes.content_json, '')) LIKE ?
+            OR lower(COALESCE(folders.name, '')) LIKE ?
+        `);
+        whereParams.push(contains, contains, contains, contains);
+
+        scoreClauses.push(`
+            CASE
+                WHEN lower(notes.title) = ? THEN 120
+                WHEN lower(notes.title) LIKE ? THEN 80
+                WHEN lower(notes.title) LIKE ? THEN 55
+                ELSE 0
+            END
+            + CASE WHEN lower(COALESCE(notes.topic, '')) LIKE ? THEN 30 ELSE 0 END
+            + CASE WHEN lower(COALESCE(notes.content_json, '')) LIKE ? THEN 12 ELSE 0 END
+            + CASE WHEN lower(COALESCE(folders.name, '')) LIKE ? THEN 18 ELSE 0 END
+        `);
+        scoreParams.push(exact, prefix, contains, contains, contains, contains);
+    });
+
+    const sql = `
+    SELECT
+        notes.id,
+        notes.title,
+        notes.topic,
+        notes.favorite,
+        notes.folder_id,
+        notes.updated_at,
+        notes.last_viewed_at,
+        folders.name AS folder_name,
+        (${scoreClauses.join(' + ')}) AS keyword_score
+    FROM notes
+    LEFT JOIN folders ON notes.folder_id = folders.id
+    WHERE ${whereClauses.map(clause => `(${clause})`).join(' OR ')}
+    ORDER BY keyword_score DESC,
+             COALESCE(notes.last_viewed_at, notes.updated_at) DESC,
+             notes.title ASC
+    LIMIT ?
+    `;
+
+    db.all(sql, [...scoreParams, ...whereParams, safeLimit], (err, rows) => {
+        callback(err, rows);
+    });
+}
+
 module.exports = {
     createFolder,
     getFolderContent,
@@ -266,4 +340,5 @@ module.exports = {
     updateNoteLastViewed,
     getFavoriteNotes,
     getLastViewedNotes,
+    searchNotes,
 };

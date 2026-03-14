@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('api', {
     updateNoteLastViewed: (id) => ipcRenderer.invoke('update-note-last-viewed', id),
     getFavoriteNotes: () => ipcRenderer.invoke('get-favorite-notes'),
     getLastViewedNotes: () => ipcRenderer.invoke('get-last-viewed-notes'),
+    searchNotes: (payload) => ipcRenderer.invoke('search-notes', payload),
     searchSimilarNotes: (payload) => ipcRenderer.invoke('search-similar-notes', payload),
     
     // IPC events

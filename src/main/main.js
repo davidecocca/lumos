@@ -23,6 +23,7 @@ const {
     updateNoteLastViewed,
     getFavoriteNotes,
     getLastViewedNotes,
+    searchNotes,
 } = require('./database/crud.js');
 
 // Create the BrowserWindow
@@ -246,6 +247,115 @@ function setupIPC() {
                 else resolve(notes);
             });
         });
+    });
+
+    ipcMain.handle('search-notes', async (event, { query, limit = 10, includeSemantic = true } = {}) => {
+        const safeLimit = Math.max(1, Number(limit) || 10);
+        const keywordResults = await new Promise((resolve, reject) => {
+            searchNotes(query, safeLimit, (err, notes) => {
+                if (err) reject(err);
+                else resolve(notes);
+            });
+        });
+
+        if (!includeSemantic || !String(query || '').trim()) {
+            return keywordResults.map((note) => ({
+                ...note,
+                match_type: 'keyword',
+            }));
+        }
+
+        const mergedResults = new Map(
+            keywordResults.map((note) => [
+                note.id,
+                {
+                    ...note,
+                    match_type: 'keyword',
+                }
+            ])
+        );
+
+        try {
+            const semanticMatches = await vectorStore.searchSimilarNotes(query, safeLimit);
+            const semanticIds = [...new Set(
+                semanticMatches
+                .map((result) => Number(result.metadata?.source))
+                .filter((id) => Number.isInteger(id))
+            )];
+
+            if (semanticIds.length > 0) {
+                const semanticNotes = await new Promise((resolve, reject) => {
+                    getNotesByIds(semanticIds, (err, notes) => {
+                        if (err) reject(err);
+                        else resolve(notes);
+                    });
+                });
+
+                const semanticDistanceById = semanticMatches.reduce((distances, result) => {
+                    const noteId = Number(result.metadata?.source);
+                    const nextDistance = result.metadata?._distance;
+
+                    if (!Number.isInteger(noteId) || typeof nextDistance !== 'number') {
+                        return distances;
+                    }
+
+                    const currentDistance = distances.get(noteId);
+                    if (currentDistance == null || nextDistance < currentDistance) {
+                        distances.set(noteId, nextDistance);
+                    }
+
+                    return distances;
+                }, new Map());
+
+                semanticNotes.forEach((note) => {
+                    const existingNote = mergedResults.get(note.id);
+                    const semanticDistance = semanticDistanceById.get(note.id) ?? null;
+
+                    if (existingNote) {
+                        mergedResults.set(note.id, {
+                            ...existingNote,
+                            semantic_distance: semanticDistance,
+                            match_type: 'hybrid',
+                        });
+                        return;
+                    }
+
+                    mergedResults.set(note.id, {
+                        ...note,
+                        semantic_distance: semanticDistance,
+                        match_type: 'semantic',
+                        keyword_score: 0,
+                    });
+                });
+            }
+        } catch (err) {
+            console.warn('Semantic note search failed, falling back to keyword results:', err.message);
+        }
+
+        return [...mergedResults.values()].sort((left, right) => {
+            const leftPriority = left.match_type === 'hybrid' ? 0 : left.match_type === 'keyword' ? 1 : 2;
+            const rightPriority = right.match_type === 'hybrid' ? 0 : right.match_type === 'keyword' ? 1 : 2;
+
+            if (leftPriority !== rightPriority) {
+                return leftPriority - rightPriority;
+            }
+
+            const leftKeywordScore = left.keyword_score ?? 0;
+            const rightKeywordScore = right.keyword_score ?? 0;
+            if (leftKeywordScore !== rightKeywordScore) {
+                return rightKeywordScore - leftKeywordScore;
+            }
+
+            const leftSemanticDistance = left.semantic_distance ?? Number.POSITIVE_INFINITY;
+            const rightSemanticDistance = right.semantic_distance ?? Number.POSITIVE_INFINITY;
+            if (leftSemanticDistance !== rightSemanticDistance) {
+                return leftSemanticDistance - rightSemanticDistance;
+            }
+
+            const leftTimestamp = new Date(left.last_viewed_at || left.updated_at || 0).getTime();
+            const rightTimestamp = new Date(right.last_viewed_at || right.updated_at || 0).getTime();
+            return rightTimestamp - leftTimestamp;
+        }).slice(0, safeLimit);
     });
     
     ipcMain.handle('search-similar-notes', async (event, { query, limit, filter }) => {

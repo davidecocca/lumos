@@ -37,7 +37,7 @@ export const useFoldersStore = defineStore('folders', {
         },
         recentNotes(state) {
             // Return recent notes sorted by access date (descending)
-            return state.recents.slice().sort((a, b) => new Date(b.accessedAt) - new Date(a.accessedAt))
+            return state.recents.slice().sort((a, b) => new Date(b.last_viewed_at) - new Date(a.last_viewed_at))
         }
     },
     actions: {
@@ -97,6 +97,15 @@ export const useFoldersStore = defineStore('folders', {
             } catch (err) {
                 console.error('Error fetching recent notes:', err)
             }
+        },
+        async searchNotes(query, options = {}) {
+            const payload = {
+                query,
+                limit: options.limit ?? 10,
+                includeSemantic: options.includeSemantic ?? true,
+            }
+
+            return window.api.searchNotes(payload)
         },
         async loadFolderNotes(folder) {
             folder.loading = true

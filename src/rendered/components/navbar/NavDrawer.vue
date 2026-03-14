@@ -10,7 +10,9 @@
             <div class="nav-header">
                 <!-- Page Router -->
                 <div class="ma-3">
-                    <PageRouter />
+                    <PageRouter
+                    @open-search="emit('open-search')"
+                    />
                 </div>
                 
                 <!-- Divider shown only when the scrollable content overflows AND the content has been scrolled -->
@@ -44,7 +46,7 @@
         }
     })
     
-    const emit = defineEmits(['update:isDrawerOpen'])
+    const emit = defineEmits(['update:isDrawerOpen', 'open-search'])
     
     const drawerOpen = computed({
         get: () => props.isDrawerOpen,

@@ -1,91 +1,95 @@
 <template>
-    <v-container fluid class="pa-2">
-        <v-tabs
-        v-model="tab"
-        color="primary"
-        class="mb-4"
-        >
-        <v-tab :value="chatTab">Chat</v-tab>
-        
-        <v-spacer></v-spacer>
-        
-        <!-- New chat button -->
-        <v-tooltip text="New chat" location="bottom">
-            <template v-slot:activator="{ props }">
-                <v-btn
-                v-bind="props"
-                variant="text"
-                icon="ph-plus"
-                @click="resetChat"
-                ></v-btn>
-            </template>
-        </v-tooltip>
-        
-        <!-- Expand / Collapse button -->
-        <v-tooltip :text="isChatFullscreen ? 'Collapse' : 'Expand'" location="bottom">
-            <template v-slot:activator="{ props }">
-                <v-btn
-                v-bind="props"
-                variant="text"
-                :icon="isChatFullscreen ? 'ph-arrows-in-simple' : 'ph-arrows-out-simple'"
-                @click="toggleChatExpansion"
-                ></v-btn>
-            </template>
-        </v-tooltip>
-    </v-tabs>
-    
-    <!-- Chat content -->
-    <v-tabs-window v-model="tab">
-        <v-tabs-window-item :value="chatTab">
-            <div class="chat-container" ref="chatContainer" :style="{ height: chatContainerHeight }">
+    <v-container
+    fluid
+    :class="['chat-sidebar pa-4', { 'chat-sidebar--fullscreen': isChatFullscreen }]"
+    >
+        <div class="d-flex align-center ga-3 mb-4">
+            <div class="chat-header-icon">
+                <v-icon icon="ph-chat-circle-text" size="20" />
+            </div>
+            <div>
+                <p class="text-h6 font-weight-medium ma-0">Chat</p>
+            </div>
+            <v-spacer />
+
+            <v-tooltip text="New chat" location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn
+                    v-bind="props"
+                    variant="text"
+                    icon="ph-plus"
+                    rounded="xl"
+                    @click="resetChat"
+                    />
+                </template>
+            </v-tooltip>
+
+            <v-tooltip :text="isChatFullscreen ? 'Collapse (⌘L)' : 'Expand (⌘⇧L)'" location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn
+                    v-bind="props"
+                    variant="text"
+                    :icon="isChatFullscreen ? 'ph-arrows-in-simple' : 'ph-arrows-out-simple'"
+                    rounded="xl"
+                    @click="toggleChatExpansion"
+                    />
+                </template>
+            </v-tooltip>
+        </div>
+
+        <div class="chat-content">
+            <div class="chat-container" ref="chatContainer">
                 <v-list
                 lines="one"
                 v-if="chatStore.messages.length > 0"
                 style="background-color: transparent;"
                 >
-                <v-list-item
-                v-for="(message, index) in chatStore.messages"
-                :key="index"
-                class="mb-2"
-                >
-                <div v-if="message.user === 'bot'" class="d-flex flex-grow-1 justify-start align-items-center" style="max-width: 80%;">
-                    <ChatCard
-                    class="flex-grow-1"
-                    :message="message"
+                    <v-list-item
+                    v-for="(message, index) in chatStore.messages"
+                    :key="index"
+                    :data-message-index="index"
+                    class="mb-2"
+                    >
+                        <div v-if="message.user === 'bot'" class="d-flex flex-grow-1 justify-start align-items-center" style="max-width: 80%;">
+                            <ChatCard
+                            class="flex-grow-1"
+                            :message="message"
+                            @open-source="openSourceNote"
+                            />
+                        </div>
+                        <div v-if="message.user === 'user'" class="d-flex justify-end flex-grow-1">
+                            <ChatCard
+                            :message="message"
+                            class="ms-auto"
+                            style="max-width: 80%"
+                            @open-source="openSourceNote"
+                            />
+                        </div>
+                    </v-list-item>
+                </v-list>
+            </div>
+
+            <!-- Input area -->
+            <v-card
+            :class="['border', { 'chat-input-card--fullscreen': isChatFullscreen }]"
+            elevation="0"
+            rounded="xl"
+            >
+                <v-card-text class="ps-2 pt-1 pb-0">
+                    <v-textarea
+                    v-model="chatStore.userInput"
+                    placeholder="Ask something"
+                    variant="text"
+                    hide-details
+                    rows="2"
+                    max-rows="2"
+                    auto-grow
+                    @keydown.ctrl.enter="sendMessage"
+                    @keydown.meta.enter="sendMessage"
                     />
-                </div>
-                <div v-if="message.user === 'user'" class="d-flex justify-end flex-grow-1">
-                    <ChatCard
-                    :message="message"
-                    class="ms-auto"
-                    style="max-width: 80%"
-                    />
-                </div>
-            </v-list-item>
-        </v-list>
-    </div>
-    
-    <!-- Input area -->
-    <v-card
-    class="mx-4 border"
-    elevation="0"
-    rounded="xl"
-    >
-    <v-card-text class="ps-2 pt-1 pb-0">
-        <v-textarea
-        v-model="chatStore.userInput"
-        placeholder="Ask something"
-        variant="text"
-        hide-details
-        rows="2"
-        max-rows="2"
-        auto-grow
-        @keydown.ctrl.enter="sendMessage"
-        @keydown.meta.enter="sendMessage"
-        />
-    </v-card-text>
-    
-    <v-card-actions class="pt-2 pb-2 px-4 d-flex ga-2 align-center flex-nowrap">
+                </v-card-text>
+
+                <v-card-actions class="pt-2 pb-2 px-4 d-flex ga-2 align-center flex-nowrap">
         <div class="d-flex align-center">
             <v-menu location="top start">
                 <template v-slot:activator="{ props: menuProps }">
@@ -180,10 +184,8 @@
 </div>
 </v-card-actions>
 </v-card>
-
-</v-tabs-window-item>
-</v-tabs-window>
-</v-container>
+        </div>
+    </v-container>
 
 </template>
 
@@ -198,7 +200,8 @@ import { useChatStore } from '../../stores/chatStore';
 import chatRagPrompt from '../../prompts/chatRagPrompt';
 import { buildModelItems } from '../../utils/modelProviders'
 
-import { ref, nextTick, computed, onMounted, watch, mergeProps } from 'vue'
+import { ref, nextTick, computed, onMounted, onBeforeUnmount, watch, mergeProps } from 'vue'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
     "isChatFullscreen": {
@@ -206,6 +209,10 @@ const props = defineProps({
         default: false,
     },
     "isChatOpen": {
+        type: Boolean,
+        default: false,
+    },
+    "isVisible": {
         type: Boolean,
         default: false,
     },
@@ -218,20 +225,12 @@ const aiStore = aiPreferencesStore();
 
 // Store for folders and notes
 const store = useFoldersStore()
+const router = useRouter()
 
 // Chat store
 const chatStore = useChatStore()
 
-// Tabs for switching between favorite and recent notes
-const chatTab = 'chatTab'
-const tab = ref(chatTab)
-
 const chatContainer = ref(null)
-
-// Computed height for chat container based on fullscreen state
-const chatContainerHeight = computed(() => {
-    return props.isChatFullscreen ? 'calc(100vh - 335px)' : 'calc(100vh - 305px)'
-})
 
 // Available models for chat from all providers
 const availableChatModels = computed(() => {
@@ -277,10 +276,80 @@ const selectedModelTitle = computed(() => {
     return match?.title || 'Model'
 })
 
+const getAnchorData = (container) => {
+    const containerRect = container.getBoundingClientRect()
+    const messageElements = [...container.querySelectorAll('[data-message-index]')]
+
+    for (const element of messageElements) {
+        const rect = element.getBoundingClientRect()
+        if (rect.bottom >= containerRect.top) {
+            return {
+                anchorIndex: Number(element.getAttribute('data-message-index')) || 0,
+                anchorOffset: rect.top - containerRect.top,
+            }
+        }
+    }
+
+    const lastIndex = Math.max(0, chatStore.messages.length - 1)
+    return {
+        anchorIndex: lastIndex,
+        anchorOffset: 0,
+    }
+}
+
+const saveScrollPosition = () => {
+    const el = chatContainer.value
+    if (!el) return
+
+    const { anchorIndex, anchorOffset } = getAnchorData(el)
+
+    chatStore.updateScrollState({
+        top: el.scrollTop,
+        clientHeight: el.clientHeight,
+        scrollHeight: el.scrollHeight,
+        anchorIndex,
+        anchorOffset,
+    })
+}
+
+const restoreScrollPosition = async () => {
+    await nextTick()
+
+    requestAnimationFrame(() => {
+        const el = chatContainer.value
+        if (!el) return
+
+        const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight)
+        const { top, distanceFromBottom, anchorIndex, anchorOffset } = chatStore.scrollState
+        const shouldStickToBottom = distanceFromBottom <= 48
+        let targetTop = shouldStickToBottom
+            ? Math.max(0, maxScroll - distanceFromBottom)
+            : top
+
+        if (!shouldStickToBottom) {
+            const anchorElement = el.querySelector(`[data-message-index="${anchorIndex}"]`)
+
+            if (anchorElement) {
+                const containerRect = el.getBoundingClientRect()
+                const anchorRect = anchorElement.getBoundingClientRect()
+                targetTop = el.scrollTop + (anchorRect.top - containerRect.top) - anchorOffset
+            }
+        }
+
+        el.scrollTop = Math.max(0, Math.min(maxScroll, targetTop))
+    })
+}
+
 // Load AI preferences on mount
 onMounted(() => {
     aiStore.loadPreferences();
+    chatContainer.value?.addEventListener('scroll', saveScrollPosition, { passive: true })
 });
+
+onBeforeUnmount(() => {
+    saveScrollPosition()
+    chatContainer.value?.removeEventListener('scroll', saveScrollPosition)
+})
 
 // Watch for activeNoteId changes and reset scope if necessary
 watch(() => store.activeNoteId, (newActiveNoteId) => {
@@ -289,14 +358,35 @@ watch(() => store.activeNoteId, (newActiveNoteId) => {
     }
 });
 
+watch(() => props.isVisible, async (isVisible) => {
+    if (isVisible) {
+        await restoreScrollPosition()
+        return
+    }
+
+    saveScrollPosition()
+}, { immediate: true })
+
 const resetChat = () => {
     chatStore.resetChat()
 }
 
 // Function to toggle chat expansion
 const toggleChatExpansion = () => {
+    saveScrollPosition()
     emit('update:isChatOpen', !props.isChatOpen)
     emit('update:isChatFullscreen', !props.isChatFullscreen)
+}
+
+const openSourceNote = async (noteId) => {
+    saveScrollPosition()
+
+    if (props.isChatFullscreen) {
+        emit('update:isChatFullscreen', false)
+        emit('update:isChatOpen', true)
+    }
+
+    await store.openNote(noteId, router)
 }
 
 const chunkDivederText = '\n\n-------\n\n'
@@ -316,6 +406,7 @@ const sendMessage = async () => {
         // Scroll to the bottom of the chat container
         await nextTick()
         chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+        saveScrollPosition()
         
         const userMessage = chatStore.userInput
         chatStore.userInput = ''
@@ -383,6 +474,7 @@ const sendMessage = async () => {
             // Scroll to the bottom of the chat container
             await nextTick()
             chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+            saveScrollPosition()
         }
         
         // Add citing information to the bot message
@@ -397,6 +489,7 @@ const sendMessage = async () => {
         // Scroll to the bottom of the chat container
         await nextTick()
         chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+        saveScrollPosition()
         
     } catch (error) {
         console.error('Error:', error)
@@ -412,8 +505,50 @@ const sendMessage = async () => {
 </script>
 
 <style scoped>
+.chat-sidebar {
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.chat-sidebar--fullscreen {
+    padding-bottom: 20px;
+}
+
+.chat-header-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 130, 246, 0.12);
+    color: rgb(37, 99, 235);
+    flex-shrink: 0;
+}
+
+.chat-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow: hidden;
+}
+
 .chat-container {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    padding-bottom: 8px;
+}
+
+.chat-input-card--fullscreen {
+    flex-shrink: 0;
 }
 
 /* Styles for model trigger button to handle model names of varying lengths */
