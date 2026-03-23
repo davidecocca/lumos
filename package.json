@@ -23,13 +23,15 @@
         "@langchain/groq": "^0.2.2",
         "@langchain/ollama": "^0.2.0",
         "@langchain/openai": "^0.5.8",
-        "@mdi/font": "^7.4.47",
+        "@phosphor-icons/web": "^2.1.2",
         "@tiptap/extension-blockquote": "^2.11.5",
         "@tiptap/extension-bullet-list": "^2.11.5",
         "@tiptap/extension-code-block-lowlight": "^2.11.5",
         "@tiptap/extension-color": "^2.11.5",
+        "@tiptap/extension-file-handler": "^2.27.2",
         "@tiptap/extension-highlight": "^2.11.5",
         "@tiptap/extension-horizontal-rule": "^2.11.5",
+        "@tiptap/extension-image": "^2.27.2",
         "@tiptap/extension-list-item": "^2.11.5",
         "@tiptap/extension-ordered-list": "^2.11.5",
         "@tiptap/extension-placeholder": "^2.11.5",
@@ -53,6 +55,6 @@
         "tippy.js": "^6.3.7",
         "vue": "^3.2.0",
         "vue-router": "^4.5.0",
-        "vuetify": "^3.11.0"
+        "vuetify": "^4.0.0"
     }
 }

@@ -37,10 +37,34 @@ export const useFoldersStore = defineStore('folders', {
         },
         recentNotes(state) {
             // Return recent notes sorted by access date (descending)
-            return state.recents.slice().sort((a, b) => new Date(b.accessedAt) - new Date(a.accessedAt))
+            return state.recents.slice().sort((a, b) => new Date(b.last_viewed_at) - new Date(a.last_viewed_at))
         }
     },
     actions: {
+        sortNotesByTitle(notes) {
+            notes.sort((a, b) => a.title.localeCompare(b.title))
+        },
+        updateNoteFolderMetadata(note, folder) {
+            if (!note || !folder) return note
+            note.folder_id = folder.id
+            note.folder_name = folder.name
+            note.folderId = folder.id
+            note.folderName = folder.name
+            return note
+        },
+        syncNoteFolderReferences(noteId, folder) {
+            if (!folder) return
+            this.favorites.forEach(note => {
+                if (note.id === noteId) {
+                    this.updateNoteFolderMetadata(note, folder)
+                }
+            })
+            this.recents.forEach(note => {
+                if (note.id === noteId) {
+                    this.updateNoteFolderMetadata(note, folder)
+                }
+            })
+        },
         async fetchFolders() {
             try {
                 const results = await window.api.listFolders()
@@ -74,6 +98,15 @@ export const useFoldersStore = defineStore('folders', {
                 console.error('Error fetching recent notes:', err)
             }
         },
+        async searchNotes(query, options = {}) {
+            const payload = {
+                query,
+                limit: options.limit ?? 10,
+                includeSemantic: options.includeSemantic ?? true,
+            }
+
+            return window.api.searchNotes(payload)
+        },
         async loadFolderNotes(folder) {
             folder.loading = true
             try {
@@ -102,6 +135,7 @@ export const useFoldersStore = defineStore('folders', {
                         name: folderName,
                         id: folderId,
                         notes: [],
+                        isOpen: false,
                         loading: false
                     })
                     this.folders.sort((a, b) => a.name.localeCompare(b.name))
@@ -182,7 +216,7 @@ export const useFoldersStore = defineStore('folders', {
                     if (folder) {
                         const newNote = await window.api.getNote(noteId)
                         folder.notes.push(newNote)
-                        folder.notes.sort((a, b) => a.title.localeCompare(b.title))
+                        this.sortNotesByTitle(folder.notes)
                     }
                     this.createNoteDialog = false
                 } catch (err) {
@@ -210,7 +244,7 @@ export const useFoldersStore = defineStore('folders', {
                                 note.title = newNoteTitle
                             }
                         })
-                        folder.notes.sort((a, b) => a.title.localeCompare(b.title))
+                        this.sortNotesByTitle(folder.notes)
                     })
                     // Update in favorites if present.
                     const favIndex = this.favorites.findIndex(note => note.id === noteId)
@@ -237,10 +271,16 @@ export const useFoldersStore = defineStore('folders', {
             this.activeNoteCurrentFolderId = noteFolderId
             this.moveToFolderDialog = true
         },
-        async moveNote(noteId, newFolderId) {
+        async moveNote(noteId, newFolderId, currentFolderId = this.activeNoteCurrentFolderId, options = {}) {
+            if (!newFolderId) return
+            if (currentFolderId === newFolderId) {
+                this.moveToFolderDialog = false
+                return
+            }
             try {
                 await window.api.moveNoteToFolder({noteId: noteId, newFolderId: newFolderId})
-                const currentFolder = this.folders.find(folder => folder.id === this.activeNoteCurrentFolderId)
+                const resolvedCurrentFolderId = currentFolderId ?? this.folders.find(folder => folder.notes.some(note => note.id === noteId))?.id
+                const currentFolder = this.folders.find(folder => folder.id === resolvedCurrentFolderId)
                 const newFolder = this.folders.find(folder => folder.id === newFolderId)
                 
                 if (currentFolder) {
@@ -249,24 +289,25 @@ export const useFoldersStore = defineStore('folders', {
                 
                 if (newFolder) {
                     const note = await window.api.getNote(noteId)
-                    newFolder.notes.push({ ...note })
-                    newFolder.notes.sort((a, b) => a.title.localeCompare(b.title))
+                    this.updateNoteFolderMetadata(note, newFolder)
+                    const existingNoteIndex = newFolder.notes.findIndex(existingNote => existingNote.id === noteId)
+                    if (existingNoteIndex === -1) {
+                        newFolder.notes.push({ ...note })
+                    } else {
+                        newFolder.notes.splice(existingNoteIndex, 1, { ...note })
+                    }
+                    this.sortNotesByTitle(newFolder.notes)
+                    if (options.revealTarget) {
+                        newFolder.isOpen = true
+                        await this.loadFolderNotes(newFolder)
+                    }
                 }
                 
-                // Update folder reference in favorites if present.
-                const favIndex = this.favorites.findIndex(note => note.id === noteId)
-                if (favIndex !== -1 && newFolder) {
-                    this.favorites[favIndex].folderId = newFolderId
-                    this.favorites[favIndex].folderName = newFolder.name
+                if (newFolder) {
+                    this.syncNoteFolderReferences(noteId, newFolder)
                 }
                 
-                // Update folder reference in recents if present
-                const recentIndex = this.recents.findIndex(note => note.id === noteId)
-                if (recentIndex !== -1 && newFolder) {
-                    this.recents[recentIndex].folderId = newFolderId
-                    this.recents[recentIndex].folderName = newFolder.name
-                }
-                
+                this.activeNoteCurrentFolderId = newFolderId
                 this.moveToFolderDialog = false
             } catch (err) {
                 console.error('Error moving note:', err)

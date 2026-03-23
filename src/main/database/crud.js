@@ -1,5 +1,6 @@
 const db = require('./db');
 const vectorStore = require('./vectorStore');
+const imageService = require('../services/imageService');
 
 /* ---------------------------
 Folder CRUD Operations
@@ -81,18 +82,36 @@ function getNote(id, callback) {
     FROM notes 
     LEFT JOIN folders ON notes.folder_id = folders.id 
     WHERE notes.id = ?`;
-    db.get(sql, [id], (err, row) => {
-        if (row && row.content_json) {
-            row.content_json = JSON.parse(row.content_json);
+    db.get(sql, [id], async (err, row) => {
+        if (err) {
+            callback(err, row);
+            return;
         }
-        callback(err, row);
+        
+        try {
+            if (row && row.content_json) {
+                row.content_json = JSON.parse(row.content_json);
+                row.content_json = await imageService.resolveNoteContentForDisplay(row.content_json);
+            }
+        } catch (resolveErr) {
+            callback(resolveErr, row);
+            return;
+        }
+        
+        callback(null, row);
     });
 }
 
 // Get notes by ids
 function getNotesByIds(ids, callback) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+        callback(null, []);
+        return;
+    }
+    
     const sql = `
-    SELECT notes.id, notes.title, folders.name AS folder_name 
+    SELECT notes.id, notes.title, notes.topic, notes.favorite, notes.folder_id,
+           notes.updated_at, notes.last_viewed_at, folders.name AS folder_name
     FROM notes 
     LEFT JOIN folders ON notes.folder_id = folders.id 
     WHERE notes.id IN (${ids.join(',')})`;
@@ -124,17 +143,22 @@ function renameNote(id, newTitle, callback) {
 
 // Update note content
 function updateNote(id, topic, contentJson, contentText, callback) {
+    const normalizedContent = imageService.normalizeNoteContentForStorage(contentJson);
+    const referencedImages = imageService.collectManagedImagePaths(normalizedContent);
     const sql = `
     UPDATE notes 
     SET topic = ?, content_json = ?, updated_at = CURRENT_TIMESTAMP 
     WHERE id = ?
   `;
-    db.run(sql, [topic, JSON.stringify(contentJson), id], async function (err) {
+    
+    db.run(sql, [topic, JSON.stringify(normalizedContent), id], async function (err) {
         if (err) {
             callback(err);
             return;
         }
+        
         try {
+            await imageService.pruneNoteImages(id, referencedImages);
             await vectorStore.deleteNote(id);
             await vectorStore.addNote(id, contentText);
             callback(null);
@@ -154,6 +178,7 @@ function deleteNote(id, callback) {
         }
         try {
             await vectorStore.deleteNote(id);
+            await imageService.deleteNoteImages(id);
             callback(null);
         } catch (vectorErr) {
             callback(vectorErr);
@@ -183,6 +208,7 @@ function deleteNotesInFolder(folderId, callback) {
                 // Delete each note from vector store
                 for (const note of notes) {
                     await vectorStore.deleteNote(note.id);
+                    await imageService.deleteNoteImages(note.id);
                 }
                 callback(null, this.changes);
             } catch (vectorErr) {
@@ -246,24 +272,93 @@ function getLastViewedNotes(callback) {
     });
 }
 
-module.exports = {
-    createFolder,
-    getFolderContent,
-    getFolder,
-    updateFolder,
-    deleteFolder,
-    listFolders,
-    createNote,
-    getNote,
-    getNotesByIds,
-    listNotes,
-    renameNote,
-    updateNote,
-    deleteNote,
-    moveNoteToFolder,
-    deleteNotesInFolder,
-    setNoteFavorite,
-    updateNoteLastViewed,
-    getFavoriteNotes,
-    getLastViewedNotes,
-};
+// Search notes by keyword across title, topic, content, and folder name
+function searchNotes(query, limit = 10, callback) {
+    const normalizedQuery = String(query || '').trim().toLowerCase();
+    const safeLimit = Math.max(1, Number(limit) || 10);
+    
+    if (!normalizedQuery) {
+        callback(null, []);
+        return;
+    }
+    
+    const searchTerms = [...new Set(normalizedQuery.split(/\s+/).filter(Boolean))].slice(0, 8);
+    const whereClauses = [];
+    const scoreClauses = [];
+    const whereParams = [];
+    const scoreParams = [];
+    
+    searchTerms.forEach((term) => {
+        const exact = term;
+        const prefix = `${term}%`;
+        const contains = `%${term}%`;
+        
+        whereClauses.push(`
+            lower(notes.title) LIKE ?
+            OR lower(COALESCE(notes.topic, '')) LIKE ?
+            OR lower(COALESCE(notes.content_json, '')) LIKE ?
+            OR lower(COALESCE(folders.name, '')) LIKE ?
+        `);
+            whereParams.push(contains, contains, contains, contains);
+            
+            scoreClauses.push(`
+            CASE
+                WHEN lower(notes.title) = ? THEN 120
+                WHEN lower(notes.title) LIKE ? THEN 80
+                WHEN lower(notes.title) LIKE ? THEN 55
+                ELSE 0
+            END
+            + CASE WHEN lower(COALESCE(notes.topic, '')) LIKE ? THEN 30 ELSE 0 END
+            + CASE WHEN lower(COALESCE(notes.content_json, '')) LIKE ? THEN 12 ELSE 0 END
+            + CASE WHEN lower(COALESCE(folders.name, '')) LIKE ? THEN 18 ELSE 0 END
+        `);
+                scoreParams.push(exact, prefix, contains, contains, contains, contains);
+            });
+            
+            const sql = `
+    SELECT
+        notes.id,
+        notes.title,
+        notes.topic,
+        notes.favorite,
+        notes.folder_id,
+        notes.updated_at,
+        notes.last_viewed_at,
+        folders.name AS folder_name,
+        (${scoreClauses.join(' + ')}) AS keyword_score
+    FROM notes
+    LEFT JOIN folders ON notes.folder_id = folders.id
+    WHERE ${whereClauses.map(clause => `(${clause})`).join(' OR ')}
+    ORDER BY keyword_score DESC,
+             COALESCE(notes.last_viewed_at, notes.updated_at) DESC,
+             notes.title ASC
+    LIMIT ?
+    `;
+            
+            db.all(sql, [...scoreParams, ...whereParams, safeLimit], (err, rows) => {
+                callback(err, rows);
+            });
+        }
+        
+        module.exports = {
+            createFolder,
+            getFolderContent,
+            getFolder,
+            updateFolder,
+            deleteFolder,
+            listFolders,
+            createNote,
+            getNote,
+            getNotesByIds,
+            listNotes,
+            renameNote,
+            updateNote,
+            deleteNote,
+            moveNoteToFolder,
+            deleteNotesInFolder,
+            setNoteFavorite,
+            updateNoteLastViewed,
+            getFavoriteNotes,
+            getLastViewedNotes,
+            searchNotes,
+        };

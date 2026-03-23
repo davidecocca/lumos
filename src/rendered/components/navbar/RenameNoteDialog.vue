@@ -7,11 +7,11 @@
         <v-card rounded="xl" elevation="8">
             <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
                 <v-avatar color="deep-purple-lighten-5" size="36" class="mr-3">
-                    <v-icon size="22" color="deep-purple-darken-2">mdi-file-edit</v-icon>
+                    <v-icon size="22" color="deep-purple-darken-2">ph-note-pencil</v-icon>
                 </v-avatar>
                 <div>
-                    <div class="text-h6">Rename note</div>
-                    <div class="text-subtitle-2 text-medium-emphasis">Enter a new title for the note.</div>
+                    <div class="text-headline-small">Rename note</div>
+                    <div class="text-label-large text-medium-emphasis">Enter a new title for the note.</div>
                 </div>
             </v-card-title>
 
