@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, nativeImage, Menu } = require('electron');
 const path = require('path');
 const vectorStore = require('./database/vectorStore');
+const imageService = require('./services/imageService');
 
 // Import CRUD functions from the local DB layer
 const {
@@ -184,6 +185,10 @@ function setupIPC() {
                 else resolve(changes);
             });
         });
+    });
+
+    ipcMain.handle('import-note-image', async (event, { noteId, fileName, mimeType, data }) => {
+        return imageService.importNoteImage(noteId, { fileName, mimeType, data });
     });
     
     ipcMain.handle('delete-note', async (event, id) => {

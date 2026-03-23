@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('api', {
     listNotes: () => ipcRenderer.invoke('list-notes'),
     renameNote: (payload) => ipcRenderer.invoke('rename-note', payload),
     updateNote: (payload) => ipcRenderer.invoke('update-note', payload),
+    importNoteImage: (payload) => ipcRenderer.invoke('import-note-image', payload),
     deleteNote: (id) => ipcRenderer.invoke('delete-note', id),
     moveNoteToFolder: (payload) => ipcRenderer.invoke('move-note-to-folder', payload),
     deleteNotesInFolder: (folderId) => ipcRenderer.invoke('delete-notes-in-folder', folderId),

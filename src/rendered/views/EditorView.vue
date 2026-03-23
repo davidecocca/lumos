@@ -188,6 +188,7 @@
 <div v-if="editor">
     <bubble-menu
     class="bubble-menu"
+    :should-show="shouldShowBubbleMenu"
     :tippy-options="{
         duration: 100,
         position: fixed,
@@ -495,6 +496,7 @@
     import { useRouter } from 'vue-router'
     import { useFoldersStore } from '../stores/foldersStore'
     import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
+    import { isTextSelection } from '@tiptap/core'
     import StarterKit from '@tiptap/starter-kit'
     import {
         BubbleMenu,
@@ -521,9 +523,13 @@
     import TableCell from '@tiptap/extension-table-cell'
     import TableHeader from '@tiptap/extension-table-header'
     import TableRow from '@tiptap/extension-table-row'
+    import FileHandler from '@tiptap/extension-file-handler'
+    import ResizableImage from '../components/editor/resizableImage'
     
     // Code block highlighting: load all languages with "all" and common languages with "common"
     import { all, createLowlight } from 'lowlight'
+
+    const IMAGE_MUTATION_EVENT = 'lumos-note-image-mutation'
     
     const props = defineProps({
         theme: {
@@ -610,6 +616,12 @@
         // Softer surfaces for menus consistent with app theme
         return props.theme === 'dark' ? '#212121' : '#ffffff'
     })
+
+    const shouldShowBubbleMenu = ({ state, from, to }) => (
+        isTextSelection(state.selection)
+        && !state.selection.empty
+        && from !== to
+    )
     
     const currentFolderName = computed(() => {
         if (!note.value) return ''
@@ -685,29 +697,106 @@
             editor.value.commands.setContent(note.value.content_json)
         }
     }
+
+    const persistEditorContent = async ({ refreshTopic = false } = {}) => {
+        if (!editor.value || !note.value) {
+            return
+        }
+
+        let topic = note.value.topic || ''
+
+        if (refreshTopic && getTopicService) {
+            topic = await getTopicService.generate(editor.value.getText())
+        }
+
+        const payload = {
+            id: note.value.id,
+            contentJson: editor.value.getJSON(),
+            contentText: editor.value.getText(),
+            topic,
+        }
+
+        await window.api.updateNote(payload)
+        note.value.topic = topic
+    }
     
     const saveNoteManually = async () => {
-        try {       
+        try {
             // Enable loading state
-            isLoading.value = 'primary'
-            
-            // Extract the topic from note content using AI service
-            const topic = await getTopicService.generate(editor.value.getText());
-            
-            // Save the content
-            const payload = {
-                id: note.value.id,
-                contentJson: editor.value.getJSON(),
-                contentText: editor.value.getText(),
-                topic: topic,
-            }
-            await window.api.updateNote(payload)
-            
+            isLoading.value = true
+
+            await persistEditorContent({ refreshTopic: true })
+
             // Stop loading state
             isLoading.value = false
         } catch (error) {
             const errorMsg = 'Failed to save note'
             console.error(errorMsg, error)
+            isLoading.value = false
+        }
+    }
+
+    const createImageNode = (source, altText = '', storageSrc = null) => ({
+        type: 'noteImage',
+        attrs: {
+            src: source,
+            storageSrc,
+            alt: altText,
+            title: altText,
+            align: 'center',
+        },
+    })
+
+    const isImageFile = (file) => (
+        file.type?.startsWith('image/')
+        || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '')
+    )
+
+    const insertImportedImages = async (files, insertPosition = null) => {
+        if (!note.value?.id || !editor.value) {
+            return false
+        }
+
+        const imageFiles = files.filter(isImageFile)
+
+        if (!imageFiles.length) {
+            return false
+        }
+
+        try {
+            if (typeof insertPosition === 'number') {
+                editor.value.chain().focus().setTextSelection(insertPosition).run()
+            } else {
+                editor.value.chain().focus().run()
+            }
+
+            for (const file of imageFiles) {
+                const imageData = new Uint8Array(await file.arrayBuffer())
+                const importedImage = await window.api.importNoteImage({
+                    noteId: note.value.id,
+                    fileName: file.name,
+                    mimeType: file.type,
+                    data: imageData,
+                })
+
+                editor.value.commands.setImage(
+                    createImageNode(importedImage.src, file.name, importedImage.storedSrc).attrs
+                )
+            }
+
+            await persistEditorContent()
+            return true
+        } catch (error) {
+            console.error('Failed to import dropped image:', error)
+            return false
+        }
+    }
+
+    const handleImageMutation = async () => {
+        try {
+            await persistEditorContent()
+        } catch (error) {
+            console.error('Failed to persist image change:', error)
         }
     }
     
@@ -1191,11 +1280,24 @@
             TableRow,
             TableHeader,
             TableCell,
+            FileHandler.configure({
+                allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml'],
+                onDrop: (currentEditor, files, pos) => {
+                    currentEditor.chain().focus(pos).run()
+                    void insertImportedImages(files, pos)
+                },
+                onPaste: (currentEditor, files) => {
+                    currentEditor.chain().focus().run()
+                    void insertImportedImages(files)
+                },
+            }),
+            ResizableImage,
             ],
         })
         
         getNote(props.noteId)
         window.addEventListener('keydown', handleKeyDown)
+        window.addEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
     })
     
     onBeforeUnmount(() => {
@@ -1203,6 +1305,7 @@
             editor.value.destroy()
         }
         window.removeEventListener('keydown', handleKeyDown)
+        window.removeEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
     })
 </script>
 
