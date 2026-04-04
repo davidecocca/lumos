@@ -1,5 +1,27 @@
 import { defineStore } from 'pinia'
 
+const normalizeOllamaModel = (model) => {
+    if (!model) return null
+    if (typeof model === 'string') return model
+    if (typeof model === 'object' && typeof model.name === 'string') {
+        return model.name
+    }
+    return null
+}
+
+const normalizeFeatureSelection = (selection, fallback) => {
+    const normalizedSelection = {
+        ...fallback,
+        ...selection
+    }
+
+    if (normalizedSelection.provider === 'ollama') {
+        normalizedSelection.model = normalizeOllamaModel(normalizedSelection.model)
+    }
+
+    return normalizedSelection
+}
+
 export const aiPreferencesStore = defineStore('aiPreferences', {
     state: () => ({
         // Provider selection for different features
@@ -32,18 +54,19 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
                 { label: 'Llama 3.1 8B', value: 'llama-3.1-8b-instant' },
                 { label: 'Llama 3.3 70B', value: 'llama-3.3-70b-versatile' },
                 { label: 'Llama 4 Scout', value: 'meta-llama/llama-4-scout-17b-16e-instruct' },
-                { label: 'Llama 4 Maverick', value: 'meta-llama/llama-4-maverick-17b-128e-instruct' },
                 { label: 'Groq Compound', value: 'groq/compound' },
                 { label: 'Groq Compound Mini', value: 'groq/compound-mini' },
                 { label: 'Qwen3 32B', value: 'qwen-qwq-32b' }
             ],
             openai: [
+                { label: 'GPT-5.4', value: 'gpt-5.4' },
+                { label: 'GPT-5.3 Chat', value: 'gpt-5.3-chat-latest' },
+                { label: 'GPT-5.3 Codex', value: 'gpt-5.3-codex' },
                 { label: 'GPT-5.2', value: 'gpt-5.2' },
                 { label: 'GPT-5.1', value: 'gpt-5.1' },
                 { label: 'GPT-5', value: 'gpt-5' },
                 { label: 'GPT-5 Mini', value: 'gpt-5-mini' },
                 { label: 'GPT-5 Nano', value: 'gpt-5-nano' },
-                { label: 'GPT-5.1 Codex', value: 'gpt-5.1-codex' },
                 { label: 'GPT-4.1', value: 'gpt-4.1' },
                 { label: 'GPT-4.1 Mini', value: 'gpt-4.1-mini' },
                 { label: 'GPT-4.1 Nano', value: 'gpt-4.1-nano' },
@@ -59,11 +82,13 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
                 const preferences = JSON.parse(savedPrefs)
                 
                 // Load provider and model selections
-                this.editor = preferences.editor || this.editor
-                this.chat = preferences.chat || this.chat
+                this.editor = normalizeFeatureSelection(preferences.editor, this.editor)
+                this.chat = normalizeFeatureSelection(preferences.chat, this.chat)
                 
                 // Load API keys
                 this.apiKeys = preferences.apiKeys || this.apiKeys
+
+                this.savePreferences()
             }
         },
         
@@ -108,7 +133,7 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
         generateOllamaLabel(model) {
             const fullName = model.name
             const size = model.size
-            const [name, tag] = fullName.split(':')
+            const [name] = fullName.split(':')
             return `${name} (${size})`
         },
         
@@ -116,7 +141,10 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
         updateAvailableModels(provider, models) {
             if (this.availableModels.hasOwnProperty(provider)) {
                 if (provider === 'ollama') {
-                    this.availableModels[provider] = models.map(model => ({ label: this.generateOllamaLabel(model), value: model }))
+                    this.availableModels[provider] = models.map(model => ({
+                        label: this.generateOllamaLabel(model),
+                        value: model.name
+                    }))
                 } else {
                     this.availableModels[provider] = models
                 }

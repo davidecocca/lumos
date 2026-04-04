@@ -2,7 +2,7 @@
     <!-- Flex container to place button toggle and text field on the same line -->
     <div v-if="note" class="d-flex align-center">
         <div class="d-flex flex-column ml-4">
-            <p class="text-h4 font-weight-medium">{{ note.title }}</p>
+            <p class="text-headline-large font-weight-medium ma-0">{{ note.title }}</p>
             <div class="d-inline-flex mt-2">
                 <v-chip
                 color="primary"
@@ -20,7 +20,7 @@
             <v-tooltip text="Undo" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().undo().run()">
-                        <v-icon>mdi-undo</v-icon>
+                        <v-icon>ph-arrow-counter-clockwise</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -28,7 +28,7 @@
             <v-tooltip text="Redo" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().redo().run()">
-                        <v-icon>mdi-redo</v-icon>
+                        <v-icon>ph-arrow-clockwise</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -36,41 +36,40 @@
             <v-tooltip text="Save" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="saveNoteManually">
-                        <v-icon>mdi-content-save</v-icon>
+                        <v-icon>ph-floppy-disk</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
-            
             <v-tooltip text="More" location="bottom">
                 <template v-slot:activator="{ props: tooltipProps }">
                     <v-menu>
                         <template v-slot:activator="{ props: menuProps }">
                             <v-btn v-bind="{ ...tooltipProps, ...menuProps }">
-                                <v-icon>mdi-dots-horizontal</v-icon>
+                                <v-icon>ph-dots-three</v-icon>
                             </v-btn>
                         </template>
                         <v-list density="compact">
                             <v-list-item @click="toggleFavorite(note.id)">
                                 <template v-slot:prepend>
-                                    <v-icon :icon="note.favorite === 1 ? 'mdi-heart-broken' : 'mdi-heart'"></v-icon>
+                                    <v-icon :icon="note.favorite === 1 ? 'ph-heart-break' : 'ph-heart'"></v-icon>
                                 </template>
                                 <v-list-item-title>{{ note.favorite === 1 ? 'Unfavorite' : 'Favorite' }}</v-list-item-title>
                             </v-list-item>
                             <v-list-item @click="renameNoteDialog = true">
                                 <template v-slot:prepend>
-                                    <v-icon>mdi-rename</v-icon>
+                                    <v-icon>ph-pencil-line</v-icon>
                                 </template>
                                 <v-list-item-title>Rename</v-list-item-title>
                             </v-list-item>
                             <v-list-item @click="moveToFolderDialog = true">
                                 <template v-slot:prepend>
-                                    <v-icon>mdi-file-move</v-icon>
+                                    <v-icon>ph-export</v-icon>
                                 </template>
                                 <v-list-item-title>Move</v-list-item-title>
                             </v-list-item>
                             <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)">
                                 <template v-slot:prepend>
-                                    <v-icon>mdi-delete</v-icon>
+                                    <v-icon>ph-trash</v-icon>
                                 </template>
                                 <v-list-item-title>Delete</v-list-item-title>
                             </v-list-item>
@@ -87,52 +86,52 @@
 <div class="d-flex justify-left align-center pa-2 mt-2 ai-actions">
     <v-tooltip text="Generate with AI" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="generateWithAIDialog = !generateWithAIDialog" class="ma-2" variant="outlined" prepend-icon="mdi-lightbulb" rounded="lg" :color="theme === 'dark' ? 'amber' : 'orange-darken-4'">Generate</v-btn>
+            <v-btn v-bind="props" @click="generateWithAIDialog = !generateWithAIDialog" class="ma-2" variant="outlined" prepend-icon="ph-lightbulb" rounded="lg" :color="theme === 'dark' ? 'amber' : 'orange-darken-4'">Generate</v-btn>
         </template>
     </v-tooltip>
     <v-tooltip text="Edit with AI" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiEdit" class="ma-2" variant="outlined" prepend-icon="mdi-pencil" rounded="lg" color="primary">Edit</v-btn>
+            <v-btn v-bind="props" @click="aiEdit" class="ma-2" variant="outlined" prepend-icon="ph-pencil-simple" rounded="lg" color="primary">Edit</v-btn>
         </template>
     </v-tooltip>
     <v-tooltip text="Fix spelling & grammar" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiFixGrammar()" class="ma-2" variant="outlined" prepend-icon="mdi-spellcheck" rounded="lg" :color="theme === 'dark' ? 'teal-lighten-1' : 'teal-darken-4'">Fix</v-btn>
+            <v-btn v-bind="props" @click="aiFixGrammar()" class="ma-2" variant="outlined" prepend-icon="ph-text-aa" rounded="lg" :color="theme === 'dark' ? 'teal-lighten-1' : 'teal-darken-4'">Fix</v-btn>
         </template>
     </v-tooltip>
     <v-tooltip text="Format text with AI" location="bottom">
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiFormatText()" class="ma-2" variant="outlined" prepend-icon="mdi-format-letter-case-lower" rounded="lg" :color="theme === 'dark' ? 'blue-grey-lighten-3' : 'blue-grey-darken-4'">Format</v-btn>
+            <v-btn v-bind="props" @click="aiFormatText()" class="ma-2" variant="outlined" prepend-icon="ph-text-t" rounded="lg" :color="theme === 'dark' ? 'blue-grey-lighten-3' : 'blue-grey-darken-4'">Format</v-btn>
         </template>
     </v-tooltip>
     <v-menu>
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" class="ma-2" variant="outlined" prepend-icon="mdi-chevron-down" rounded="lg">Other</v-btn>
+            <v-btn v-bind="props" class="ma-2" variant="outlined" prepend-icon="ph-caret-down" rounded="lg">Other</v-btn>
         </template>
         <v-list density="compact">
             <!-- Edit submenu (no Format here) -->
             <v-list-subheader>Edit</v-list-subheader>
             <v-list-item @click="aiImproveWriting()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-pencil"></v-icon>
+                    <v-icon icon="ph-pencil-simple"></v-icon>
                 </template>
                 <v-list-item-title>Improve writing</v-list-item-title>
             </v-list-item>
             <v-list-item @click="aiMakeShorter()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-text-short"></v-icon>
+                    <v-icon icon="ph-text-align-left"></v-icon>
                 </template>
                 <v-list-item-title>Summarize</v-list-item-title>
             </v-list-item>
             <v-list-item @click="aiMakeLonger()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-text-long"></v-icon>
+                    <v-icon icon="ph-text-align-justify"></v-icon>
                 </template>
                 <v-list-item-title>Expand</v-list-item-title>
             </v-list-item>
             <v-list-item @click="aiSimplify()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-alphabetical-variant"></v-icon>
+                    <v-icon icon="ph-text-aa"></v-icon>
                 </template>
                 <v-list-item-title>Simplify language</v-list-item-title>
             </v-list-item>
@@ -142,10 +141,10 @@
                 <template v-slot:activator="{ props }">
                     <v-list-item v-bind="props">
                         <template v-slot:prepend>
-                            <v-icon icon="mdi-tune-variant"></v-icon>
+                            <v-icon icon="ph-sliders-horizontal"></v-icon>
                         </template>
                         <template v-slot:append>
-                            <v-icon icon="mdi-chevron-right"></v-icon>
+                            <v-icon icon="ph-caret-right"></v-icon>
                         </template>
                         <v-list-item-title>Change tone to</v-list-item-title>
                     </v-list-item>
@@ -165,10 +164,10 @@
                 <template v-slot:activator="{ props }">
                     <v-list-item v-bind="props">
                         <template v-slot:prepend>
-                            <v-icon icon="mdi-translate"></v-icon>
+                            <v-icon icon="ph-translate"></v-icon>
                         </template>
                         <template v-slot:append>
-                            <v-icon icon="mdi-chevron-right"></v-icon>
+                            <v-icon icon="ph-caret-right"></v-icon>
                         </template>
                         <v-list-item-title>Translate to</v-list-item-title>
                     </v-list-item>
@@ -188,10 +187,12 @@
 <div v-if="editor">
     <bubble-menu
     class="bubble-menu"
-    :tippy-options="{
-        duration: 100,
-        position: fixed,
-        zIndex: 1500,
+    :should-show="shouldShowBubbleMenu"
+    :append-to="getBubbleMenuAppendTarget"
+    :options="{
+        offset: 6,
+        placement: 'top',
+        strategy: 'fixed',
     }"
     :editor="editor"
     >
@@ -210,7 +211,7 @@
             <v-tooltip text="Bold (⌘B)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleBold().run()">
-                        <v-icon>mdi-format-bold</v-icon>
+                        <v-icon>ph-text-b</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -218,7 +219,7 @@
             <v-tooltip text="Italic (⌘I)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleItalic().run()">
-                        <v-icon>mdi-format-italic</v-icon>
+                        <v-icon>ph-text-italic</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -226,7 +227,7 @@
             <v-tooltip text="Underline (⌘U)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleUnderline().run()">
-                        <v-icon>mdi-format-underline</v-icon>
+                        <v-icon>ph-text-underline</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -234,7 +235,7 @@
             <v-tooltip text="Strike (⌘⇧S)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleStrike().run()">
-                        <v-icon>mdi-format-strikethrough</v-icon>
+                        <v-icon>ph-text-strikethrough</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -242,7 +243,7 @@
             <v-tooltip text="Superscript (⌘.)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleSuperscript().run()">
-                        <v-icon>mdi-format-superscript</v-icon>
+                        <v-icon>ph-text-superscript</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -250,7 +251,7 @@
             <v-tooltip text="Subscript (⌘,)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleSubscript().run()">
-                        <v-icon>mdi-format-subscript</v-icon>
+                        <v-icon>ph-text-subscript</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -258,7 +259,7 @@
             <v-tooltip text="Inline code (⌘E)" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="editor.chain().focus().toggleCode().run()">
-                        <v-icon>mdi-code-tags</v-icon>
+                        <v-icon>ph-code</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -277,7 +278,7 @@
                 width="135px"
                 v-bind="props"
                 variant="text"
-                prepend-icon="mdi-chevron-down"
+                prepend-icon="ph-caret-down"
                 >
                 Style
             </v-btn>
@@ -287,65 +288,71 @@
             <!-- Paragraph -->
             <v-list-item @click="editor.commands.setParagraph()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-paragraph"></v-icon>
+                    <v-icon icon="ph-paragraph"></v-icon>
                 </template>
                 <v-list-item-title>Paragraph</v-list-item-title>
             </v-list-item>
             <!-- Heading 1 -->
             <v-list-item @click="editor.commands.toggleHeading({ level: 1 })">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-header-1"></v-icon>
+                    <v-icon icon="ph-text-h-one"></v-icon>
                 </template>
                 <v-list-item-title>Heading 1</v-list-item-title>
             </v-list-item>
             <!-- Heading 2 -->
             <v-list-item @click="editor.commands.toggleHeading({ level: 2 })">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-header-2"></v-icon>
+                    <v-icon icon="ph-text-h-two"></v-icon>
                 </template>
                 <v-list-item-title>Heading 2</v-list-item-title>
             </v-list-item>
             <!-- Heading 3 -->
             <v-list-item @click="editor.commands.toggleHeading({ level: 3 })">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-header-3"></v-icon>
+                    <v-icon icon="ph-text-h-three"></v-icon>
                 </template>
                 <v-list-item-title>Heading 3</v-list-item-title>
             </v-list-item>
             <!-- Bullet list -->
             <v-list-item @click="editor.commands.toggleBulletList()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-list-bulleted"></v-icon>
+                    <v-icon icon="ph-list-bullets"></v-icon>
                 </template>
                 <v-list-item-title>Bullet list</v-list-item-title>
             </v-list-item>
             <!-- Numbered list -->
             <v-list-item @click="editor.commands.toggleOrderedList()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-list-numbered"></v-icon>
+                    <v-icon icon="ph-list-numbers"></v-icon>
                 </template>
                 <v-list-item-title>Numbered list</v-list-item-title>
             </v-list-item>
             <!-- Task list -->
             <v-list-item @click="editor.commands.toggleTaskList()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-list-checkbox"></v-icon>
+                    <v-icon icon="ph-list-checks"></v-icon>
                 </template>
                 <v-list-item-title>Task list</v-list-item-title>
             </v-list-item>
             <!-- Blockquote -->
             <v-list-item @click="editor.commands.toggleBlockquote()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-format-quote-open"></v-icon>
+                    <v-icon icon="ph-quotes"></v-icon>
                 </template>
                 <v-list-item-title>Quote</v-list-item-title>
             </v-list-item>
             <!-- Code block -->
             <v-list-item @click="editor.commands.toggleCodeBlock()">
                 <template v-slot:prepend>
-                    <v-icon icon="mdi-code-tags"></v-icon>
+                    <v-icon icon="ph-code"></v-icon>
                 </template>
                 <v-list-item-title>Code block</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="embedYoutubeDialog = true">
+                <template v-slot:prepend>
+                    <v-icon icon="ph-youtube-logo"></v-icon>
+                </template>
+                <v-list-item-title>Embed YouTube video</v-list-item-title>
             </v-list-item>
         </v-list>
     </v-menu>
@@ -359,14 +366,14 @@
             width="135px"
             v-bind="props"
             variant="text"
-            prepend-icon="mdi-marker"
+            prepend-icon="ph-highlighter"
             >
             Highlight
         </v-btn>
     </template>
     <!-- Card with all color to highlight -->
     <v-card class="pa-2 rounded-lg elevation-4" max-width="340" :style="{ backgroundColor: backgroundColor }">
-        <v-row dense>
+        <v-row density="compact">
             <v-col v-for="(color, index) in highlightColors" :key="index" cols="3">
                 <v-btn
                 :style="{ backgroundColor: color.displayedColor }"
@@ -391,14 +398,14 @@
         width="135px"
         v-bind="props"
         variant="text"
-        prepend-icon="mdi-palette"
+        prepend-icon="ph-palette"
         >
         Color
     </v-btn>
 </template>
 <!-- Card with all color for the text -->
 <v-card class="pa-2 rounded-lg elevation-4" max-width="340" :style="{ backgroundColor: backgroundColor }">
-    <v-row dense>
+    <v-row density="compact">
         <v-col v-for="(color, index) in textColors" :key="index" cols="3">
             <v-btn
             :style="{ backgroundColor: color.displayedColor }"
@@ -429,7 +436,14 @@
         :loading="isLoading"
         >
         <v-card-text>
-            <editor-content :editor="editor" v-model="content"/>
+            <div ref="editorShellRef" class="editor-shell">
+                <TableOverlayControls
+                v-if="editor"
+                :editor="editor"
+                :container-ref="editorShellRef"
+                />
+                <editor-content :editor="editor"/>
+            </div>
         </v-card-text>
     </v-card>
 </div>
@@ -471,6 +485,11 @@
     :selectedText="selectedText"
     @apply="handleApply"
     />
+
+    <EmbedYoutubeDialog
+    v-model="embedYoutubeDialog"
+    @embed="handleYoutubeEmbed"
+    />
 </div>
 </template>
 
@@ -480,6 +499,9 @@
     import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDialog.vue'
     import GenerateAIDialog from '../components/editor/GenerateAIDialog.vue'
     import EditAIDialog from '../components/editor/EditAIDialog.vue'
+    import EmbedYoutubeDialog from '../components/editor/EmbedYoutubeDialog.vue'
+    import TableOverlayControls from '../components/editor/TableOverlayControls.vue'
+    import TableSlashCommand, { OPEN_YOUTUBE_DIALOG_EVENT } from '../components/editor/tableSlashCommand'
     
     import { createLlmService } from '../services/llmService';
     import fixGrammarPrompt from '../prompts/fixGrammarPrompt'
@@ -494,36 +516,40 @@
     
     import { useRouter } from 'vue-router'
     import { useFoldersStore } from '../stores/foldersStore'
-    import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
+    import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
+    import { isTextSelection } from '@tiptap/core'
     import StarterKit from '@tiptap/starter-kit'
     import {
-        BubbleMenu,
         Editor,
         EditorContent,
-        FloatingMenu,
     } from '@tiptap/vue-3'
-    import Underline from '@tiptap/extension-underline'
-    import Placeholder from '@tiptap/extension-placeholder'
+    import { BubbleMenu } from '@tiptap/vue-3/menus'
+    import { Placeholder } from '@tiptap/extensions'
     import Subscript from '@tiptap/extension-subscript'
     import Superscript from '@tiptap/extension-superscript'
     import Highlight from '@tiptap/extension-highlight'
-    import Blockquote from '@tiptap/extension-blockquote'
-    import BulletList from '@tiptap/extension-bullet-list'
-    import OrderedList from '@tiptap/extension-ordered-list'
-    import ListItem from '@tiptap/extension-list-item'
     import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-    import TaskList from '@tiptap/extension-task-list'
-    import TaskItem from '@tiptap/extension-task-item'
-    import HorizontalRule from '@tiptap/extension-horizontal-rule'
+    import { TaskList, TaskItem } from '@tiptap/extension-list'
     import { Color } from '@tiptap/extension-color'
-    import TextStyle from '@tiptap/extension-text-style'
-    import Table from '@tiptap/extension-table'
-    import TableCell from '@tiptap/extension-table-cell'
-    import TableHeader from '@tiptap/extension-table-header'
-    import TableRow from '@tiptap/extension-table-row'
+    import { TextStyle } from '@tiptap/extension-text-style'
+    import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
+    import FileHandler from '@tiptap/extension-file-handler'
+    import Youtube from '../components/editor/youtubeEmbed'
+    import ResizableImage from '../components/editor/resizableImage'
     
     // Code block highlighting: load all languages with "all" and common languages with "common"
     import { all, createLowlight } from 'lowlight'
+
+    const IMAGE_MUTATION_EVENT = 'lumos-note-image-mutation'
+    const VIDEO_MUTATION_EVENT = 'lumos-note-video-mutation'
+    const EMPTY_EDITOR_DOCUMENT = {
+        type: 'doc',
+        content: [
+            {
+                type: 'paragraph',
+            },
+        ],
+    }
     
     const props = defineProps({
         theme: {
@@ -563,11 +589,11 @@
     
     // Init list with supported tones for change tone tool
     const supportedTones = [
-    { key: 'professional', icon: 'mdi-briefcase', label: 'Professional' },
-    { key: 'friendly', icon: 'mdi-emoticon-happy', label: 'Friendly' },
-    { key: 'empathetic', icon: 'mdi-handshake', label: 'Empathetic' },
-    { key: 'persuasive', icon: 'mdi-creation', label: 'Persuasive' },
-    { key: 'casual', icon: 'mdi-emoticon-cool', label: 'Casual' }
+    { key: 'professional', icon: 'ph-briefcase', label: 'Professional' },
+    { key: 'friendly', icon: 'ph-smiley', label: 'Friendly' },
+    { key: 'empathetic', icon: 'ph-handshake', label: 'Empathetic' },
+    { key: 'persuasive', icon: 'ph-sparkle', label: 'Persuasive' },
+    { key: 'casual', icon: 'ph-smiley-wink', label: 'Casual' }
     ]
     
     // Init list with supported languages for translation tool
@@ -600,6 +626,7 @@
     
     const generateWithAIDialog = ref(false)
     const editWithAIDialog = ref(false)
+    const embedYoutubeDialog = ref(false)
     
     const note = ref(null)
     const selectedText = ref('')
@@ -610,6 +637,12 @@
         // Softer surfaces for menus consistent with app theme
         return props.theme === 'dark' ? '#212121' : '#ffffff'
     })
+
+    const shouldShowBubbleMenu = ({ state, from, to }) => (
+        isTextSelection(state.selection)
+        && !state.selection.empty
+        && from !== to
+    )
     
     const currentFolderName = computed(() => {
         if (!note.value) return ''
@@ -621,7 +654,8 @@
     const lowlight = createLowlight(all)
     
     const editor = ref(null)
-    const content = ref('')
+    const editorShellRef = ref(null)
+    let noteRequestId = 0
     
     const isLoading = ref(false)
     
@@ -666,48 +700,158 @@
             editor.value.chain().focus().setColor(colorValue).run();
         }
     }
-    
+
+    const getBubbleMenuAppendTarget = () => document.body
+
+    const setEditorDocument = (contentJson) => {
+        if (!editor.value) {
+            return
+        }
+
+        const nextContent = contentJson && contentJson !== '{}'
+            ? contentJson
+            : EMPTY_EDITOR_DOCUMENT
+
+        editor.value.commands.setContent(nextContent, {
+            emitUpdate: false,
+        })
+    }
+
     const getNote = async (id) => {
+        const requestId = ++noteRequestId
+
         // Get note from the database
         const noteInfo = await window.api.getNote(id)
-        note.value = noteInfo
-        
+
+        if (requestId !== noteRequestId) {
+            return
+        }
+
         // Get note folder from the database
         const folderInfo = await window.api.getFolder(noteInfo.folder_id)
+
+        if (requestId !== noteRequestId) {
+            return
+        }
+
+        note.value = noteInfo
         note.value.folderName = folderInfo.name
         
         // Set active note in the store
         store.activeNoteId = noteInfo.id
         store.activeNoteTitle = noteInfo.title
         store.activeNoteCurrentFolderId = noteInfo.folder_id
-        
-        if (note.value && editor.value && note.value.content_json != '{}') {
-            editor.value.commands.setContent(note.value.content_json)
+
+        setEditorDocument(note.value?.content_json)
+    }
+
+    const persistEditorContent = async ({ refreshTopic = false } = {}) => {
+        if (!editor.value || !note.value) {
+            return
         }
+
+        let topic = note.value.topic || ''
+
+        if (refreshTopic && getTopicService) {
+            topic = await getTopicService.generate(editor.value.getText())
+        }
+
+        const payload = {
+            id: note.value.id,
+            contentJson: editor.value.getJSON(),
+            contentText: editor.value.getText(),
+            topic,
+        }
+
+        await window.api.updateNote(payload)
+        note.value.topic = topic
     }
     
     const saveNoteManually = async () => {
-        try {       
+        try {
             // Enable loading state
-            isLoading.value = 'primary'
-            
-            // Extract the topic from note content using AI service
-            const topic = await getTopicService.generate(editor.value.getText());
-            
-            // Save the content
-            const payload = {
-                id: note.value.id,
-                contentJson: editor.value.getJSON(),
-                contentText: editor.value.getText(),
-                topic: topic,
-            }
-            await window.api.updateNote(payload)
-            
+            isLoading.value = true
+
+            await persistEditorContent({ refreshTopic: true })
+
             // Stop loading state
             isLoading.value = false
         } catch (error) {
             const errorMsg = 'Failed to save note'
             console.error(errorMsg, error)
+            isLoading.value = false
+        }
+    }
+
+    const createImageNode = (source, altText = '', storageSrc = null) => ({
+        type: 'noteImage',
+        attrs: {
+            src: source,
+            storageSrc,
+            alt: altText,
+            title: altText,
+            align: 'center',
+        },
+    })
+
+    const isImageFile = (file) => (
+        file.type?.startsWith('image/')
+        || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '')
+    )
+
+    const insertImportedImages = async (files, insertPosition = null) => {
+        if (!note.value?.id || !editor.value) {
+            return false
+        }
+
+        const imageFiles = files.filter(isImageFile)
+
+        if (!imageFiles.length) {
+            return false
+        }
+
+        try {
+            if (typeof insertPosition === 'number') {
+                editor.value.chain().focus().setTextSelection(insertPosition).run()
+            } else {
+                editor.value.chain().focus().run()
+            }
+
+            for (const file of imageFiles) {
+                const imageData = new Uint8Array(await file.arrayBuffer())
+                const importedImage = await window.api.importNoteImage({
+                    noteId: note.value.id,
+                    fileName: file.name,
+                    mimeType: file.type,
+                    data: imageData,
+                })
+
+                editor.value.commands.setImage(
+                    createImageNode(importedImage.src, file.name, importedImage.storedSrc).attrs
+                )
+            }
+
+            await persistEditorContent()
+            return true
+        } catch (error) {
+            console.error('Failed to import dropped image:', error)
+            return false
+        }
+    }
+
+    const handleImageMutation = async () => {
+        try {
+            await persistEditorContent()
+        } catch (error) {
+            console.error('Failed to persist image change:', error)
+        }
+    }
+
+    const handleVideoMutation = async () => {
+        try {
+            await persistEditorContent()
+        } catch (error) {
+            console.error('Failed to persist video change:', error)
         }
     }
     
@@ -778,6 +922,28 @@
         }
         
         editor.value.chain().focus().setTextSelection({ from: selectionFrom.value, to: selectionTo.value }).insertContent(aiText).run();
+    }
+
+    const handleYoutubeEmbed = ({ src }) => {
+        if (!editor.value) {
+            console.error('Editor not ready')
+            return
+        }
+
+        editor.value
+            .chain()
+            .focus()
+            .setYoutubeVideo({
+                src,
+                align: 'center',
+                width: 640,
+                height: 360,
+            })
+            .run()
+    }
+
+    const openYoutubeEmbedDialog = () => {
+        embedYoutubeDialog.value = true
     }
     
     const aiFixGrammar = async () => {
@@ -1155,19 +1321,13 @@
         }
     }
     
-    onMounted(() => {
+    onMounted(async () => {
         editor.value = new Editor({
             extensions: [
             StarterKit,
-            Underline,
             Subscript,
             Superscript,
-            Blockquote,
-            BulletList,
-            OrderedList,
-            ListItem,
             TaskList,
-            HorizontalRule,
             TextStyle,
             Highlight.configure({
                 multicolor: true,
@@ -1187,22 +1347,61 @@
             }),
             Table.configure({
                 resizable: true,
+                renderWrapper: true,
             }),
             TableRow,
             TableHeader,
             TableCell,
+            TableSlashCommand,
+            FileHandler.configure({
+                allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml'],
+                onDrop: (currentEditor, files, pos) => {
+                    currentEditor.chain().focus(pos).run()
+                    void insertImportedImages(files, pos)
+                },
+                onPaste: (currentEditor, files) => {
+                    currentEditor.chain().focus().run()
+                    void insertImportedImages(files)
+                },
+            }),
+            ResizableImage,
+            Youtube.configure({
+                addPasteHandler: true,
+                width: 640,
+                height: 360,
+                controls: true,
+                nocookie: true,
+                modestBranding: true,
+            }),
             ],
         })
-        
-        getNote(props.noteId)
+
+        await nextTick()
+        await getNote(props.noteId)
         window.addEventListener('keydown', handleKeyDown)
+        window.addEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
+        window.addEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
+        window.addEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openYoutubeEmbedDialog)
+    })
+
+    watch(() => props.noteId, async (nextNoteId, previousNoteId) => {
+        if (!nextNoteId || nextNoteId === previousNoteId) {
+            return
+        }
+
+        await nextTick()
+        await getNote(nextNoteId)
     })
     
     onBeforeUnmount(() => {
+        noteRequestId += 1
         if (editor.value) {
             editor.value.destroy()
         }
         window.removeEventListener('keydown', handleKeyDown)
+        window.removeEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
+        window.removeEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
+        window.removeEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openYoutubeEmbedDialog)
     })
 </script>
 
@@ -1216,9 +1415,35 @@
     }
     
     .ProseMirror {
-        padding: 16px;
+        padding: 16px 36px;
         height: calc(100vh - 300px);
         overflow-y: auto;
+    }
+
+    .editor-shell {
+        position: relative;
+    }
+
+    .bubble-menu {
+        z-index: 1500;
+    }
+
+    .ProseMirror .iframe-wrapper,
+    .ProseMirror iframe {
+        max-width: 100%;
+    }
+
+    .ProseMirror .iframe-wrapper {
+        margin: 1rem 0;
+    }
+
+    .ProseMirror iframe {
+        display: block;
+        border: 0;
+        border-radius: 12px;
+        width: min(100%, 640px);
+        aspect-ratio: 16 / 9;
+        height: auto;
     }
     
     /* Remove the default outline when the editor is focused */
@@ -1380,61 +1605,87 @@
     }
     
     /* Table styles */
-    /* Table-specific styling */
-    table {
-        border-collapse: collapse;
-        margin: 0;
-        overflow: hidden;
-        table-layout: fixed;
-        width: 100%;
-        
-        td,
-        th {
-            border: 1px solid var(--gray-3);
-            box-sizing: border-box;
-            min-width: 1em;
-            padding: 6px 8px;
-            position: relative;
-            vertical-align: top;
-            
-            > * {
-                margin-bottom: 0;
-            }
-        }
-        
-        th {
-            background-color: var(--gray-1);
-            font-weight: bold;
-            text-align: left;
-        }
-        
-        .selectedCell:after {
-            background: var(--gray-2);
-            content: "";
-            left: 0; right: 0; top: 0; bottom: 0;
-            pointer-events: none;
-            position: absolute;
-            z-index: 2;
-        }
-        
-        .column-resize-handle {
-            background-color: var(--purple);
-            bottom: -2px;
-            pointer-events: none;
-            position: absolute;
-            right: -2px;
-            top: 0;
-            width: 4px;
-        }
-    }
-    
-    .tableWrapper {
+    .ProseMirror .tableWrapper {
         margin: 1.5rem 0;
         overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid rgba(33, 33, 33, 0.16);
+        background-color: #ffffff;
     }
-    
-    &.resize-cursor {
-        cursor: ew-resize;
+
+    .ProseMirror table {
+        border-collapse: collapse;
+        margin: 0;
+        table-layout: fixed;
+        width: 100%;
+        background-color: #ffffff;
+    }
+
+    .ProseMirror table td,
+    .ProseMirror table th {
+        border: 1px solid rgba(33, 33, 33, 0.16);
+        box-sizing: border-box;
+        min-width: 1em;
+        padding: 10px 12px;
+        position: relative;
+        vertical-align: top;
+        background-color: transparent;
+    }
+
+    .ProseMirror table td > *,
+    .ProseMirror table th > * {
+        margin-bottom: 0;
+    }
+
+    .ProseMirror table th {
+        background-color: #f5f5f5;
+        font-weight: 600;
+        text-align: left;
+    }
+
+    .v-theme--dark .ProseMirror .tableWrapper {
+        border-color: rgba(255, 255, 255, 0.16);
+        background-color: #1f1f1f;
+    }
+
+    .v-theme--dark .ProseMirror table {
+        background-color: #1f1f1f;
+    }
+
+    .v-theme--dark .ProseMirror table td,
+    .v-theme--dark .ProseMirror table th {
+        border-color: rgba(255, 255, 255, 0.16);
+        background-color: transparent;
+    }
+
+    .v-theme--dark .ProseMirror table th {
+        background-color: #2a2a2a;
+    }
+
+    .ProseMirror table .selectedCell::after {
+        background: rgba(33, 150, 243, 0.12);
+        content: "";
+        inset: 0;
+        pointer-events: none;
+        position: absolute;
+        z-index: 2;
+    }
+
+    .v-theme--dark .ProseMirror table .selectedCell::after {
+        background: rgba(144, 202, 249, 0.12);
+    }
+
+    .ProseMirror table .column-resize-handle {
+        background-color: rgb(var(--v-theme-primary));
+        bottom: -2px;
+        pointer-events: none;
+        position: absolute;
+        right: -2px;
+        top: 0;
+        width: 4px;
+    }
+
+    .resize-cursor {
         cursor: col-resize;
     }
     
@@ -1489,32 +1740,5 @@
     
     [data-theme="dark"] .resize-divider:hover {
         background-color: #2196f3;
-    }
-    
-    /* Floating menu */
-    .floating-menu {
-        display: flex;
-        background-color: gray;
-        padding: 0.1rem;
-        border-radius: 0.5rem;
-        
-        button {
-            background-color: unset;
-            padding: 0.275rem 0.425rem;
-            border-radius: 0.3rem;
-            
-            &:hover {
-                background-color: gray;
-            }
-            
-            &.is-active {
-                background-color: white;
-                color: purple;
-                
-                &:hover {
-                    color: darkmagenta;
-                }
-            }
-        }
     }
 </style>

@@ -12,6 +12,12 @@ export const useChatStore = defineStore('chat', () => {
     }])
     const currentScope = ref('all')
     const userInput = ref('')
+    const scrollState = ref({
+        top: 0,
+        distanceFromBottom: 0,
+        anchorIndex: 0,
+        anchorOffset: 0,
+    })
     
     // Actions
     const resetChat = () => {
@@ -23,6 +29,12 @@ export const useChatStore = defineStore('chat', () => {
             sources: [],
         }]
         userInput.value = ''
+        scrollState.value = {
+            top: 0,
+            distanceFromBottom: 0,
+            anchorIndex: 0,
+            anchorOffset: 0,
+        }
     }
     
     const addMessage = (message) => {
@@ -32,13 +44,25 @@ export const useChatStore = defineStore('chat', () => {
     const updateMessage = (index, message) => {
         messages.value[index] = message
     }
+
+    const updateScrollState = ({ top, clientHeight, scrollHeight, anchorIndex, anchorOffset }) => {
+        const maxScroll = Math.max(0, scrollHeight - clientHeight)
+        scrollState.value = {
+            top,
+            distanceFromBottom: Math.max(0, maxScroll - top),
+            anchorIndex,
+            anchorOffset,
+        }
+    }
     
     return {
         messages,
         currentScope,
         userInput,
+        scrollState,
         resetChat,
         addMessage,
-        updateMessage
+        updateMessage,
+        updateScrollState,
     }
 })

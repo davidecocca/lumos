@@ -13,9 +13,9 @@
         v-for="(note, index) in message.sources"
         :key="index"
         variant="outlined"
-        prepend-icon="mdi-file-document-outline"
+        prepend-icon="ph-file-text"
         @click="openNote(note.id)"
-        class="text-none text-subtitle-2"
+        class="text-none text-label-large"
         >
         {{ note.folderName }} / {{ note.title }}
     </v-chip>
@@ -25,19 +25,17 @@
 </template>
 
 <script setup>
-    import { useRouter } from 'vue-router'
-    
-    const router = useRouter()
-    
     const props = defineProps({
         message: {
             type: Object,
             required: true
         }
     })
+
+    const emit = defineEmits(['open-source'])
     
     // Open the note when the user clicks on the citing
     const openNote = (nodeId) => {
-        router.push({ name: 'notes', params: { noteId: nodeId } })
+        emit('open-source', nodeId)
     }
 </script>

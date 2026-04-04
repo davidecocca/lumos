@@ -1,8 +1,8 @@
 <template>
     <div class="d-flex flex-column">
         <div class="d-flex flex-column align-center mt-2 mb-4">
-            <p class="text-h4 font-weight-medium">Settings</p>
-            <p class="text-h6 font-weight-light">Set things your way.</p>
+            <p class="text-headline-large font-weight-medium ma-0">Settings</p>
+            <p class="text-headline-small font-weight-light ma-0 mt-1">Set things your way.</p>
         </div>
         
         <v-tabs

@@ -6,6 +6,15 @@ import { aiPreferencesStore } from '../stores/aiPreferencesStore';
 const ollamaBaseUrl = "http://localhost:11434";
 const ollamaListModelsUrl = `${ollamaBaseUrl}/api/tags`;
 
+const normalizeModelForProvider = (provider, model) => {
+    if (provider !== 'ollama') return model;
+    if (typeof model === 'string') return model;
+    if (typeof model === 'object' && typeof model?.name === 'string') {
+        return model.name;
+    }
+    return null;
+};
+
 /**
 * Service for interacting with LLM models
 */
@@ -108,7 +117,7 @@ export function createLlmService(systemPrompt, feature = 'chat', options = {}) {
     // Get settings from store based on feature
     const featureSettings = aiStore[feature];
     const provider = featureSettings?.provider;
-    const model = featureSettings?.model;
+    const model = normalizeModelForProvider(provider, featureSettings?.model);
     
     // Configure LLM based on provider and model
     if (provider === 'ollama' && model) {
