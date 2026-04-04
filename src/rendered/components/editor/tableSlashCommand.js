@@ -1,8 +1,8 @@
 import { Extension } from '@tiptap/core'
 import { PluginKey } from '@tiptap/pm/state'
+import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom'
 import Suggestion from '@tiptap/suggestion'
 import { VueRenderer } from '@tiptap/vue-3'
-import tippy from 'tippy.js'
 import TableSlashMenu from './TableSlashMenu.vue'
 
 export const tableSlashCommandPluginKey = new PluginKey('tableSlashCommand')
@@ -80,6 +80,64 @@ export default Extension.create({
                 render: () => {
                     let component = null
                     let popup = null
+                    let cleanupAutoUpdate = null
+
+                    const destroyPopup = () => {
+                        cleanupAutoUpdate?.()
+                        cleanupAutoUpdate = null
+
+                        if (popup?.parentNode) {
+                            popup.parentNode.removeChild(popup)
+                        }
+
+                        popup = null
+                    }
+
+                    const createVirtualElement = (clientRect) => ({
+                        getBoundingClientRect: () => clientRect(),
+                    })
+
+                    const updatePopupPosition = async (props) => {
+                        if (!popup || !props.clientRect) {
+                            return
+                        }
+
+                        const { x, y } = await computePosition(
+                            createVirtualElement(props.clientRect),
+                            popup,
+                            {
+                                placement: 'bottom-start',
+                                strategy: 'fixed',
+                                middleware: [
+                                    offset(8),
+                                    flip(),
+                                    shift({ padding: 8 }),
+                                ],
+                            }
+                        )
+
+                        Object.assign(popup.style, {
+                            left: `${x}px`,
+                            top: `${y}px`,
+                        })
+                    }
+
+                    const bindPopupAutoUpdate = (props) => {
+                        cleanupAutoUpdate?.()
+
+                        if (!popup || !props.clientRect) {
+                            cleanupAutoUpdate = null
+                            return
+                        }
+
+                        cleanupAutoUpdate = autoUpdate(
+                            createVirtualElement(props.clientRect),
+                            popup,
+                            () => {
+                                void updatePopupPosition(props)
+                            }
+                        )
+                    }
 
                     return {
                         onStart: (props) => {
@@ -92,34 +150,35 @@ export default Extension.create({
                                 return
                             }
 
-                            popup = tippy(document.body, {
-                                getReferenceClientRect: props.clientRect,
-                                appendTo: () => document.body,
-                                content: component.element,
-                                interactive: true,
-                                placement: 'bottom-start',
-                                showOnCreate: true,
-                                trigger: 'manual',
-                                offset: [0, 8],
-                                zIndex: 1600,
+                            popup = document.createElement('div')
+                            Object.assign(popup.style, {
+                                position: 'fixed',
+                                top: '0',
+                                left: '0',
+                                zIndex: '1600',
                             })
+                            popup.appendChild(component.element)
+                            document.body.appendChild(popup)
+
+                            bindPopupAutoUpdate(props)
+                            void updatePopupPosition(props)
                         },
 
                         onUpdate: (props) => {
                             component?.updateProps(props)
 
-                            if (!props.clientRect || !popup?.[0]) {
+                            if (!popup || !props.clientRect) {
+                                destroyPopup()
                                 return
                             }
 
-                            popup[0].setProps({
-                                getReferenceClientRect: props.clientRect,
-                            })
+                            bindPopupAutoUpdate(props)
+                            void updatePopupPosition(props)
                         },
 
                         onKeyDown: (props) => {
                             if (props.event.key === 'Escape') {
-                                popup?.[0]?.hide()
+                                destroyPopup()
                                 return true
                             }
 
@@ -127,9 +186,8 @@ export default Extension.create({
                         },
 
                         onExit: () => {
-                            popup?.[0]?.destroy()
+                            destroyPopup()
                             component?.destroy()
-                            popup = null
                             component = null
                         },
                     }

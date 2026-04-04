@@ -210,6 +210,18 @@
 
     const getContainerElement = () => props.containerRef?.value || props.containerRef || null
 
+    const getEditorDom = (editorInstance = props.editor) => {
+        if (!editorInstance) {
+            return null
+        }
+
+        try {
+            return editorInstance.view?.dom || null
+        } catch {
+            return null
+        }
+    }
+
     const getSelectionNodeElement = () => {
         const editorInstance = props.editor
 
@@ -293,10 +305,11 @@
 
     const handleOverlayLeave = (event) => {
         const relatedTarget = event.relatedTarget instanceof Element ? event.relatedTarget : null
+        const editorDom = getEditorDom()
 
         if (
             relatedTarget?.closest('.table-overlay')
-            || props.editor?.view.dom.contains(relatedTarget)
+            || editorDom?.contains(relatedTarget)
         ) {
             return
         }
@@ -307,6 +320,8 @@
     }
 
     const detachEditorListeners = (editorInstance) => {
+        const editorDom = getEditorDom(editorInstance)
+
         if (!editorInstance) {
             return
         }
@@ -315,12 +330,14 @@
         editorInstance.off('transaction', syncEditorState)
         editorInstance.off('focus', syncEditorState)
         editorInstance.off('blur', syncEditorState)
-        editorInstance.view.dom.removeEventListener('scroll', syncEditorState)
-        editorInstance.view.dom.removeEventListener('mousemove', handlePointerMove)
-        editorInstance.view.dom.removeEventListener('mouseleave', handlePointerLeave)
+        editorDom?.removeEventListener('scroll', syncEditorState)
+        editorDom?.removeEventListener('mousemove', handlePointerMove)
+        editorDom?.removeEventListener('mouseleave', handlePointerLeave)
     }
 
     const attachEditorListeners = (editorInstance) => {
+        const editorDom = getEditorDom(editorInstance)
+
         if (!editorInstance) {
             return
         }
@@ -329,9 +346,9 @@
         editorInstance.on('transaction', syncEditorState)
         editorInstance.on('focus', syncEditorState)
         editorInstance.on('blur', syncEditorState)
-        editorInstance.view.dom.addEventListener('scroll', syncEditorState)
-        editorInstance.view.dom.addEventListener('mousemove', handlePointerMove)
-        editorInstance.view.dom.addEventListener('mouseleave', handlePointerLeave)
+        editorDom?.addEventListener('scroll', syncEditorState)
+        editorDom?.addEventListener('mousemove', handlePointerMove)
+        editorDom?.addEventListener('mouseleave', handlePointerLeave)
     }
 
     const canRun = (buildChain) => {

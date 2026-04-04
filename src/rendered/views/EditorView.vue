@@ -188,10 +188,11 @@
     <bubble-menu
     class="bubble-menu"
     :should-show="shouldShowBubbleMenu"
-    :tippy-options="{
-        duration: 100,
-        position: fixed,
-        zIndex: 1500,
+    :append-to="getBubbleMenuAppendTarget"
+    :options="{
+        offset: 6,
+        placement: 'top',
+        strategy: 'fixed',
     }"
     :editor="editor"
     >
@@ -441,7 +442,7 @@
                 :editor="editor"
                 :container-ref="editorShellRef"
                 />
-                <editor-content :editor="editor" v-model="content"/>
+                <editor-content :editor="editor"/>
             </div>
         </v-card-text>
     </v-card>
@@ -515,33 +516,23 @@
     
     import { useRouter } from 'vue-router'
     import { useFoldersStore } from '../stores/foldersStore'
-    import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+    import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
     import { isTextSelection } from '@tiptap/core'
     import StarterKit from '@tiptap/starter-kit'
     import {
-        BubbleMenu,
         Editor,
         EditorContent,
     } from '@tiptap/vue-3'
-    import Underline from '@tiptap/extension-underline'
-    import Placeholder from '@tiptap/extension-placeholder'
+    import { BubbleMenu } from '@tiptap/vue-3/menus'
+    import { Placeholder } from '@tiptap/extensions'
     import Subscript from '@tiptap/extension-subscript'
     import Superscript from '@tiptap/extension-superscript'
     import Highlight from '@tiptap/extension-highlight'
-    import Blockquote from '@tiptap/extension-blockquote'
-    import BulletList from '@tiptap/extension-bullet-list'
-    import OrderedList from '@tiptap/extension-ordered-list'
-    import ListItem from '@tiptap/extension-list-item'
     import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-    import TaskList from '@tiptap/extension-task-list'
-    import TaskItem from '@tiptap/extension-task-item'
-    import HorizontalRule from '@tiptap/extension-horizontal-rule'
+    import { TaskList, TaskItem } from '@tiptap/extension-list'
     import { Color } from '@tiptap/extension-color'
-    import TextStyle from '@tiptap/extension-text-style'
-    import Table from '@tiptap/extension-table'
-    import TableCell from '@tiptap/extension-table-cell'
-    import TableHeader from '@tiptap/extension-table-header'
-    import TableRow from '@tiptap/extension-table-row'
+    import { TextStyle } from '@tiptap/extension-text-style'
+    import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
     import FileHandler from '@tiptap/extension-file-handler'
     import Youtube from '../components/editor/youtubeEmbed'
     import ResizableImage from '../components/editor/resizableImage'
@@ -551,6 +542,14 @@
 
     const IMAGE_MUTATION_EVENT = 'lumos-note-image-mutation'
     const VIDEO_MUTATION_EVENT = 'lumos-note-video-mutation'
+    const EMPTY_EDITOR_DOCUMENT = {
+        type: 'doc',
+        content: [
+            {
+                type: 'paragraph',
+            },
+        ],
+    }
     
     const props = defineProps({
         theme: {
@@ -656,7 +655,7 @@
     
     const editor = ref(null)
     const editorShellRef = ref(null)
-    const content = ref('')
+    let noteRequestId = 0
     
     const isLoading = ref(false)
     
@@ -702,23 +701,48 @@
         }
     }
 
+    const getBubbleMenuAppendTarget = () => document.body
+
+    const setEditorDocument = (contentJson) => {
+        if (!editor.value) {
+            return
+        }
+
+        const nextContent = contentJson && contentJson !== '{}'
+            ? contentJson
+            : EMPTY_EDITOR_DOCUMENT
+
+        editor.value.commands.setContent(nextContent, {
+            emitUpdate: false,
+        })
+    }
+
     const getNote = async (id) => {
+        const requestId = ++noteRequestId
+
         // Get note from the database
         const noteInfo = await window.api.getNote(id)
-        note.value = noteInfo
-        
+
+        if (requestId !== noteRequestId) {
+            return
+        }
+
         // Get note folder from the database
         const folderInfo = await window.api.getFolder(noteInfo.folder_id)
+
+        if (requestId !== noteRequestId) {
+            return
+        }
+
+        note.value = noteInfo
         note.value.folderName = folderInfo.name
         
         // Set active note in the store
         store.activeNoteId = noteInfo.id
         store.activeNoteTitle = noteInfo.title
         store.activeNoteCurrentFolderId = noteInfo.folder_id
-        
-        if (note.value && editor.value && note.value.content_json != '{}') {
-            editor.value.commands.setContent(note.value.content_json)
-        }
+
+        setEditorDocument(note.value?.content_json)
     }
 
     const persistEditorContent = async ({ refreshTopic = false } = {}) => {
@@ -1297,19 +1321,13 @@
         }
     }
     
-    onMounted(() => {
+    onMounted(async () => {
         editor.value = new Editor({
             extensions: [
             StarterKit,
-            Underline,
             Subscript,
             Superscript,
-            Blockquote,
-            BulletList,
-            OrderedList,
-            ListItem,
             TaskList,
-            HorizontalRule,
             TextStyle,
             Highlight.configure({
                 multicolor: true,
@@ -1357,15 +1375,26 @@
             }),
             ],
         })
-        
-        getNote(props.noteId)
+
+        await nextTick()
+        await getNote(props.noteId)
         window.addEventListener('keydown', handleKeyDown)
         window.addEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
         window.addEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
         window.addEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openYoutubeEmbedDialog)
     })
+
+    watch(() => props.noteId, async (nextNoteId, previousNoteId) => {
+        if (!nextNoteId || nextNoteId === previousNoteId) {
+            return
+        }
+
+        await nextTick()
+        await getNote(nextNoteId)
+    })
     
     onBeforeUnmount(() => {
+        noteRequestId += 1
         if (editor.value) {
             editor.value.destroy()
         }
@@ -1393,6 +1422,10 @@
 
     .editor-shell {
         position: relative;
+    }
+
+    .bubble-menu {
+        z-index: 1500;
     }
 
     .ProseMirror .iframe-wrapper,
