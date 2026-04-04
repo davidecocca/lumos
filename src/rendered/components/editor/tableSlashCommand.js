@@ -6,12 +6,39 @@ import tippy from 'tippy.js'
 import TableSlashMenu from './TableSlashMenu.vue'
 
 export const tableSlashCommandPluginKey = new PluginKey('tableSlashCommand')
+export const OPEN_YOUTUBE_DIALOG_EVENT = 'lumos-open-youtube-embed-dialog'
 
 const slashItems = [
     {
         title: 'Table',
         subtitle: 'Insert a 3x3 table with a header row',
         icon: 'ph-table',
+        command: ({ editor, range }) => editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .insertTable({
+                rows: 3,
+                cols: 3,
+                withHeaderRow: true,
+            })
+            .run(),
+    },
+    {
+        title: 'YouTube video',
+        subtitle: 'Embed a YouTube video from a pasted URL',
+        icon: 'ph-youtube-logo',
+        command: ({ editor, range }) => {
+            editor
+                .chain()
+                .focus()
+                .deleteRange(range)
+                .run()
+
+            window.dispatchEvent(new CustomEvent(OPEN_YOUTUBE_DIALOG_EVENT))
+
+            return true
+        },
     },
 ]
 
@@ -37,18 +64,7 @@ export default Extension.create({
                     ))
                 },
                 command: ({ editor, range, props }) => {
-                    editor
-                        .chain()
-                        .focus()
-                        .deleteRange(range)
-                        .insertTable({
-                            rows: 3,
-                            cols: 3,
-                            withHeaderRow: true,
-                        })
-                        .run()
-
-                    return true
+                    return props.command({ editor, range })
                 },
                 allow: ({ editor, state, range }) => {
                     const parentNode = state.selection.$from.parent

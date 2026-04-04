@@ -347,6 +347,12 @@
                 </template>
                 <v-list-item-title>Code block</v-list-item-title>
             </v-list-item>
+            <v-list-item @click="embedYoutubeDialog = true">
+                <template v-slot:prepend>
+                    <v-icon icon="ph-youtube-logo"></v-icon>
+                </template>
+                <v-list-item-title>Embed YouTube video</v-list-item-title>
+            </v-list-item>
         </v-list>
     </v-menu>
     
@@ -478,6 +484,11 @@
     :selectedText="selectedText"
     @apply="handleApply"
     />
+
+    <EmbedYoutubeDialog
+    v-model="embedYoutubeDialog"
+    @embed="handleYoutubeEmbed"
+    />
 </div>
 </template>
 
@@ -487,8 +498,9 @@
     import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDialog.vue'
     import GenerateAIDialog from '../components/editor/GenerateAIDialog.vue'
     import EditAIDialog from '../components/editor/EditAIDialog.vue'
+    import EmbedYoutubeDialog from '../components/editor/EmbedYoutubeDialog.vue'
     import TableOverlayControls from '../components/editor/TableOverlayControls.vue'
-    import TableSlashCommand from '../components/editor/tableSlashCommand'
+    import TableSlashCommand, { OPEN_YOUTUBE_DIALOG_EVENT } from '../components/editor/tableSlashCommand'
     
     import { createLlmService } from '../services/llmService';
     import fixGrammarPrompt from '../prompts/fixGrammarPrompt'
@@ -531,12 +543,14 @@
     import TableHeader from '@tiptap/extension-table-header'
     import TableRow from '@tiptap/extension-table-row'
     import FileHandler from '@tiptap/extension-file-handler'
+    import Youtube from '../components/editor/youtubeEmbed'
     import ResizableImage from '../components/editor/resizableImage'
     
     // Code block highlighting: load all languages with "all" and common languages with "common"
     import { all, createLowlight } from 'lowlight'
 
     const IMAGE_MUTATION_EVENT = 'lumos-note-image-mutation'
+    const VIDEO_MUTATION_EVENT = 'lumos-note-video-mutation'
     
     const props = defineProps({
         theme: {
@@ -613,6 +627,7 @@
     
     const generateWithAIDialog = ref(false)
     const editWithAIDialog = ref(false)
+    const embedYoutubeDialog = ref(false)
     
     const note = ref(null)
     const selectedText = ref('')
@@ -807,6 +822,14 @@
             console.error('Failed to persist image change:', error)
         }
     }
+
+    const handleVideoMutation = async () => {
+        try {
+            await persistEditorContent()
+        } catch (error) {
+            console.error('Failed to persist video change:', error)
+        }
+    }
     
     const handleKeyDown = (event) => {
         // For Mac, event.metaKey is Command; fallback to Ctrl for others
@@ -875,6 +898,28 @@
         }
         
         editor.value.chain().focus().setTextSelection({ from: selectionFrom.value, to: selectionTo.value }).insertContent(aiText).run();
+    }
+
+    const handleYoutubeEmbed = ({ src }) => {
+        if (!editor.value) {
+            console.error('Editor not ready')
+            return
+        }
+
+        editor.value
+            .chain()
+            .focus()
+            .setYoutubeVideo({
+                src,
+                align: 'center',
+                width: 640,
+                height: 360,
+            })
+            .run()
+    }
+
+    const openYoutubeEmbedDialog = () => {
+        embedYoutubeDialog.value = true
     }
     
     const aiFixGrammar = async () => {
@@ -1302,12 +1347,22 @@
                 },
             }),
             ResizableImage,
+            Youtube.configure({
+                addPasteHandler: true,
+                width: 640,
+                height: 360,
+                controls: true,
+                nocookie: true,
+                modestBranding: true,
+            }),
             ],
         })
         
         getNote(props.noteId)
         window.addEventListener('keydown', handleKeyDown)
         window.addEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
+        window.addEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
+        window.addEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openYoutubeEmbedDialog)
     })
     
     onBeforeUnmount(() => {
@@ -1316,6 +1371,8 @@
         }
         window.removeEventListener('keydown', handleKeyDown)
         window.removeEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
+        window.removeEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
+        window.removeEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openYoutubeEmbedDialog)
     })
 </script>
 
@@ -1336,6 +1393,24 @@
 
     .editor-shell {
         position: relative;
+    }
+
+    .ProseMirror .iframe-wrapper,
+    .ProseMirror iframe {
+        max-width: 100%;
+    }
+
+    .ProseMirror .iframe-wrapper {
+        margin: 1rem 0;
+    }
+
+    .ProseMirror iframe {
+        display: block;
+        border: 0;
+        border-radius: 12px;
+        width: min(100%, 640px);
+        aspect-ratio: 16 / 9;
+        height: auto;
     }
     
     /* Remove the default outline when the editor is focused */

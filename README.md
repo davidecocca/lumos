@@ -126,7 +126,7 @@ Lumos started as a side project—built to offer a simple, local, and AI-powered
 - [ ] Add support for rich media in notes:
     - [✅] Add images with drag-and-drop
     - [✅] Add tables with formatting
-    - [ ] Embed YouTube videos
+    - [✅] Embed YouTube videos
 - [✅] Implement drag-and-drop for notes organization
 - [ ] Add note categorization with tags/labels
 - [ ] Add function to export notes
