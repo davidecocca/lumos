@@ -372,6 +372,13 @@ onBeforeUnmount(() => {
     z-index: 2;
 }
 
+.note-image-node__handle :deep(.v-btn),
+.note-image-node__handle :deep(.v-btn:hover),
+.note-image-node__handle :deep(.v-btn__content),
+.note-image-node__handle :deep(.v-icon) {
+    cursor: ew-resize;
+}
+
 .note-image-node__handle--left {
     left: 10px;
 }
