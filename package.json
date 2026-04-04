@@ -13,7 +13,7 @@
         "concurrently": "^7.6.0",
         "electron": "^35.7.5",
         "sass-embedded": "^1.85.1",
-        "vite": "^6.3.6",
+        "vite": "^6.4.1",
         "wait-on": "^7.0.0"
     },
     "dependencies": {
