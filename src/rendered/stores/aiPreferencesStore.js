@@ -1,5 +1,27 @@
 import { defineStore } from 'pinia'
 
+const normalizeOllamaModel = (model) => {
+    if (!model) return null
+    if (typeof model === 'string') return model
+    if (typeof model === 'object' && typeof model.name === 'string') {
+        return model.name
+    }
+    return null
+}
+
+const normalizeFeatureSelection = (selection, fallback) => {
+    const normalizedSelection = {
+        ...fallback,
+        ...selection
+    }
+
+    if (normalizedSelection.provider === 'ollama') {
+        normalizedSelection.model = normalizeOllamaModel(normalizedSelection.model)
+    }
+
+    return normalizedSelection
+}
+
 export const aiPreferencesStore = defineStore('aiPreferences', {
     state: () => ({
         // Provider selection for different features
@@ -60,11 +82,13 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
                 const preferences = JSON.parse(savedPrefs)
                 
                 // Load provider and model selections
-                this.editor = preferences.editor || this.editor
-                this.chat = preferences.chat || this.chat
+                this.editor = normalizeFeatureSelection(preferences.editor, this.editor)
+                this.chat = normalizeFeatureSelection(preferences.chat, this.chat)
                 
                 // Load API keys
                 this.apiKeys = preferences.apiKeys || this.apiKeys
+
+                this.savePreferences()
             }
         },
         
@@ -109,7 +133,7 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
         generateOllamaLabel(model) {
             const fullName = model.name
             const size = model.size
-            const [name, tag] = fullName.split(':')
+            const [name] = fullName.split(':')
             return `${name} (${size})`
         },
         
@@ -117,7 +141,10 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
         updateAvailableModels(provider, models) {
             if (this.availableModels.hasOwnProperty(provider)) {
                 if (provider === 'ollama') {
-                    this.availableModels[provider] = models.map(model => ({ label: this.generateOllamaLabel(model), value: model }))
+                    this.availableModels[provider] = models.map(model => ({
+                        label: this.generateOllamaLabel(model),
+                        value: model.name
+                    }))
                 } else {
                     this.availableModels[provider] = models
                 }
