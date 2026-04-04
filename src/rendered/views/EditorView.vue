@@ -40,7 +40,6 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-            
             <v-tooltip text="More" location="bottom">
                 <template v-slot:activator="{ props: tooltipProps }">
                     <v-menu>
@@ -430,7 +429,14 @@
         :loading="isLoading"
         >
         <v-card-text>
-            <editor-content :editor="editor" v-model="content"/>
+            <div ref="editorShellRef" class="editor-shell">
+                <TableOverlayControls
+                v-if="editor"
+                :editor="editor"
+                :container-ref="editorShellRef"
+                />
+                <editor-content :editor="editor" v-model="content"/>
+            </div>
         </v-card-text>
     </v-card>
 </div>
@@ -481,6 +487,8 @@
     import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDialog.vue'
     import GenerateAIDialog from '../components/editor/GenerateAIDialog.vue'
     import EditAIDialog from '../components/editor/EditAIDialog.vue'
+    import TableOverlayControls from '../components/editor/TableOverlayControls.vue'
+    import TableSlashCommand from '../components/editor/tableSlashCommand'
     
     import { createLlmService } from '../services/llmService';
     import fixGrammarPrompt from '../prompts/fixGrammarPrompt'
@@ -495,14 +503,13 @@
     
     import { useRouter } from 'vue-router'
     import { useFoldersStore } from '../stores/foldersStore'
-    import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
+    import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
     import { isTextSelection } from '@tiptap/core'
     import StarterKit from '@tiptap/starter-kit'
     import {
         BubbleMenu,
         Editor,
         EditorContent,
-        FloatingMenu,
     } from '@tiptap/vue-3'
     import Underline from '@tiptap/extension-underline'
     import Placeholder from '@tiptap/extension-placeholder'
@@ -633,6 +640,7 @@
     const lowlight = createLowlight(all)
     
     const editor = ref(null)
+    const editorShellRef = ref(null)
     const content = ref('')
     
     const isLoading = ref(false)
@@ -678,7 +686,7 @@
             editor.value.chain().focus().setColor(colorValue).run();
         }
     }
-    
+
     const getNote = async (id) => {
         // Get note from the database
         const noteInfo = await window.api.getNote(id)
@@ -1276,10 +1284,12 @@
             }),
             Table.configure({
                 resizable: true,
+                renderWrapper: true,
             }),
             TableRow,
             TableHeader,
             TableCell,
+            TableSlashCommand,
             FileHandler.configure({
                 allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml'],
                 onDrop: (currentEditor, files, pos) => {
@@ -1319,9 +1329,13 @@
     }
     
     .ProseMirror {
-        padding: 16px;
+        padding: 16px 36px;
         height: calc(100vh - 300px);
         overflow-y: auto;
+    }
+
+    .editor-shell {
+        position: relative;
     }
     
     /* Remove the default outline when the editor is focused */
@@ -1483,61 +1497,87 @@
     }
     
     /* Table styles */
-    /* Table-specific styling */
-    table {
-        border-collapse: collapse;
-        margin: 0;
-        overflow: hidden;
-        table-layout: fixed;
-        width: 100%;
-        
-        td,
-        th {
-            border: 1px solid var(--gray-3);
-            box-sizing: border-box;
-            min-width: 1em;
-            padding: 6px 8px;
-            position: relative;
-            vertical-align: top;
-            
-            > * {
-                margin-bottom: 0;
-            }
-        }
-        
-        th {
-            background-color: var(--gray-1);
-            font-weight: bold;
-            text-align: left;
-        }
-        
-        .selectedCell:after {
-            background: var(--gray-2);
-            content: "";
-            left: 0; right: 0; top: 0; bottom: 0;
-            pointer-events: none;
-            position: absolute;
-            z-index: 2;
-        }
-        
-        .column-resize-handle {
-            background-color: var(--purple);
-            bottom: -2px;
-            pointer-events: none;
-            position: absolute;
-            right: -2px;
-            top: 0;
-            width: 4px;
-        }
-    }
-    
-    .tableWrapper {
+    .ProseMirror .tableWrapper {
         margin: 1.5rem 0;
         overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid rgba(33, 33, 33, 0.16);
+        background-color: #ffffff;
     }
-    
-    &.resize-cursor {
-        cursor: ew-resize;
+
+    .ProseMirror table {
+        border-collapse: collapse;
+        margin: 0;
+        table-layout: fixed;
+        width: 100%;
+        background-color: #ffffff;
+    }
+
+    .ProseMirror table td,
+    .ProseMirror table th {
+        border: 1px solid rgba(33, 33, 33, 0.16);
+        box-sizing: border-box;
+        min-width: 1em;
+        padding: 10px 12px;
+        position: relative;
+        vertical-align: top;
+        background-color: transparent;
+    }
+
+    .ProseMirror table td > *,
+    .ProseMirror table th > * {
+        margin-bottom: 0;
+    }
+
+    .ProseMirror table th {
+        background-color: #f5f5f5;
+        font-weight: 600;
+        text-align: left;
+    }
+
+    .v-theme--dark .ProseMirror .tableWrapper {
+        border-color: rgba(255, 255, 255, 0.16);
+        background-color: #1f1f1f;
+    }
+
+    .v-theme--dark .ProseMirror table {
+        background-color: #1f1f1f;
+    }
+
+    .v-theme--dark .ProseMirror table td,
+    .v-theme--dark .ProseMirror table th {
+        border-color: rgba(255, 255, 255, 0.16);
+        background-color: transparent;
+    }
+
+    .v-theme--dark .ProseMirror table th {
+        background-color: #2a2a2a;
+    }
+
+    .ProseMirror table .selectedCell::after {
+        background: rgba(33, 150, 243, 0.12);
+        content: "";
+        inset: 0;
+        pointer-events: none;
+        position: absolute;
+        z-index: 2;
+    }
+
+    .v-theme--dark .ProseMirror table .selectedCell::after {
+        background: rgba(144, 202, 249, 0.12);
+    }
+
+    .ProseMirror table .column-resize-handle {
+        background-color: rgb(var(--v-theme-primary));
+        bottom: -2px;
+        pointer-events: none;
+        position: absolute;
+        right: -2px;
+        top: 0;
+        width: 4px;
+    }
+
+    .resize-cursor {
         cursor: col-resize;
     }
     
@@ -1592,32 +1632,5 @@
     
     [data-theme="dark"] .resize-divider:hover {
         background-color: #2196f3;
-    }
-    
-    /* Floating menu */
-    .floating-menu {
-        display: flex;
-        background-color: gray;
-        padding: 0.1rem;
-        border-radius: 0.5rem;
-        
-        button {
-            background-color: unset;
-            padding: 0.275rem 0.425rem;
-            border-radius: 0.3rem;
-            
-            &:hover {
-                background-color: gray;
-            }
-            
-            &.is-active {
-                background-color: white;
-                color: purple;
-                
-                &:hover {
-                    color: darkmagenta;
-                }
-            }
-        }
     }
 </style>

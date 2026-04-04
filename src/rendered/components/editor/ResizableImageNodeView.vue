@@ -8,66 +8,112 @@
     }"
     :style="wrapperStyle"
     >
-    <div v-if="selected" class="note-image-node__toolbar note-image-node__toolbar--top-right">
-        <v-btn
-        icon="ph-x"
-        size="x-small"
-        rounded="xl"
-        class="note-image-node__action"
-        title="Remove image"
-        @click.stop="handleDelete"
-        />
-    </div>
+    <v-sheet
+    v-if="selected"
+    class="note-image-node__toolbar note-image-node__toolbar--top-right note-image-node__toolbar--single d-flex align-center justify-center pa-1 rounded-xl"
+    color="surface"
+    border
+    elevation="6"
+    >
+        <v-tooltip text="Remove image" location="top">
+            <template v-slot:activator="{ props }">
+                <v-btn
+                v-bind="props"
+                icon="ph-trash"
+                size="x-small"
+                variant="text"
+                @click.stop="handleDelete"
+                />
+            </template>
+        </v-tooltip>
+    </v-sheet>
     
-    <div v-if="selected" class="note-image-node__toolbar note-image-node__toolbar--bottom-center">
-        <v-btn
-        icon="ph-text-align-left"
-        size="x-small"
-        rounded="xl"
-        :color="node.attrs.align === 'left' ? 'primary' : undefined"
-        :class="getAlignmentButtonClass('left')"
-        title="Align left"
-        @click.stop="updateAlignment('left')"
-        />
-        <v-btn
-        icon="ph-text-align-center"
-        size="x-small"
-        rounded="xl"
-        :color="node.attrs.align === 'center' ? 'primary' : undefined"
-        :class="getAlignmentButtonClass('center')"
-        title="Align center"
-        @click.stop="updateAlignment('center')"
-        />
-        <v-btn
-        icon="ph-text-align-right"
-        size="x-small"
-        rounded="xl"
-        :color="node.attrs.align === 'right' ? 'primary' : undefined"
-        :class="getAlignmentButtonClass('right')"
-        title="Align right"
-        @click.stop="updateAlignment('right')"
-        />
-    </div>
+    <v-sheet
+    v-if="selected"
+    class="note-image-node__toolbar note-image-node__toolbar--bottom-center d-flex align-center ga-1 pa-1 rounded-xl"
+    color="surface"
+    border
+    elevation="6"
+    >
+        <v-tooltip text="Align left" location="top">
+            <template v-slot:activator="{ props }">
+                <v-btn
+                v-bind="props"
+                icon="ph-text-align-left"
+                size="x-small"
+                variant="text"
+                :color="node.attrs.align === 'left' ? 'primary' : undefined"
+                @click.stop="updateAlignment('left')"
+                />
+            </template>
+        </v-tooltip>
+        <v-tooltip text="Align center" location="top">
+            <template v-slot:activator="{ props }">
+                <v-btn
+                v-bind="props"
+                icon="ph-text-align-center"
+                size="x-small"
+                variant="text"
+                :color="node.attrs.align === 'center' ? 'primary' : undefined"
+                @click.stop="updateAlignment('center')"
+                />
+            </template>
+        </v-tooltip>
+        <v-tooltip text="Align right" location="top">
+            <template v-slot:activator="{ props }">
+                <v-btn
+                v-bind="props"
+                icon="ph-text-align-right"
+                size="x-small"
+                variant="text"
+                :color="node.attrs.align === 'right' ? 'primary' : undefined"
+                @click.stop="updateAlignment('right')"
+                />
+            </template>
+        </v-tooltip>
+    </v-sheet>
     
-    <v-btn
+    <v-sheet
     v-if="showResizeHandle('left')"
-    icon="ph-dots-three-vertical"
-    size="x-small"
-    rounded="pill"
-    class="note-image-node__action note-image-node__handle note-image-node__handle--left"
-    aria-label="Resize image from the left"
-    @pointerdown.stop.prevent="startResize('left', $event)"
-    />
+    class="note-image-node__handle note-image-node__handle--left note-image-node__toolbar--single d-flex align-center justify-center pa-1 rounded-xl"
+    color="surface"
+    border
+    elevation="6"
+    >
+        <v-tooltip text="Resize" location="top">
+            <template v-slot:activator="{ props }">
+                <v-btn
+                v-bind="props"
+                icon="ph-arrows-out-line-horizontal"
+                size="x-small"
+                variant="text"
+                aria-label="Resize image"
+                @pointerdown.stop.prevent="startResize('left', $event)"
+                />
+            </template>
+        </v-tooltip>
+    </v-sheet>
     
-    <v-btn
+    <v-sheet
     v-if="showResizeHandle('right')"
-    icon="ph-dots-three-vertical"
-    size="x-small"
-    rounded="pill"
-    class="note-image-node__action note-image-node__handle note-image-node__handle--right"
-    aria-label="Resize image from the right"
-    @pointerdown.stop.prevent="startResize('right', $event)"
-    />
+    class="note-image-node__handle note-image-node__handle--right note-image-node__toolbar--single d-flex align-center justify-center pa-1 rounded-xl"
+    color="surface"
+    border
+    elevation="6"
+    >
+        <v-tooltip text="Resize" location="top">
+            <template v-slot:activator="{ props }">
+                <v-btn
+                v-bind="props"
+                icon="ph-arrows-out-line-horizontal"
+                size="x-small"
+                variant="text"
+                aria-label="Resize image"
+                @pointerdown.stop.prevent="startResize('right', $event)"
+                />
+            </template>
+        </v-tooltip>
+    </v-sheet>
     
     <img
     class="note-image-node__image"
@@ -145,10 +191,6 @@ const updateAlignment = (align) => {
     props.updateAttributes({ align })
     emitMutation()
 }
-
-const getAlignmentButtonClass = (align) => (
-props.node.attrs.align === align ? undefined : 'note-image-node__action'
-)
 
 const showResizeHandle = (direction) => (
 props.selected
@@ -296,9 +338,13 @@ onBeforeUnmount(() => {
 
 .note-image-node__toolbar {
     position: absolute;
-    z-index: 1;
+    z-index: 2;
     display: flex;
-    gap: 6px;
+}
+
+.note-image-node__toolbar--single {
+    min-width: 40px;
+    min-height: 40px;
 }
 
 .note-image-node__toolbar--top-right {
@@ -317,17 +363,13 @@ onBeforeUnmount(() => {
     bottom: 10px;
 }
 
-.note-image-node__action {
-    background: #F5F5F5;
-}
-
 .note-image-node__handle {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
     cursor: ew-resize;
     touch-action: none;
-    z-index: 1;
+    z-index: 2;
 }
 
 .note-image-node__handle--left {
@@ -338,7 +380,4 @@ onBeforeUnmount(() => {
     right: 10px;
 }
 
-.v-theme--dark .note-image-node__action {
-    background: #595959;
-}
 </style>

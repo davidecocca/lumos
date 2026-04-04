@@ -47,6 +47,7 @@
         "@tiptap/extension-underline": "^2.11.5",
         "@tiptap/pm": "^2.11.5",
         "@tiptap/starter-kit": "^2.11.5",
+        "@tiptap/suggestion": "^2.27.2",
         "@tiptap/vue-3": "^2.11.5",
         "lowlight": "^3.3.0",
         "marked": "^15.0.7",
