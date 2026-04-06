@@ -348,11 +348,17 @@
                 </template>
                 <v-list-item-title>Code block</v-list-item-title>
             </v-list-item>
-            <v-list-item @click="embedYoutubeDialog = true">
+            <v-list-item @click="insertDetails()">
                 <template v-slot:prepend>
-                    <v-icon icon="ph-youtube-logo"></v-icon>
+                    <v-icon icon="ph-caret-right"></v-icon>
                 </template>
-                <v-list-item-title>Embed YouTube video</v-list-item-title>
+                <v-list-item-title>Details</v-list-item-title>
+            </v-list-item>
+            <v-list-item v-if="canRemoveDetails()" @click="removeDetails()">
+                <template v-slot:prepend>
+                    <v-icon icon="ph-minus-circle"></v-icon>
+                </template>
+                <v-list-item-title>Remove details</v-list-item-title>
             </v-list-item>
         </v-list>
     </v-menu>
@@ -529,6 +535,7 @@
     import Superscript from '@tiptap/extension-superscript'
     import Highlight from '@tiptap/extension-highlight'
     import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+    import { Details, DetailsContent, DetailsSummary } from '@tiptap/extension-details'
     import { TaskList, TaskItem } from '@tiptap/extension-list'
     import { Color } from '@tiptap/extension-color'
     import { TextStyle } from '@tiptap/extension-text-style'
@@ -542,6 +549,7 @@
 
     const IMAGE_MUTATION_EVENT = 'lumos-note-image-mutation'
     const VIDEO_MUTATION_EVENT = 'lumos-note-video-mutation'
+    const DETAILS_OPEN_CLASS_NAME = 'is-open'
     const EMPTY_EDITOR_DOCUMENT = {
         type: 'doc',
         content: [
@@ -702,6 +710,66 @@
     }
 
     const getBubbleMenuAppendTarget = () => document.body
+
+    const renderDetailsToggleButton = ({ element, isOpen, node }) => {
+        const label = node.textContent?.trim() || 'details'
+
+        element.textContent = isOpen ? '▾' : '▸'
+        element.setAttribute('aria-label', isOpen ? `Collapse details: ${label}` : `Expand details: ${label}`)
+        element.classList.add('tiptap-details__toggle')
+
+        if (!element.dataset.lumosDetailsBound) {
+            element.dataset.lumosDetailsBound = 'true'
+            element.addEventListener('click', () => {
+                window.setTimeout(() => {
+                    if (!editor.value?.isEditable) {
+                        return
+                    }
+
+                    const detailsElement = element.closest('[data-type="details"]')
+
+                    if (!detailsElement || !editor.value.isActive('details')) {
+                        return
+                    }
+
+                    editor.value.commands.updateAttributes('details', {
+                        open: detailsElement.classList.contains(DETAILS_OPEN_CLASS_NAME),
+                    })
+                }, 0)
+            })
+        }
+    }
+
+    const canRemoveDetails = () => {
+        if (!editor.value) {
+            return false
+        }
+
+        return editor.value.can().chain().focus().unsetDetails().run()
+    }
+
+    const insertDetails = () => {
+        if (!editor.value) {
+            return
+        }
+
+        editor.value
+            .chain()
+            .focus()
+            .setDetails()
+            .updateAttributes('details', {
+                open: true,
+            })
+            .run()
+    }
+
+    const removeDetails = () => {
+        if (!editor.value || !canRemoveDetails()) {
+            return
+        }
+
+        editor.value.chain().focus().unsetDetails().run()
+    }
 
     const setEditorDocument = (contentJson) => {
         if (!editor.value) {
@@ -1329,6 +1397,24 @@
             Superscript,
             TaskList,
             TextStyle,
+            Details.configure({
+                persist: true,
+                openClassName: DETAILS_OPEN_CLASS_NAME,
+                HTMLAttributes: {
+                    class: 'tiptap-details',
+                },
+                renderToggleButton: renderDetailsToggleButton,
+            }),
+            DetailsSummary.configure({
+                HTMLAttributes: {
+                    class: 'tiptap-details__summary',
+                },
+            }),
+            DetailsContent.configure({
+                HTMLAttributes: {
+                    class: 'tiptap-details__content',
+                },
+            }),
             Highlight.configure({
                 multicolor: true,
             }),
@@ -1444,6 +1530,83 @@
         width: min(100%, 640px);
         aspect-ratio: 16 / 9;
         height: auto;
+    }
+
+    .ProseMirror .tiptap-details {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        column-gap: 0.75rem;
+        align-items: start;
+        margin: 1rem 0;
+        padding: 0.9rem 1rem;
+        border: 1px solid rgba(98, 108, 125, 0.22);
+        border-radius: 14px;
+        background: transparent;
+    }
+
+    .ProseMirror .tiptap-details > div {
+        display: grid;
+        min-width: 0;
+        row-gap: 0.7rem;
+    }
+
+    .ProseMirror .tiptap-details__toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        margin-top: 0;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        font-size: 0.95rem;
+        line-height: 1;
+    }
+
+    .ProseMirror .tiptap-details__toggle:hover {
+        background: rgba(98, 108, 125, 0.14);
+    }
+
+    .ProseMirror .tiptap-details__toggle:focus-visible {
+        outline: 2px solid rgb(var(--v-theme-primary));
+        outline-offset: 2px;
+    }
+
+    .ProseMirror .tiptap-details__summary {
+        display: flex;
+        align-items: center;
+        min-height: 28px;
+        margin: 0;
+        font-weight: 600;
+        line-height: 1.35;
+        list-style: none;
+    }
+
+    .ProseMirror .tiptap-details__summary::marker,
+    .ProseMirror .tiptap-details__summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .ProseMirror .tiptap-details__content {
+        margin-top: 0;
+        padding-top: 0.7rem;
+    }
+
+    .ProseMirror .tiptap-details .tiptap-details {
+        margin: 0.2rem 0;
+        background: transparent;
+    }
+
+    .ProseMirror .tiptap-details__content > :first-child {
+        margin-top: 0;
+    }
+
+    .ProseMirror .tiptap-details__content > :last-child {
+        margin-bottom: 0;
     }
     
     /* Remove the default outline when the editor is focused */

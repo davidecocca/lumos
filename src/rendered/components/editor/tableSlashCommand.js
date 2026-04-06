@@ -25,6 +25,31 @@ const slashItems = [
             .run(),
     },
     {
+        title: 'Horizontal rule',
+        subtitle: 'Insert a divider line',
+        icon: 'ph-minus',
+        command: ({ editor, range }) => editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .setHorizontalRule()
+            .run(),
+    },
+    {
+        title: 'Details',
+        subtitle: 'Insert a collapsible details block',
+        icon: 'ph-caret-right',
+        command: ({ editor, range }) => editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .setDetails()
+            .updateAttributes('details', {
+                open: true,
+            })
+            .run(),
+    },
+    {
         title: 'YouTube video',
         subtitle: 'Embed a YouTube video from a pasted URL',
         icon: 'ph-youtube-logo',
