@@ -12,39 +12,43 @@
         <v-card-text class="mt-2">
             <!-- Editor -->
             <v-select
+            class="model-select"
             label="Editor"
-            :items="providers.flatMap(provider => 
-            getProviderModels(provider).map(item => ({
-                title: item.label,
-                subtitle: provider,
-                value: { provider, model: item.value }
-            }))
-            )"
+            :items="modelItems"
             v-model="editorSelection"
             clearable
             variant="outlined"
             >
             <template v-slot:item="{ props: itemProps, item }">
-                <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle"></v-list-item>
+                <v-list-item v-bind="itemProps" :title="getSlotItemTitle(item)">
+                    <template v-slot:prepend>
+                        <ModelProviderMark :provider="getSlotItemProvider(item)" class="me-3" />
+                    </template>
+                </v-list-item>
+            </template>
+            <template v-slot:selection="{ item }">
+                <span class="model-selection-label">{{ getSlotItemTitle(item) }}</span>
             </template>
         </v-select>
         
         <!-- Chat -->
         <v-select
+        class="model-select"
         label="Chat"
-        :items="providers.flatMap(provider => 
-        getProviderModels(provider).map(item => ({
-            title: item.label,
-            subtitle: provider,
-            value: { provider, model: item.value }
-        }))
-        )"
+        :items="modelItems"
         v-model="chatSelection"
         clearable
         variant="outlined"
         >
         <template v-slot:item="{ props: itemProps, item }">
-            <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle"></v-list-item>
+            <v-list-item v-bind="itemProps" :title="getSlotItemTitle(item)">
+                <template v-slot:prepend>
+                    <ModelProviderMark :provider="getSlotItemProvider(item)" class="me-3" />
+                </template>
+            </v-list-item>
+        </template>
+        <template v-slot:selection="{ item }">
+            <span class="model-selection-label">{{ getSlotItemTitle(item) }}</span>
         </template>
     </v-select>
 </v-card-text>
@@ -65,7 +69,7 @@ elevation="0"
             :type="showGroqKey ? 'text' : 'password'"
             class="flex-grow-1 mr-4"
             v-model="groqApiKey"
-            :append-inner-icon="showGroqKey ? 'mdi-eye' : 'mdi-eye-off'"
+            :append-inner-icon="showGroqKey ? 'ph-eye' : 'ph-eye-slash'"
             @click:append-inner="showGroqKey = !showGroqKey"
             @keydown.enter="saveGroqApiKey"
             variant="outlined"
@@ -88,7 +92,7 @@ elevation="0"
         :type="showOpenAIKey ? 'text' : 'password'"
         class="flex-grow-1 mr-4"
         v-model="openaiApiKey" 
-        :append-inner-icon="showOpenAIKey ? 'mdi-eye' : 'mdi-eye-off'"
+        :append-inner-icon="showOpenAIKey ? 'ph-eye' : 'ph-eye-slash'"
         @click:append-inner="showOpenAIKey = !showOpenAIKey"
         @keydown.enter="saveOpenAIApiKey"
         variant="outlined"
@@ -110,7 +114,9 @@ elevation="0"
 
 <script setup>
     import { onMounted, ref, computed } from 'vue';
+    import ModelProviderMark from '../ai/ModelProviderMark.vue'
     import { aiPreferencesStore } from '../../stores/aiPreferencesStore';
+    import { buildModelItems, getSlotItemProvider, getSlotItemTitle } from '../../utils/modelProviders'
     
     const aiStore = aiPreferencesStore();
     
@@ -147,11 +153,13 @@ elevation="0"
     const showOpenAIKey = ref(false);
     
     const providers = computed(() => aiStore.availableProviders);
-    
+
     const getProviderModels = (provider) => {
         if (!provider) return [];
         return aiStore.getProviderModels(provider);
     };
+
+    const modelItems = computed(() => buildModelItems(providers.value, getProviderModels));
     
     const saveGroqApiKey = () => {
         aiStore.setApiKey('groq', groqApiKey.value);
@@ -167,3 +175,17 @@ elevation="0"
         openaiApiKey.value = aiStore.apiKeys.openai;
     });
 </script>
+
+<style scoped>
+.model-selection-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.model-select :deep(.v-select__selection) {
+    min-width: 0;
+    max-width: 100%;
+}
+</style>

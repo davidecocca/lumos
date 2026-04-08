@@ -2,8 +2,8 @@
     <div class="d-flex flex-column">
         <!-- Page title -->
         <div class="d-flex flex-column align-center mt-2 mb-4">
-            <p class="text-h4 font-weight-medium">Welcome to <b>Lumos</b></p>
-            <p class="text-h6 font-weight-light">{{ subtitle }}</p>
+            <p class="text-headline-large font-weight-medium ma-0">Welcome to <b>Lumos</b></p>
+            <p class="text-headline-small font-weight-light ma-0 mt-1">{{ subtitle }}</p>
         </div>
         
         <v-tabs
@@ -21,12 +21,12 @@
         <v-tabs-window-item :value="favoritesTab">
             <v-container fluid>
                 <template v-if="(favoriteNotes?.length ?? 0) === 0">
-                    <v-row justify="center">
+                    <v-row class="justify-center">
                         <v-col cols="12" md="8" class="d-flex justify-center">
                             <EmptyState
                             title="No favorite notes yet"
                             text="Mark a note as favorite and it will appear here."
-                            icon="mdi-heart-outline"
+                            icon="ph-heart"
                             />
                         </v-col>
                     </v-row>
@@ -54,12 +54,12 @@
     <v-tabs-window-item :value="recentsTab">
         <v-container fluid>
             <template v-if="(recentNotes?.length ?? 0) === 0">
-                <v-row justify="center">
+                <v-row class="justify-center">
                     <v-col cols="12" md="8" class="d-flex justify-center">
                         <EmptyState
                         title="No recently viewed notes yet"
                         text="Open a note and it will appear here."
-                        icon="mdi-history"
+                        icon="ph-clock-counter-clockwise"
                         />
                     </v-col>
                 </v-row>

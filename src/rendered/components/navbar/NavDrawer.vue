@@ -2,6 +2,7 @@
     <v-navigation-drawer
     v-model="drawerOpen"
     width="350"
+    class="nav-drawer"
     >
     <div class="drawer-container">
         <div class="sidebar-box">
@@ -9,7 +10,9 @@
             <div class="nav-header">
                 <!-- Page Router -->
                 <div class="ma-3">
-                    <PageRouter />
+                    <PageRouter
+                    @open-search="emit('open-search')"
+                    />
                 </div>
                 
                 <!-- Divider shown only when the scrollable content overflows AND the content has been scrolled -->
@@ -43,7 +46,7 @@
         }
     })
     
-    const emit = defineEmits(['update:isDrawerOpen'])
+    const emit = defineEmits(['update:isDrawerOpen', 'open-search'])
     
     const drawerOpen = computed({
         get: () => props.isDrawerOpen,
@@ -99,6 +102,10 @@
 </script>
 
 <style scoped>
+    .nav-drawer.v-theme--light {
+        background: #FAFAFA;
+    }
+
     .drawer-container {
         height: 100vh;
         position: relative;
@@ -133,8 +140,7 @@
     }
     
     .sidebar-box .nav-header {
-        background: rgba(255,255,255,0.85);
-        backdrop-filter: blur(10px);
+        background: #FAFAFA;
     }
     
     .v-theme--dark .sidebar-box .nav-header {
@@ -142,7 +148,7 @@
     }
     
     .sidebar-box .nav-content {
-        padding: 8px 12px 16px 12px;
+        padding: 0px 12px 2px 12px;
         overflow-y: auto;
     }
     
