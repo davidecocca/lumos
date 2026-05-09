@@ -1,21 +1,21 @@
 <template>
-        <v-empty-state
-            :title="props.title"
-            :text="props.text"
-            class="rounded-xl border pa-8 text-center"
-            rounded="xl"
-            width="400px"
-        >
-        <template #media>
-            <v-avatar size="72" variant="tonal" color="primary" class="mb-4">
-                <v-icon :icon="props.icon" size="42"></v-icon>
-            </v-avatar>
-        </template>
-
-        <template #actions>
-            <slot name="actions" />
-        </template>
-    </v-empty-state>
+    <v-empty-state
+    :title="props.title"
+    class="text-center"
+    width="400px"
+    >
+    <template #media>
+        <v-avatar size="48" variant="text">
+            <v-icon :icon="props.icon" size="32"></v-icon>
+        </v-avatar>
+    </template>
+    
+    <template v-slot:text>
+        <div class="text-medium-emphasis text-body-medium">
+            {{ props.text }}
+        </div>
+    </template>
+</v-empty-state>
 </template>
 
 <script setup>

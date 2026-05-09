@@ -30,6 +30,7 @@ db.serialize(() => {
       title TEXT NOT NULL,
       topic TEXT,
       content_json TEXT NOT NULL,
+      content_text TEXT NOT NULL,
       favorite INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -40,6 +41,65 @@ db.serialize(() => {
     if (err) console.error('Error creating notes table:', err.message);
     else console.log('Notes table ready.');
   });
+
+  // FTS5 virtual table for full-text search on notes
+  db.run(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS note_search_fts USING fts5(
+      title,
+      topic,
+      content_text,
+      note_id UNINDEXED,
+      tokenize = 'unicode61'
+    )
+  `, (err) => {
+    if (err) console.error('Error creating note search FTS table:', err.message);
+    else console.log('Note search FTS table ready.');
+  });
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS chat_conversations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      scope TEXT NOT NULL CHECK (scope IN ('all', 'note')),
+      note_id INTEGER,
+      title TEXT NOT NULL DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (note_id) REFERENCES notes(id)
+    )
+  `, (err) => {
+    if (err) console.error('Error creating chat conversations table:', err.message);
+    else console.log('Chat conversations table ready.');
+  });
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id INTEGER NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+      content TEXT NOT NULL,
+      sources_json TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id)
+    )
+  `, (err) => {
+    if (err) console.error('Error creating chat messages table:', err.message);
+    else console.log('Chat messages table ready.');
+  });
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_chat_conversations_scope_updated
+    ON chat_conversations(scope, updated_at)
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_chat_conversations_note_updated
+    ON chat_conversations(note_id, updated_at)
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation
+    ON chat_messages(conversation_id, created_at)
+  `);
 });
 
 module.exports = db;

@@ -26,6 +26,14 @@ contextBridge.exposeInMainWorld('api', {
     getLastViewedNotes: () => ipcRenderer.invoke('get-last-viewed-notes'),
     searchNotes: (payload) => ipcRenderer.invoke('search-notes', payload),
     searchSimilarNotes: (payload) => ipcRenderer.invoke('search-similar-notes', payload),
+
+    // Chat
+    createChatConversation: (payload) => ipcRenderer.invoke('create-chat-conversation', payload),
+    listChatConversations: (payload) => ipcRenderer.invoke('list-chat-conversations', payload),
+    getChatConversation: (id) => ipcRenderer.invoke('get-chat-conversation', id),
+    appendChatMessage: (payload) => ipcRenderer.invoke('append-chat-message', payload),
+    updateChatConversation: (payload) => ipcRenderer.invoke('update-chat-conversation', payload),
+    deleteChatConversation: (id) => ipcRenderer.invoke('delete-chat-conversation', id),
     
     // IPC events
     on: (channel, callback) => ipcRenderer.on(channel, callback),

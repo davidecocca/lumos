@@ -1,32 +1,30 @@
 <template>
-    <div class="ma-2">
-        <v-card
-        class="rounded-md border ma-2"
-        title="Theme"
-        subtitle="Customize how Lumos looks on your device."
-        rounded="lg"
-        elevation="0"
-        >
-        <v-card-text>
-            <v-btn-toggle v-model="localTheme" mandatory color="primary" divided>
-                <v-btn value="light">
-                    <span class="hidden-sm-and-down">Light</span>
-                    <v-icon end>ph-sun</v-icon>
-                </v-btn>
-                
-                <v-btn value="dark">
-                    <span class="hidden-sm-and-down">Dark</span>
-                    <v-icon end>ph-moon-stars</v-icon>
-                </v-btn>
-                
-                <v-btn value="auto">
-                    <span class="hidden-sm-and-down">Auto</span>
-                    <v-icon end>ph-circle-half-tilt</v-icon>
-                </v-btn>
-            </v-btn-toggle>
-        </v-card-text>
-    </v-card>
-</div>
+    <v-card
+    class="rounded-md border"
+    title="Theme"
+    subtitle="Customize how Lumos looks on your device."
+    rounded="lg"
+    elevation="0"
+    >
+    <v-card-text>
+        <v-btn-toggle v-model="localTheme" mandatory color="primary" divided rounded="lg">
+            <v-btn value="light">
+                <span class="hidden-sm-and-down">Light</span>
+                <v-icon end>ph-sun</v-icon>
+            </v-btn>
+            
+            <v-btn value="dark">
+                <span class="hidden-sm-and-down">Dark</span>
+                <v-icon end>ph-moon-stars</v-icon>
+            </v-btn>
+            
+            <v-btn value="auto">
+                <span class="hidden-sm-and-down">Auto</span>
+                <v-icon end>ph-circle-half-tilt</v-icon>
+            </v-btn>
+        </v-btn-toggle>
+    </v-card-text>
+</v-card>
 </template>
 
 <script setup>

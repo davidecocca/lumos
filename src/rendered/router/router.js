@@ -1,6 +1,7 @@
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import HomeView from '../views/HomeView.vue'
+import ChatView from '../views/ChatView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import EditorView from '../views/EditorView.vue'
 
@@ -9,6 +10,11 @@ const routes = [
         path: '/',
         name: 'home',
         component: HomeView
+    },
+    {
+        path: '/chat',
+        name: 'chat',
+        component: ChatView
     },
     {
         path: '/settings',

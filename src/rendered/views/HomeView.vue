@@ -1,10 +1,10 @@
 <template>
     <div class="d-flex flex-column">
         <!-- Page title -->
-        <div class="d-flex flex-column align-center mt-2 mb-4">
-            <p class="text-headline-large font-weight-medium ma-0">Welcome to <b>Lumos</b></p>
-            <p class="text-headline-small font-weight-light ma-0 mt-1">{{ subtitle }}</p>
-        </div>
+        <ViewTitle
+        title="Welcome back!"
+        :subtitle="subtitle"
+        />
         
         <v-tabs
         v-model="tab"
@@ -12,81 +12,80 @@
         color="primary"
         class="mb-4"
         >
-        <v-tab :value="favoritesTab">Favorites</v-tab>
-        <v-tab :value="recentsTab">Recents</v-tab>
+        <v-tab :value="favoritesTab" prepend-icon="ph-heart">Favorites</v-tab>
+        <v-tab :value="recentsTab" prepend-icon="ph-clock-counter-clockwise">Recents</v-tab>
     </v-tabs>
     
     <v-tabs-window v-model="tab">
         <!-- Favorite notes -->
         <v-tabs-window-item :value="favoritesTab">
-            <v-container fluid>
-                <template v-if="(favoriteNotes?.length ?? 0) === 0">
-                    <v-row class="justify-center">
-                        <v-col cols="12" md="8" class="d-flex justify-center">
-                            <EmptyState
-                            title="No favorite notes yet"
-                            text="Mark a note as favorite and it will appear here."
-                            icon="ph-heart"
-                            />
-                        </v-col>
-                    </v-row>
-                </template>
-                <template v-else>
-                    <v-row>
-                        <v-col
-                        v-for="note in favoriteNotes"
-                        :key="note.id"
-                        cols="12"
-                        md="4"
-                        >
-                        <NoteCard
-                        :note="note"
-                        :showAccessedAt="false"
-                        :showUpdatedAt="true"
-                        />
-                    </v-col>
-                </v-row>
-            </template>
-        </v-container>
-    </v-tabs-window-item>
-    
-    <!-- Recent notes -->
-    <v-tabs-window-item :value="recentsTab">
-        <v-container fluid>
-            <template v-if="(recentNotes?.length ?? 0) === 0">
+            <template v-if="(favoriteNotes?.length ?? 0) === 0">
                 <v-row class="justify-center">
                     <v-col cols="12" md="8" class="d-flex justify-center">
                         <EmptyState
-                        title="No recently viewed notes yet"
-                        text="Open a note and it will appear here."
-                        icon="ph-clock-counter-clockwise"
+                        title="No favorite notes yet"
+                        text="Mark a note as favorite to see it here."
+                        icon="ph-heart-break"
                         />
                     </v-col>
                 </v-row>
             </template>
             <template v-else>
-                <v-row>
+                <v-row density="comfortable">
                     <v-col
-                    v-for="note in recentNotes"
+                    v-for="note in favoriteNotes"
                     :key="note.id"
                     cols="12"
-                    md="4"
+                    md="6"
+                    lg="4"
                     >
                     <NoteCard
                     :note="note"
-                    :showAccessedAt="true"
-                    :showUpdatedAt="false"
+                    :showAccessedAt="false"
+                    :showUpdatedAt="true"
                     />
                 </v-col>
             </v-row>
         </template>
-    </v-container>
+    </v-tabs-window-item>
+    
+    <!-- Recent notes -->
+    <v-tabs-window-item :value="recentsTab">
+        <template v-if="(recentNotes?.length ?? 0) === 0">
+            <v-row class="justify-center">
+                <v-col cols="12" md="8" class="d-flex justify-center">
+                    <EmptyState
+                    title="No recent notes yet"
+                    text="Open a note to see it here."
+                    icon="ph-bed"
+                    />
+                </v-col>
+            </v-row>
+        </template>
+        <template v-else>
+            <v-row density="comfortable">
+                <v-col
+                v-for="note in recentNotes"
+                :key="note.id"
+                cols="12"
+                md="6"
+                lg="4"
+                >
+                <NoteCard
+                :note="note"
+                :showAccessedAt="true"
+                :showUpdatedAt="false"
+                />
+            </v-col>
+        </v-row>
+    </template>
 </v-tabs-window-item>
 </v-tabs-window>
 </div>
 </template>
 
 <script setup>
+import ViewTitle from '../components/commons/ViewTitle.vue';
 import NoteCard from '../components/home/NoteCard.vue';
 import EmptyState from '../components/home/EmptyState.vue';
 

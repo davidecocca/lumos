@@ -1,9 +1,10 @@
 <template>
     <div class="d-flex flex-column">
-        <div class="d-flex flex-column align-center mt-2 mb-4">
-            <p class="text-headline-large font-weight-medium ma-0">Settings</p>
-            <p class="text-headline-small font-weight-light ma-0 mt-1">Set things your way.</p>
-        </div>
+        <!-- Page title -->
+        <ViewTitle
+        title="Settings"
+        subtitle="Set things your way."
+        />
         
         <v-tabs
         v-model="tab"
@@ -11,8 +12,8 @@
         color="primary"
         class="mb-4"
         >
-        <v-tab :value="appearanceTab">Appearance</v-tab>
-        <v-tab :value="lumosAITab">Lumos AI</v-tab>
+        <v-tab :value="appearanceTab" prepend-icon="ph-broom">Appearance</v-tab>
+        <v-tab :value="lumosAITab" prepend-icon="ph-brain">Lumos AI</v-tab>
     </v-tabs>
     
     <v-tabs-window v-model="tab">
@@ -32,6 +33,7 @@
 </template>
 
 <script setup>
+import ViewTitle from '../components/commons/ViewTitle.vue';
 import ChangeThemeCard from '../components/settings/ChangeThemeCard.vue';
 import LumosAICard from '../components/settings/LumosAICard.vue';
 

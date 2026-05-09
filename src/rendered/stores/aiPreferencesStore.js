@@ -47,8 +47,6 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
         availableModels: {
             ollama: [],
             groq: [
-                { label: 'Kimi K2', value: 'moonshotai/kimi-k2-instruct' },
-                { label: 'Kimi K2 (0905)', value: 'moonshotai/kimi-k2-instruct-0905' },
                 { label: 'GPT OSS 120B', value: 'openai/gpt-oss-120b' },
                 { label: 'GPT OSS 20B', value: 'openai/gpt-oss-20b' },
                 { label: 'Llama 3.1 8B', value: 'llama-3.1-8b-instant' },

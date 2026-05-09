@@ -8,6 +8,7 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { aliases as vuetifyPhAliases } from 'vuetify/iconsets/ph'
+import { vuetifyTheme } from './styles/vuetifyTheme'
 
 // Components
 import App from './App.vue'
@@ -46,9 +47,7 @@ const vuetify = createVuetify({
             ph,
         },
     },
-    theme: {
-        defaultTheme: 'light',
-    }
+    theme: vuetifyTheme,
 })
 
 const pinia = createPinia()

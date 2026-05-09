@@ -2,6 +2,119 @@ const db = require('./db');
 const vectorStore = require('./vectorStore');
 const imageService = require('../services/imageService');
 
+/* ---------------------------------
+Helper functions for search indexing
+--------------------------------- */
+
+// Normalize text before storing/indexing it
+function normalizeSearchText(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+// Turn the user search query into safe FTS terms
+function getSearchTokens(query) {
+    const matches = String(query || '').normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}_]+/gu) || [];
+    return [...new Set(matches)].slice(0, 8);
+}
+
+// Delete a note from the FTS index
+function deleteNoteSearchIndex(noteId) {
+    return new Promise((resolve, reject) => {
+        db.run(`DELETE FROM note_search_fts WHERE rowid = ?`, [noteId], (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+}
+
+// Update or insert a note into the FTS index
+function updateNoteSearchIndex(note) {
+    return new Promise((resolve, reject) => {
+        db.run(`DELETE FROM note_search_fts WHERE rowid = ?`, [note.id], (deleteErr) => {
+            if (deleteErr) {
+                reject(deleteErr);
+                return;
+            }
+
+            db.run(`
+                INSERT INTO note_search_fts(rowid, title, topic, content_text, note_id)
+                VALUES (?, ?, ?, ?, ?)
+            `, [
+                note.id,
+                note.title || '',
+                note.topic || '',
+                note.content_text || '',
+                note.id,
+            ], (insertErr) => {
+                if (insertErr) reject(insertErr);
+                else resolve();
+            });
+        });
+    });
+}
+
+// Refresh the FTS index for a note
+function refreshNoteSearchIndex(noteId) {
+    return new Promise((resolve, reject) => {
+        db.get(`
+            SELECT id, title, topic, content_text
+            FROM notes
+            WHERE id = ?
+        `, [noteId], async (err, note) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+
+            if (!note) {
+                resolve();
+                return;
+            }
+
+            try {
+                await updateNoteSearchIndex(note);
+                resolve();
+            } catch (searchErr) {
+                reject(searchErr);
+            }
+        });
+    });
+}
+
+function deleteNoteChatConversations(noteId) {
+    return new Promise((resolve, reject) => {
+        db.all(`
+            SELECT id
+            FROM chat_conversations
+            WHERE scope = 'note' AND note_id = ?
+        `, [noteId], (selectErr, rows) => {
+            if (selectErr) {
+                reject(selectErr);
+                return;
+            }
+
+            const conversationIds = rows.map((row) => row.id);
+            if (conversationIds.length === 0) {
+                resolve();
+                return;
+            }
+
+            const placeholders = conversationIds.map(() => '?').join(',');
+            db.run(`DELETE FROM chat_messages WHERE conversation_id IN (${placeholders})`, conversationIds, (messageErr) => {
+                if (messageErr) {
+                    reject(messageErr);
+                    return;
+                }
+
+                db.run(`DELETE FROM chat_conversations WHERE id IN (${placeholders})`, conversationIds, (conversationErr) => {
+                    if (conversationErr) reject(conversationErr);
+                    else resolve();
+                });
+            });
+        });
+    });
+}
+
 /* ---------------------------
 Folder CRUD Operations
 --------------------------- */
@@ -36,7 +149,6 @@ function listFolders(callback) {
     db.all(sql, [], (err, rows) => {
         callback(err, rows);
     });
-    
 }
 
 // Get all notes in a folder
@@ -64,13 +176,29 @@ Notes CRUD Operations
 --------------------------- */
 
 // Create a new note
-function createNote(folder_id, title, contentJson, callback) {
+function createNote(folder_id, title, contentJson, contentText, callback) {
+    const searchableContentText = normalizeSearchText(contentText);
     const sql = `
-    INSERT INTO notes (folder_id, title, content_json)
-    VALUES (?, ?, ?)
+    INSERT INTO notes (folder_id, title, content_json, content_text)
+    VALUES (?, ?, ?, ?)
   `;
-    db.run(sql, [folder_id, title, JSON.stringify(contentJson)], function (err) {
-        callback(err, this ? this.lastID : null);
+    db.run(sql, [folder_id, title, JSON.stringify(contentJson), searchableContentText], async function (err) {
+        if (err) {
+            callback(err, this ? this.lastID : null);
+            return;
+        }
+
+        try {
+            await updateNoteSearchIndex({
+                id: this.lastID,
+                title,
+                topic: '',
+                content_text: searchableContentText,
+            });
+            callback(null, this.lastID);
+        } catch (searchErr) {
+            callback(searchErr, this.lastID);
+        }
     });
     // Note: the note is not added to the vector store here because the content is not yet available
 }
@@ -136,8 +264,18 @@ function listNotes(callback) {
 // Rename a note
 function renameNote(id, newTitle, callback) {
     const sql = `UPDATE notes SET title = ? WHERE id = ?`;
-    db.run(sql, [newTitle, id], function (err) {
-        callback(err, this.changes);
+    db.run(sql, [newTitle, id], async function (err) {
+        if (err) {
+            callback(err, this.changes);
+            return;
+        }
+
+        try {
+            await refreshNoteSearchIndex(id);
+            callback(null, this.changes);
+        } catch (searchErr) {
+            callback(searchErr, this.changes);
+        }
     });
 }
 
@@ -145,22 +283,24 @@ function renameNote(id, newTitle, callback) {
 function updateNote(id, topic, contentJson, contentText, callback) {
     const normalizedContent = imageService.normalizeNoteContentForStorage(contentJson);
     const referencedImages = imageService.collectManagedImagePaths(normalizedContent);
+    const searchableContentText = normalizeSearchText(contentText);
     const sql = `
     UPDATE notes 
-    SET topic = ?, content_json = ?, updated_at = CURRENT_TIMESTAMP 
+    SET topic = ?, content_json = ?, content_text = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `;
-    
-    db.run(sql, [topic, JSON.stringify(normalizedContent), id], async function (err) {
+
+    db.run(sql, [topic, JSON.stringify(normalizedContent), searchableContentText, id], async function (err) {
         if (err) {
             callback(err);
             return;
         }
         
         try {
+            await refreshNoteSearchIndex(id);
             await imageService.pruneNoteImages(id, referencedImages);
             await vectorStore.deleteNote(id);
-            await vectorStore.addNote(id, contentText);
+            await vectorStore.addNote(id, searchableContentText);
             callback(null);
         } catch (vectorErr) {
             callback(vectorErr);
@@ -177,6 +317,8 @@ function deleteNote(id, callback) {
             return;
         }
         try {
+            await deleteNoteChatConversations(id);
+            await deleteNoteSearchIndex(id);
             await vectorStore.deleteNote(id);
             await imageService.deleteNoteImages(id);
             callback(null);
@@ -205,6 +347,14 @@ function deleteNotesInFolder(folderId, callback) {
             }
             
             try {
+                for (const note of notes) {
+                    await deleteNoteChatConversations(note.id);
+                }
+
+                for (const note of notes) {
+                    await deleteNoteSearchIndex(note.id);
+                }
+
                 // Delete each note from vector store
                 for (const note of notes) {
                     await vectorStore.deleteNote(note.id);
@@ -272,50 +422,18 @@ function getLastViewedNotes(callback) {
     });
 }
 
-// Search notes by keyword across title, topic, content, and folder name
+// Search notes by keyword across title, topic, and plain note content
 function searchNotes(query, limit = 10, callback) {
-    const normalizedQuery = String(query || '').trim().toLowerCase();
+    const searchTerms = getSearchTokens(query);
     const safeLimit = Math.max(1, Number(limit) || 10);
     
-    if (!normalizedQuery) {
+    if (searchTerms.length === 0) {
         callback(null, []);
         return;
     }
     
-    const searchTerms = [...new Set(normalizedQuery.split(/\s+/).filter(Boolean))].slice(0, 8);
-    const whereClauses = [];
-    const scoreClauses = [];
-    const whereParams = [];
-    const scoreParams = [];
-    
-    searchTerms.forEach((term) => {
-        const exact = term;
-        const prefix = `${term}%`;
-        const contains = `%${term}%`;
-        
-        whereClauses.push(`
-            lower(notes.title) LIKE ?
-            OR lower(COALESCE(notes.topic, '')) LIKE ?
-            OR lower(COALESCE(notes.content_json, '')) LIKE ?
-            OR lower(COALESCE(folders.name, '')) LIKE ?
-        `);
-            whereParams.push(contains, contains, contains, contains);
-            
-            scoreClauses.push(`
-            CASE
-                WHEN lower(notes.title) = ? THEN 120
-                WHEN lower(notes.title) LIKE ? THEN 80
-                WHEN lower(notes.title) LIKE ? THEN 55
-                ELSE 0
-            END
-            + CASE WHEN lower(COALESCE(notes.topic, '')) LIKE ? THEN 30 ELSE 0 END
-            + CASE WHEN lower(COALESCE(notes.content_json, '')) LIKE ? THEN 12 ELSE 0 END
-            + CASE WHEN lower(COALESCE(folders.name, '')) LIKE ? THEN 18 ELSE 0 END
-        `);
-                scoreParams.push(exact, prefix, contains, contains, contains, contains);
-            });
-            
-            const sql = `
+    const ftsQuery = searchTerms.map((term) => `${term}*`).join(' ');
+    const sql = `
     SELECT
         notes.id,
         notes.title,
@@ -325,40 +443,217 @@ function searchNotes(query, limit = 10, callback) {
         notes.updated_at,
         notes.last_viewed_at,
         folders.name AS folder_name,
-        (${scoreClauses.join(' + ')}) AS keyword_score
-    FROM notes
+        -bm25(note_search_fts, 8.0, 4.0, 1.0, 0.0) AS keyword_score
+    FROM note_search_fts
+    JOIN notes ON notes.id = note_search_fts.note_id
     LEFT JOIN folders ON notes.folder_id = folders.id
-    WHERE ${whereClauses.map(clause => `(${clause})`).join(' OR ')}
+    WHERE note_search_fts MATCH ?
     ORDER BY keyword_score DESC,
              COALESCE(notes.last_viewed_at, notes.updated_at) DESC,
              notes.title ASC
     LIMIT ?
     `;
-            
-            db.all(sql, [...scoreParams, ...whereParams, safeLimit], (err, rows) => {
-                callback(err, rows);
-            });
+
+    db.all(sql, [ftsQuery, safeLimit], (err, rows) => {
+        callback(err, rows);
+    });
+}
+
+/* ---------------------------
+Chat CRUD Operations
+--------------------------- */
+
+function normalizeChatScope(scope) {
+    return scope === 'note' ? 'note' : 'all';
+}
+
+function parseMessageSources(message) {
+    if (!message.sources_json) return [];
+
+    try {
+        const parsed = JSON.parse(message.sources_json);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+        return [];
+    }
+}
+
+function mapConversation(row) {
+    if (!row) return null;
+
+    return {
+        id: row.id,
+        scope: row.scope,
+        noteId: row.note_id,
+        title: row.title,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    };
+}
+
+function mapChatMessage(row) {
+    return {
+        id: row.id,
+        conversationId: row.conversation_id,
+        role: row.role,
+        content: row.content,
+        sources: parseMessageSources(row),
+        createdAt: row.created_at,
+    };
+}
+
+function createChatConversation({ scope = 'all', noteId = null, title = '' }, callback) {
+    const normalizedScope = normalizeChatScope(scope);
+    const normalizedNoteId = normalizedScope === 'note' ? noteId : null;
+
+    db.run(`
+        INSERT INTO chat_conversations (scope, note_id, title)
+        VALUES (?, ?, ?)
+    `, [normalizedScope, normalizedNoteId, title || 'New chat'], function (err) {
+        if (err) {
+            callback(err);
+            return;
         }
-        
-        module.exports = {
-            createFolder,
-            getFolderContent,
-            getFolder,
-            updateFolder,
-            deleteFolder,
-            listFolders,
-            createNote,
-            getNote,
-            getNotesByIds,
-            listNotes,
-            renameNote,
-            updateNote,
-            deleteNote,
-            moveNoteToFolder,
-            deleteNotesInFolder,
-            setNoteFavorite,
-            updateNoteLastViewed,
-            getFavoriteNotes,
-            getLastViewedNotes,
-            searchNotes,
-        };
+
+        getChatConversation(this.lastID, callback);
+    });
+}
+
+function listChatConversations({ scope = 'all', noteId = null, limit = 20 } = {}, callback) {
+    const normalizedScope = normalizeChatScope(scope);
+    const safeLimit = Math.max(1, Number(limit) || 20);
+    const params = [normalizedScope];
+    let where = `scope = ?`;
+
+    if (normalizedScope === 'note') {
+        where += ` AND note_id = ?`;
+        params.push(noteId);
+    }
+
+    params.push(safeLimit);
+
+    db.all(`
+        SELECT id, scope, note_id, title, created_at, updated_at
+        FROM chat_conversations
+        WHERE ${where}
+        ORDER BY updated_at DESC, id DESC
+        LIMIT ?
+    `, params, (err, rows) => {
+        callback(err, rows ? rows.map(mapConversation) : []);
+    });
+}
+
+function getChatConversation(id, callback) {
+    db.get(`
+        SELECT id, scope, note_id, title, created_at, updated_at
+        FROM chat_conversations
+        WHERE id = ?
+    `, [id], (conversationErr, conversation) => {
+        if (conversationErr) {
+            callback(conversationErr);
+            return;
+        }
+
+        if (!conversation) {
+            callback(null, null);
+            return;
+        }
+
+        db.all(`
+            SELECT id, conversation_id, role, content, sources_json, created_at
+            FROM chat_messages
+            WHERE conversation_id = ?
+            ORDER BY created_at ASC, id ASC
+        `, [id], (messagesErr, messages) => {
+            if (messagesErr) {
+                callback(messagesErr);
+                return;
+            }
+
+            callback(null, {
+                ...mapConversation(conversation),
+                messages: messages.map(mapChatMessage),
+            });
+        });
+    });
+}
+
+function appendChatMessage({ conversationId, role, content, sources = [] }, callback) {
+    const normalizedRole = role === 'assistant' ? 'assistant' : 'user';
+    const sourcesJson = normalizedRole === 'assistant' ? JSON.stringify(sources || []) : null;
+
+    db.run(`
+        INSERT INTO chat_messages (conversation_id, role, content, sources_json)
+        VALUES (?, ?, ?, ?)
+    `, [conversationId, normalizedRole, content || '', sourcesJson], function (err) {
+        if (err) {
+            callback(err);
+            return;
+        }
+
+        db.run(`
+            UPDATE chat_conversations
+            SET updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `, [conversationId], (updateErr) => {
+            if (updateErr) {
+                callback(updateErr);
+                return;
+            }
+
+            callback(null, this.lastID);
+        });
+    });
+}
+
+function updateChatConversation({ id, title }, callback) {
+    db.run(`
+        UPDATE chat_conversations
+        SET title = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    `, [title || 'New chat', id], function (err) {
+        callback(err, this ? this.changes : 0);
+    });
+}
+
+function deleteChatConversation(id, callback) {
+    db.run(`DELETE FROM chat_messages WHERE conversation_id = ?`, [id], (messageErr) => {
+        if (messageErr) {
+            callback(messageErr);
+            return;
+        }
+
+        db.run(`DELETE FROM chat_conversations WHERE id = ?`, [id], function (conversationErr) {
+            callback(conversationErr, this ? this.changes : 0);
+        });
+    });
+}
+
+module.exports = {
+    createFolder,
+    getFolderContent,
+    getFolder,
+    updateFolder,
+    deleteFolder,
+    listFolders,
+    createNote,
+    getNote,
+    getNotesByIds,
+    listNotes,
+    renameNote,
+    updateNote,
+    deleteNote,
+    moveNoteToFolder,
+    deleteNotesInFolder,
+    setNoteFavorite,
+    updateNoteLastViewed,
+    getFavoriteNotes,
+    getLastViewedNotes,
+    searchNotes,
+    createChatConversation,
+    listChatConversations,
+    getChatConversation,
+    appendChatMessage,
+    updateChatConversation,
+    deleteChatConversation,
+};

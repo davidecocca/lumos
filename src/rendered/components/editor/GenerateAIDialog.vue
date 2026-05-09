@@ -6,8 +6,8 @@
     >
     <v-card rounded="xl" elevation="8">
         <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-            <v-avatar color="orange-lighten-4" size="36" class="mr-3">
-                <v-icon size="24" color="orange-darken-2">ph-lightbulb</v-icon>
+            <v-avatar color="amber" size="36" class="mr-3">
+                <v-icon size="24" color="white">ph-lightbulb</v-icon>
             </v-avatar>
             <div>
                 <div class="text-headline-small">Generate with AI</div>
@@ -28,6 +28,7 @@
                 v-model="userText"
                 class="mt-2"
                 variant="outlined"
+                rounded="lg"
                 @keydown="onPromptKeydown"
                 />
                 

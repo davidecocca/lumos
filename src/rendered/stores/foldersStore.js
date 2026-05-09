@@ -102,7 +102,6 @@ export const useFoldersStore = defineStore('folders', {
             const payload = {
                 query,
                 limit: options.limit ?? 10,
-                includeSemantic: options.includeSemantic ?? true,
             }
 
             return window.api.searchNotes(payload)
@@ -210,7 +209,12 @@ export const useFoldersStore = defineStore('folders', {
         async createNote(folderId, noteTitle) {
             if (noteTitle) {
                 try {
-                    const payload = { folder_id: folderId, title: noteTitle, contentJson: '{}' }
+                    const payload = {
+                        folder_id: folderId,
+                        title: noteTitle,
+                        contentJson: '{}',
+                        contentText: '',
+                    }
                     const noteId = await window.api.createNote(payload)
                     const folder = this.folders.find(folder => folder.id === folderId)
                     if (folder) {
@@ -399,6 +403,9 @@ export const useFoldersStore = defineStore('folders', {
         },
         async openNote(noteId, router) {
             try {
+                // Navigate to the note
+                await router.push({ name: 'notes', params: { noteId } })
+
                 // Update last viewed time in the backend
                 await window.api.updateNoteLastViewed(noteId)
                 
@@ -420,9 +427,6 @@ export const useFoldersStore = defineStore('folders', {
                 if (this.recents.length > 10) {
                     this.recents = this.recents.slice(-10)
                 }
-                
-                // Navigate to the note
-                router.push({ name: 'notes', params: { noteId } })
             } catch (err) {
                 console.error('Error opening note:', err)
                 this.errorDialogText = 'An error occurred while opening the note.'

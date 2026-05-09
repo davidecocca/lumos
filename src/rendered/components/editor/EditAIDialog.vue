@@ -6,8 +6,8 @@
     >
     <v-card rounded="xl" elevation="8">
         <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-            <v-avatar color="blue-lighten-4" size="36" class="mr-3">
-                <v-icon size="24" color="blue-darken-2">ph-pencil-simple</v-icon>
+            <v-avatar color="primary" size="36" class="mr-3">
+                <v-icon size="24" color="white">ph-pencil-simple</v-icon>
             </v-avatar>
             <div>
                 <div class="text-headline-small">Edit with AI</div>
@@ -27,6 +27,7 @@
                 readonly
                 class="mt-2"
                 variant="outlined"
+                rounded="lg"
                 />
                 
                 <v-textarea
@@ -39,6 +40,7 @@
                 v-model="userText"
                 class="mt-4"
                 variant="outlined"
+                rounded="lg"
                 @keydown="onPromptKeydown"
                 />
                 
@@ -54,6 +56,7 @@
                 variant="outlined"
                 v-model="aiText"
                 id="aiTextAreaId"
+                rounded="lg"
                 :max-rows="14"
                 >
                 <template #append-inner>
