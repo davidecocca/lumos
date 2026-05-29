@@ -16,6 +16,7 @@
     <template v-slot:activator="{ props: tooltipProps }">
         <v-list-item
         v-bind="tooltipProps"
+        class="page-router-item"
         :value="item.value"
         :active="currentRoute.name === item.value"
         @click.stop="openRoute(item.value)"
@@ -29,6 +30,7 @@
             <span :class="{ 'font-weight-bold': currentRoute.name === item.value }">{{ item.title }}</span>
         </template>
         <template v-slot:append>
+            <span class="page-router-hotkey">
             <v-hotkey
             v-if="item.hotkey"
             :keys="item.hotkey"
@@ -36,6 +38,7 @@
             variant="text"
             platform="mac"
             />
+            </span>
         </template>
     </v-list-item>
 </template>
@@ -75,4 +78,15 @@ const openRoute = (routeName) => {
 }
 </script>
 
-<style scoped></style>
+<style scoped>
+.page-router-hotkey {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+}
+
+.page-router-item:hover .page-router-hotkey,
+.page-router-item:focus-within .page-router-hotkey {
+    opacity: 1;
+}
+</style>
