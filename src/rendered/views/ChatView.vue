@@ -1,87 +1,136 @@
 <template>
-    <div class="chat-view">
-        <aside class="chat-view__sidebar border-e pr-4">
-            <v-list nav density="compact" class="chat-view__list">
-                <v-list-item
-                prepend-icon="ph-plus"
-                title="New chat"
-                rounded="lg"
-                variant="tonal"
-                class="mb-4"
-                @click="startNewChat"
-                >
-                <template v-slot:append>
-                    <v-hotkey
-                    keys="cmd+shift+o"
-                    display-mode="icon"
-                    variant="text"
-                    platform="mac"
-                    />
-                </template>
-            </v-list-item>
-            
-            <v-list-subheader>Recents</v-list-subheader>
+    <v-layout class="chat-view">
+        <v-navigation-drawer
+        v-model="isChatSidebarOpen"
+        width="320"
+        disable-route-watcher
+        color="background"
+        class="chat-view__sidebar"
+        >
+        
+        <v-list
+        nav
+        density="compact"
+        >
+        <v-list-item>
+            <v-list-item-title class="text-medium-emphasis text-body-small">
+                Recents
+            </v-list-item-title>
+            <template v-slot:append>
+                <v-tooltip text="Hide chats" location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-btn
+                        v-bind="props"
+                        icon="ph-caret-left"
+                        variant="text"
+                        density="comfortable"
+                        @click="isChatSidebarOpen = false"
+                        />
+                    </template>
+                </v-tooltip>
+            </template>
+        </v-list-item>
+    </v-list>
+    
+    <div class="chat-view__sidebar-content">
+        <v-list nav density="compact" class="chat-view__list px-2">            
             <v-list-item
             v-if="conversations.length === 0"
             prepend-icon="ph-clock-counter-clockwise"
             title="No recent chats"
+            rounded="lg"
             />
             <v-list-item
             v-for="conversation in conversations"
             :key="conversation.id"
             :active="conversation.id === selectedConversationId"
             rounded="lg"
+            lines="two"
+            class="chat-view__conversation pr-1"
+            @mouseenter="hoveredConversationId = conversation.id"
+            @mouseleave="hoveredConversationId = null"
             @click="selectedConversationId = conversation.id"
             >
-            <v-list-item-title>{{ conversation.title || 'New chat' }}</v-list-item-title>
+            <v-list-item-title class="text-body-2 font-weight-medium">
+                {{ conversation.title || 'New chat' }}
+            </v-list-item-title>
             <v-list-item-subtitle>{{ formatConversationTime(conversation.updatedAt) }}</v-list-item-subtitle>
             <template v-slot:append>
-                <v-menu>
-                    <template v-slot:activator="{ props }">
-                        <v-tooltip text="More" location="top">
-                            <template v-slot:activator="{ props: tooltipProps }">
-                                <v-btn
-                                v-bind="{ ...props, ...tooltipProps }"
-                                icon="ph-dots-three"
-                                size="small"
-                                variant="text"
-                                density="compact"
-                                @click.stop
-                                />
-                            </template>
-                        </v-tooltip>
-                    </template>
-                    <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
-                        <v-list-item @click.stop="openRenameChatDialog(conversation)" rounded="lg">
-                            <template v-slot:append>
-                                <v-icon icon="ph-pencil-line"></v-icon>
-                            </template>
-                            <v-list-item-title>Rename</v-list-item-title>
-                        </v-list-item>
-                        <v-list-item @click.stop="openDeleteChatDialog(conversation)" rounded="lg">
-                            <template v-slot:append>
-                                <v-icon icon="ph-trash"></v-icon>
-                            </template>
-                            <v-list-item-title>Delete</v-list-item-title>
-                        </v-list-item>
-                    </v-list>
-                </v-menu>
-            </template>
-        </v-list-item>
-    </v-list>
-</aside>
+                <v-menu
+                :model-value="activeConversationMenuId === conversation.id"
+                @update:model-value="setConversationMenuOpen(conversation.id, $event)"
+                >
+                <template v-slot:activator="{ props }">
+                    <v-tooltip text="More" location="top">
+                        <template v-slot:activator="{ props: tooltipProps }">
+                            <v-btn
+                            v-show="isConversationActionVisible(conversation.id)"
+                            v-bind="{ ...props, ...tooltipProps }"
+                            icon="ph-dots-three"
+                            size="small"
+                            variant="text"
+                            density="compact"
+                            @click.stop
+                            />
+                        </template>
+                    </v-tooltip>
+                </template>
+                <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
+                    <v-list-item @click.stop="openRenameChatDialog(conversation)" rounded="lg">
+                        <template v-slot:append>
+                            <v-icon icon="ph-pencil-line"></v-icon>
+                        </template>
+                        <v-list-item-title>Rename</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item
+                    class="delete-menu-action"
+                    base-color="error"
+                    @click.stop="openDeleteChatDialog(conversation)"
+                    rounded="lg"
+                    >
+                        <template v-slot:append>
+                            <v-icon icon="ph-trash"></v-icon>
+                        </template>
+                        <v-list-item-title>Delete</v-list-item-title>
+                    </v-list-item>
+                </v-list>
+            </v-menu>
+        </template>
+    </v-list-item>
+</v-list>
+</div>
+</v-navigation-drawer>
+
+<v-main class="chat-view__main">
+    <div
+    v-if="!isChatSidebarOpen"
+    class="chat-view__floating-actions d-flex align-center ga-1"
+    >
+    <v-tooltip text="Show chats" location="bottom">
+        <template v-slot:activator="{ props }">
+            <v-btn
+            v-bind="props"
+            icon="ph-chats-circle"
+            variant="text"
+            density="comfortable"
+            @click="isChatSidebarOpen = true"
+            />
+        </template>
+    </v-tooltip>
+</div>
 
 <LumosChatPanel
-:key="selectedConversationId || newChatKey"
 class="chat-view__panel"
 scope="all"
 :conversation-id="selectedConversationId"
 :start-empty="!selectedConversationId"
+:showHeaderActions="!isChatSidebarOpen"
 is-visible
 @new-thread="startNewChat"
 @select-conversation="selectedConversationId = $event"
 @conversation-updated="handleConversationUpdated"
 />
+</v-main>
 
 <RenameChatDialog
 v-model="renameChatDialog"
@@ -94,7 +143,7 @@ v-model="deleteChatDialog"
 :chat-id="activeChatId"
 @delete-chat="handleDeleteChat"
 />
-</div>
+</v-layout>
 </template>
 
 <script setup>
@@ -107,7 +156,9 @@ import { onMounted, ref } from 'vue'
 const chatStore = useChatStore()
 const conversations = ref([])
 const selectedConversationId = ref(null)
-const newChatKey = ref('new')
+const isChatSidebarOpen = ref(true)
+const hoveredConversationId = ref(null)
+const activeConversationMenuId = ref(null)
 const renameChatDialog = ref(false)
 const deleteChatDialog = ref(false)
 const activeChatId = ref(null)
@@ -122,7 +173,6 @@ const refreshConversations = async () => {
 
 const startNewChat = () => {
     selectedConversationId.value = null
-    newChatKey.value = `new:${Date.now()}`
 }
 
 const handleConversationUpdated = async (conversation) => {
@@ -142,6 +192,14 @@ const openDeleteChatDialog = (conversation) => {
     activeChatId.value = conversation.id
     activeChatTitle.value = conversation.title || 'New chat'
     deleteChatDialog.value = true
+}
+
+const setConversationMenuOpen = (conversationId, isOpen) => {
+    activeConversationMenuId.value = isOpen ? conversationId : null
+}
+
+const isConversationActionVisible = (conversationId) => {
+    return hoveredConversationId.value === conversationId || activeConversationMenuId.value === conversationId
 }
 
 const handleRenameChat = async (chatId, title) => {
@@ -180,16 +238,26 @@ onMounted(async () => {
 .chat-view {
     height: calc(100vh - 80px);
     min-height: 0;
-    display: flex;
     overflow: hidden;
+    position: relative;
 }
 
 .chat-view__sidebar {
-    width: 300px;
-    flex: 0 0 300px;
+    overflow: hidden;
+}
+
+.chat-view__sidebar :deep(.v-navigation-drawer__content) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.chat-view__sidebar-content {
+    flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .chat-view__list {
@@ -199,8 +267,33 @@ onMounted(async () => {
     background: transparent;
 }
 
+.chat-view__conversation :deep(.v-list-item-title),
+.chat-view__conversation :deep(.v-list-item-subtitle) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-view__conversation :deep(.v-list-item__append) {
+    min-width: 32px;
+}
+
+.chat-view__main {
+    height: 100%;
+    min-width: 0;
+    position: relative;
+}
+
 .chat-view__panel {
-    flex: 1;
+    height: 100%;
     min-width: 0;
 }
+
+.chat-view__floating-actions {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 2;
+}
+
 </style>

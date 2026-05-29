@@ -12,6 +12,8 @@
     :key="k"
     :active="note.id === activeNoteId"
     class="pr-1"
+    @mouseenter="hoveredActionKey = getActionKey('favorite-note', note.id)"
+    @mouseleave="hoveredActionKey = null"
     @click="store.openNote(note.id, router)"
     >
     <template v-slot:prepend>
@@ -22,42 +24,51 @@
     </template>
     <template v-slot:append>
         <!-- Note action menu -->
-        <v-menu>
-            <template v-slot:activator="{ props }">
-                <v-tooltip text="More" location="top">
-                    <template v-slot:activator="{ props: tooltipProps }">
-                        <v-btn
-                        v-bind="{ ...props, ...tooltipProps }"
-                        icon="ph-dots-three"
-                        size="small"
-                        variant="text"
-                        density="compact"
-                        ></v-btn>
-                    </template>
-                </v-tooltip>
-            </template>
-            <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
-                <v-list-item @click="store.toggleNoteFavorite(note.id)" rounded="lg">
-                    <template v-slot:append>
-                        <v-icon icon="ph-heart-break"></v-icon>
-                    </template>
-                    <v-list-item-title>Unfavorite</v-list-item-title>
-                </v-list-item>
-                <v-list-item @click="store.openRenameNoteDialog(note.id, note.title)" rounded="lg">
-                    <template v-slot:append>
-                        <v-icon icon="ph-pencil-line"></v-icon>
-                    </template>
-                    <v-list-item-title>Rename</v-list-item-title>
-                </v-list-item>
-                <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)" rounded="lg">
-                    <template v-slot:append>
-                        <v-icon icon="ph-trash"></v-icon>
-                    </template>
-                    <v-list-item-title>Delete</v-list-item-title>
-                </v-list-item>
-            </v-list>
-        </v-menu>
-    </template>
+        <v-menu
+        :model-value="activeActionMenuKey === getActionKey('favorite-note', note.id)"
+        @update:model-value="setActionMenuOpen('favorite-note', note.id, $event)"
+        >
+        <template v-slot:activator="{ props }">
+            <v-tooltip text="More" location="top">
+                <template v-slot:activator="{ props: tooltipProps }">
+                    <v-btn
+                    v-show="isActionVisible('favorite-note', note.id)"
+                    v-bind="{ ...props, ...tooltipProps }"
+                    icon="ph-dots-three"
+                    size="small"
+                    variant="text"
+                    density="compact"
+                    ></v-btn>
+                </template>
+            </v-tooltip>
+        </template>
+        <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
+            <v-list-item @click="store.toggleNoteFavorite(note.id)" rounded="lg">
+                <template v-slot:append>
+                    <v-icon icon="ph-heart-break"></v-icon>
+                </template>
+                <v-list-item-title>Unfavorite</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="store.openRenameNoteDialog(note.id, note.title)" rounded="lg">
+                <template v-slot:append>
+                    <v-icon icon="ph-pencil-line"></v-icon>
+                </template>
+                <v-list-item-title>Rename</v-list-item-title>
+            </v-list-item>
+            <v-list-item
+            class="delete-menu-action"
+            base-color="error"
+            @click="store.openDeleteNoteConfirmationDialog(note.id)"
+            rounded="lg"
+            >
+                <template v-slot:append>
+                    <v-icon icon="ph-trash"></v-icon>
+                </template>
+                <v-list-item-title>Delete</v-list-item-title>
+            </v-list-item>
+        </v-list>
+    </v-menu>
+</template>
 </v-list-item>
 </v-list>
 
@@ -80,7 +91,7 @@ indent="16px"
                 icon="ph-folder-plus"
                 size="small"
                 density="compact"
-                variant="text"
+                rounded="xl"
                 class="mr-n2"
                 @click="store.openCreateFolderDialog()"
                 />
@@ -98,6 +109,8 @@ v-for="folder in folders"
     v-bind="props"
     class="pe-0"
     :class="{ 'drop-target-folder': dropTargetFolderId === folder.id }"
+    @mouseenter="hoveredActionKey = getActionKey('folder', folder.id)"
+    @mouseleave="hoveredActionKey = null"
     @click="store.toggleFolderOpen(folder)"
     @dragenter.prevent="handleFolderDragEnter(folder.id)"
     @dragover.prevent="handleFolderDragOver(folder.id, $event)"
@@ -108,6 +121,10 @@ v-for="folder in folders"
             <div v-if="folder.loading" class="mr-2">
                 <v-progress-circular size="20" indeterminate></v-progress-circular>
             </div>
+            <div
+            v-show="isActionVisible('folder', folder.id)"
+            class="d-flex align-center ga-2 mr-1"
+            >
             <v-tooltip text="New note" location="top">
                 <template v-slot:activator="{ props }">
                     <v-btn
@@ -121,40 +138,47 @@ v-for="folder in folders"
                     />
                 </template>
             </v-tooltip>
-            <div class="d-flex align-center mr-1">
-                <v-menu>
-                    <template v-slot:activator="{ props }">
-                        <v-tooltip text="More" location="top">
-                            <template v-slot:activator="{ props: tooltipProps }">
-                                <v-btn
-                                v-bind="{ ...props, ...tooltipProps }"
-                                icon="ph-dots-three"
-                                size="small"
-                                variant="text"
-                                density="compact"
-                                />
-                            </template>
-                        </v-tooltip>
+            <v-menu
+            :model-value="activeActionMenuKey === getActionKey('folder', folder.id)"
+            @update:model-value="setActionMenuOpen('folder', folder.id, $event)"
+            >
+            <template v-slot:activator="{ props }">
+                <v-tooltip text="More" location="top">
+                    <template v-slot:activator="{ props: tooltipProps }">
+                        <v-btn
+                        v-bind="{ ...props, ...tooltipProps }"
+                        icon="ph-dots-three"
+                        size="small"
+                        variant="text"
+                        density="compact"
+                        />
                     </template>
-                    <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
-                        <v-list-item @click="store.openRenameFolderDialog(folder.id, folder.name)" rounded="lg">
-                            <template v-slot:append>
-                                <v-icon icon="ph-pencil-line"></v-icon>
-                            </template>
-                            <v-list-item-title>Rename</v-list-item-title>
-                        </v-list-item>
-                        <v-list-item @click="store.openDeleteFolderConfirmationDialog(folder.id)" rounded="lg">
-                            <template v-slot:append>
-                                <v-icon icon="ph-trash"></v-icon>
-                            </template>
-                            <v-list-item-title>Delete</v-list-item-title>
-                        </v-list-item>
-                    </v-list>
-                </v-menu>
-            </div>
-        </div>
-    </template>
-    <v-list-item-title>{{ folder.name }}</v-list-item-title>
+                </v-tooltip>
+            </template>
+            <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
+                <v-list-item @click="store.openRenameFolderDialog(folder.id, folder.name)" rounded="lg">
+                    <template v-slot:append>
+                        <v-icon icon="ph-pencil-line"></v-icon>
+                    </template>
+                    <v-list-item-title>Rename</v-list-item-title>
+                </v-list-item>
+                <v-list-item
+                class="delete-menu-action"
+                base-color="error"
+                @click="store.openDeleteFolderConfirmationDialog(folder.id)"
+                rounded="lg"
+                >
+                    <template v-slot:append>
+                        <v-icon icon="ph-trash"></v-icon>
+                    </template>
+                    <v-list-item-title>Delete</v-list-item-title>
+                </v-list-item>
+            </v-list>
+        </v-menu>
+    </div>
+</div>
+</template>
+<v-list-item-title>{{ folder.name }}</v-list-item-title>
 </v-list-item>
 </template>
 <v-list-item
@@ -164,6 +188,8 @@ v-for="(note, k) in folder.notes"
 class="pr-1"
 :class="{ 'dragging-note': draggingNoteId === note.id }"
 :active="note.id === activeNoteId"
+@mouseenter="hoveredActionKey = getActionKey('note', note.id)"
+@mouseleave="hoveredActionKey = null"
 @click="store.openNote(note.id, router)"
 @dragstart="handleNoteDragStart(note.id, folder.id, $event)"
 @dragend="handleNoteDragEnd"
@@ -175,47 +201,56 @@ class="pr-1"
     <span :class="{ 'font-weight-bold': note.id === activeNoteId }">{{ note.title }}</span>
 </template>
 <template v-slot:append>
-    <v-menu>
-        <template v-slot:activator="{ props }">
-            <v-tooltip text="More" location="top">
-                <template v-slot:activator="{ props: tooltipProps }">
-                    <v-btn
-                    v-bind="{ ...props, ...tooltipProps }"
-                    icon="ph-dots-three"
-                    size="small"
-                    variant="text"
-                    density="compact"
-                    />
-                </template>
-            </v-tooltip>
-        </template>
-        <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
-            <v-list-item @click="store.toggleNoteFavorite(note.id)" rounded="lg">
-                <template v-slot:append>
-                    <v-icon :icon="note.favorite == 1 ? 'ph-heart-break' : 'ph-heart'"></v-icon>
-                </template>
-                <v-list-item-title>{{ note.favorite == 1 ? 'Unfavorite' : 'Favorite' }}</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="store.openRenameNoteDialog(note.id, note.title)" rounded="lg">
-                <template v-slot:append>
-                    <v-icon icon="ph-pencil-line"></v-icon>
-                </template>
-                <v-list-item-title>Rename</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="store.openMoveNoteDialog(note.id, folder.id)" rounded="lg">
-                <template v-slot:append>
-                    <v-icon icon="ph-file-arrow-up"></v-icon>
-                </template>
-                <v-list-item-title>Move</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)" rounded="lg">
-                <template v-slot:append>
-                    <v-icon icon="ph-trash"></v-icon>
-                </template>
-                <v-list-item-title>Delete</v-list-item-title>
-            </v-list-item>
-        </v-list>
-    </v-menu>
+    <v-menu
+    :model-value="activeActionMenuKey === getActionKey('note', note.id)"
+    @update:model-value="setActionMenuOpen('note', note.id, $event)"
+    >
+    <template v-slot:activator="{ props }">
+        <v-tooltip text="More" location="top">
+            <template v-slot:activator="{ props: tooltipProps }">
+                <v-btn
+                v-show="isActionVisible('note', note.id)"
+                v-bind="{ ...props, ...tooltipProps }"
+                icon="ph-dots-three"
+                size="small"
+                variant="text"
+                density="compact"
+                />
+            </template>
+        </v-tooltip>
+    </template>
+    <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
+        <v-list-item @click="store.toggleNoteFavorite(note.id)" rounded="lg">
+            <template v-slot:append>
+                <v-icon :icon="note.favorite == 1 ? 'ph-heart-break' : 'ph-heart'"></v-icon>
+            </template>
+            <v-list-item-title>{{ note.favorite == 1 ? 'Unfavorite' : 'Favorite' }}</v-list-item-title>
+        </v-list-item>
+        <v-list-item @click="store.openRenameNoteDialog(note.id, note.title)" rounded="lg">
+            <template v-slot:append>
+                <v-icon icon="ph-pencil-line"></v-icon>
+            </template>
+            <v-list-item-title>Rename</v-list-item-title>
+        </v-list-item>
+        <v-list-item @click="store.openMoveNoteDialog(note.id, folder.id)" rounded="lg">
+            <template v-slot:append>
+                <v-icon icon="ph-file-arrow-up"></v-icon>
+            </template>
+            <v-list-item-title>Move</v-list-item-title>
+        </v-list-item>
+        <v-list-item
+        class="delete-menu-action"
+        base-color="error"
+        @click="store.openDeleteNoteConfirmationDialog(note.id)"
+        rounded="lg"
+        >
+            <template v-slot:append>
+                <v-icon icon="ph-trash"></v-icon>
+            </template>
+            <v-list-item-title>Delete</v-list-item-title>
+        </v-list-item>
+    </v-list>
+</v-menu>
 </template>
 </v-list-item>
 <v-list-item v-if="folder.notes.length === 0" prepend-icon="ph-file-dashed">
@@ -303,6 +338,19 @@ const errorDialogDetails = computed(() => store.errorDialogDetails)
 const draggingNoteId = ref(null)
 const draggedFromFolderId = ref(null)
 const dropTargetFolderId = ref(null)
+const hoveredActionKey = ref(null)
+const activeActionMenuKey = ref(null)
+
+const getActionKey = (type, id) => `${type}:${id}`
+
+const setActionMenuOpen = (type, id, isOpen) => {
+    activeActionMenuKey.value = isOpen ? getActionKey(type, id) : null
+}
+
+const isActionVisible = (type, id) => {
+    const key = getActionKey(type, id)
+    return hoveredActionKey.value === key || activeActionMenuKey.value === key
+}
 
 const resetDragState = () => {
     draggingNoteId.value = null

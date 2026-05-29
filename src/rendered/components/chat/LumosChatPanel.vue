@@ -3,18 +3,17 @@
     fluid
     class="chat-panel pa-0"
     >
-    <div v-if="props.showHeaderActions" class="d-flex align-center ga-3 mb-4">
+    <div class="d-flex align-center ga-3 mb-4">
         <v-card
         class="w-100"
         variant="text"
         transparent
-        title="Chat"
         >
         
         <template v-slot:append>
-            <div class="d-flex align-center justify-end ga-1 ms-auto">
+            <div class="d-flex align-center justify-end ga-2 ms-auto">
                 <v-menu
-                v-if="props.showHeaderActions && props.scope === 'note'"
+                v-if="props.showHeaderActions"
                 v-model="isHistoryOpen"
                 location="bottom end"
                 >
@@ -24,8 +23,8 @@
                             <v-btn
                             v-bind="mergeProps(menuProps, tooltipProps)"
                             variant="text"
+                            density="comfortable"
                             icon="ph-clock-counter-clockwise"
-                            rounded="xl"
                             @click="loadRecentConversations"
                             />
                         </template>
@@ -73,7 +72,12 @@
                                     </template>
                                     <v-list-item-title>Rename</v-list-item-title>
                                 </v-list-item>
-                                <v-list-item @click.stop="openDeleteChatDialog(conversation)" rounded="lg">
+                                <v-list-item
+                                class="delete-menu-action"
+                                base-color="error"
+                                @click.stop="openDeleteChatDialog(conversation)"
+                                rounded="lg"
+                                >
                                     <template v-slot:append>
                                         <v-icon icon="ph-trash"></v-icon>
                                     </template>
@@ -86,13 +90,13 @@
             </v-list>
         </v-menu>
         
-        <v-tooltip v-if="props.showHeaderActions" text="New chat" location="bottom">
+        <v-tooltip text="New chat" location="bottom">
             <template v-slot:activator="{ props }">
                 <v-btn
                 v-bind="props"
                 variant="text"
+                density="comfortable"
                 icon="ph-plus"
-                rounded="xl"
                 @click="resetChat"
                 />
             </template>
@@ -107,69 +111,71 @@
 class="chat-content"
 :class="{ 'align-center justify-center pb-16': isChatEmpty }"
 >
-    <v-slide-y-transition leave-absolute>
-        <div
-        v-if="isChatEmpty"
-        class="w-100"
-        >
-            <EmptyChatState />
-        </div>
-    </v-slide-y-transition>
-
+<v-slide-y-transition leave-absolute>
     <div
-    v-if="!isChatEmpty"
-    class="chat-container"
-    ref="chatContainer"
+    v-if="isChatEmpty"
+    class="w-100"
     >
-        <v-list
-        lines="one"
-        style="background-color: transparent;"
-        >
-        <v-list-item
-        v-for="(message, index) in messages"
-        :key="index"
-        :data-message-index="index"
-        class="mb-2"
-        >
-        <div v-if="message.user === 'bot'" class="d-flex flex-grow-1 justify-start align-items-center" style="max-width: 80%;">
-            <ChatCard
-            class="flex-grow-1"
-            :message="message"
-            @open-source="openSourceNote"
-            />
-        </div>
-        <div v-if="message.user === 'user'" class="d-flex justify-end flex-grow-1">
-            <ChatCard
-            :message="message"
-            class="ms-auto"
-            style="max-width: 80%"
-            @open-source="openSourceNote"
-            />
-        </div>
-    </v-list-item>
+    <EmptyChatState />
+</div>
+</v-slide-y-transition>
+
+<div
+v-if="!isChatEmpty"
+class="chat-container"
+ref="chatContainer"
+>
+<v-list
+lines="one"
+style="background-color: transparent;"
+>
+<v-list-item
+v-for="(message, index) in messages"
+:key="index"
+:data-message-index="index"
+class="mb-2"
+>
+<div v-if="message.user === 'bot'" class="d-flex flex-grow-1 justify-start align-items-center" style="max-width: 80%;">
+    <ChatCard
+    class="flex-grow-1"
+    :message="message"
+    :showSources="showSources"
+    @open-source="openSourceNote"
+    />
+</div>
+<div v-if="message.user === 'user'" class="d-flex justify-end flex-grow-1">
+    <ChatCard
+    :message="message"
+    :showSources="showSources"
+    class="ms-auto"
+    style="max-width: 80%"
+    @open-source="openSourceNote"
+    />
+</div>
+</v-list-item>
 </v-list>
 </div>
 
 <!-- Input area -->
 <v-card
-class="border chat-input-card mx-auto my-4"
+class="border chat-input-card align-self-center"
 color="nav-background"
 elevation="0"
 rounded="xl"
-width="100%"
+width="calc(100% - 32px)"
 max-width="800"
 >
 <v-card-text class="ps-2 pt-1 pb-0">
     <v-textarea
     v-model="userInput"
     placeholder="Ask something"
-    variant="text"
     hide-details
     rows="1"
-    max-rows="3"
+    max-rows="5"
+    variant="plain"
     auto-grow
-    @keydown.enter="sendMessage"
-    @keydown.meta.enter="sendMessage"
+    class="ml-2 mr-2"
+    @keydown.enter="handleInputEnter"
     />
 </v-card-text>
 
@@ -186,7 +192,7 @@ max-width="800"
                             v-bind="mergeProps(menuProps, tooltipProps)"
                             class="model-trigger text-none px-2"
                             variant="text"
-                            rounded="xl"
+                            rounded="lg"
                             size="small"
                             style="min-width: 0;"
                             >
@@ -329,6 +335,10 @@ const renameChatDialog = ref(false)
 const deleteChatDialog = ref(false)
 const activeChatId = ref(null)
 const activeChatTitle = ref('')
+
+const showSources = computed(() => {
+    return props.scope === 'all'
+})
 
 // Available models for chat from all providers
 const availableChatModels = computed(() => {
@@ -550,6 +560,13 @@ const openSourceNote = async (noteId) => {
 
 const chunkDivederText = '\n\n-------\n\n'
 
+const handleInputEnter = (event) => {
+    if (event.shiftKey) return
+    
+    event.preventDefault()
+    sendMessage()
+}
+
 const sendMessage = async () => {
     try {
         if (userInput.value.trim() === '') return
@@ -687,7 +704,12 @@ watch(() => [props.scope, activeNoteId.value], async () => {
 }, { flush: 'post' })
 
 watch(() => props.conversationId, async (conversationId) => {
-    if (conversationId && Number(conversationId) !== Number(session.value.conversationId)) {
+    if (!conversationId) {
+        chatStore.resetChat(props.scope, activeNoteId.value)
+        return
+    }
+    
+    if (Number(conversationId) !== Number(session.value.conversationId)) {
         await loadConversationById(conversationId)
     }
 })
@@ -721,6 +743,8 @@ watch(() => props.conversationId, async (conversationId) => {
 
 .chat-input-card {
     flex-shrink: 0;
+    margin-inline: 16px;
+    margin-bottom: 16px;
 }
 
 /* Styles for model trigger button to handle model names of varying lengths */

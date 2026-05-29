@@ -1,256 +1,267 @@
 <template>
     <node-view-wrapper
     ref="wrapperRef"
-    class="note-youtube-node"
-    :class="{
-        'note-youtube-node--selected': selected,
-        'note-youtube-node--resizing': isResizing,
-    }"
+    class="position-relative d-block overflow-hidden rounded-lg my-4"
     :style="wrapperStyle"
     @click.stop="selectNode"
     >
-    <v-sheet
+    <v-btn
     v-if="selected"
-    class="note-youtube-node__toolbar note-youtube-node__toolbar--top-right note-youtube-node__toolbar--single d-flex align-center justify-center pa-1 rounded-xl"
-    color="surface"
-    border
-    elevation="6"
+    position="absolute"
+    location="top right"
+    color="surface-dark"
+    icon
+    rounded="xl"
+    variant="flat"
+    size="small"
+    class="youtube-embed-floating-control ma-2 border"
+    @click.stop="handleDelete"
     >
-        <v-tooltip text="Remove video" location="top">
-            <template v-slot:activator="{ props }">
-                <v-btn
-                v-bind="props"
-                icon="ph-trash"
-                size="x-small"
-                variant="text"
-                @click.stop="handleDelete"
-                />
-            </template>
-        </v-tooltip>
-    </v-sheet>
+    <v-icon
+    icon="ph-trash"
+    color="error"
+    />
+</v-btn>
 
-    <v-sheet
-    v-if="selected"
-    class="note-youtube-node__toolbar note-youtube-node__toolbar--bottom-center d-flex align-center ga-1 pa-1 rounded-xl"
-    color="surface"
-    border
-    elevation="6"
-    >
-        <v-tooltip text="Align left" location="top">
-            <template v-slot:activator="{ props }">
-                <v-btn
-                v-bind="props"
-                icon="ph-text-align-left"
-                size="x-small"
-                variant="text"
-                :color="node.attrs.align === 'left' ? 'primary' : undefined"
-                @click.stop="updateAlignment('left')"
-                />
-            </template>
-        </v-tooltip>
-        <v-tooltip text="Align center" location="top">
-            <template v-slot:activator="{ props }">
-                <v-btn
-                v-bind="props"
-                icon="ph-text-align-center"
-                size="x-small"
-                variant="text"
-                :color="node.attrs.align === 'center' ? 'primary' : undefined"
-                @click.stop="updateAlignment('center')"
-                />
-            </template>
-        </v-tooltip>
-        <v-tooltip text="Align right" location="top">
-            <template v-slot:activator="{ props }">
-                <v-btn
-                v-bind="props"
-                icon="ph-text-align-right"
-                size="x-small"
-                variant="text"
-                :color="node.attrs.align === 'right' ? 'primary' : undefined"
-                @click.stop="updateAlignment('right')"
-                />
-            </template>
-        </v-tooltip>
-    </v-sheet>
+<v-sheet
+v-if="selected"
+position="absolute"
+location="bottom center"
+color="surface-dark"
+rounded="xl"
+class="youtube-embed-floating-control d-flex align-center border ma-2"
+>
+<v-btn
+v-for="control in alignmentControls"
+:key="control.value"
+:color="alignment === control.value ? 'primary' : undefined"
+:icon="control.icon"
+size="small"
+variant="text"
+@click.stop="updateAlignment(control.value)"
+/>
+</v-sheet>
 
-    <v-sheet
-    v-if="showResizeHandle('left')"
-    class="note-youtube-node__handle note-youtube-node__handle--left note-youtube-node__toolbar--single d-flex align-center justify-center pa-1 rounded-xl"
-    color="surface"
-    border
-    elevation="6"
-    >
-        <v-tooltip text="Resize" location="top">
-            <template v-slot:activator="{ props }">
-                <v-btn
-                v-bind="props"
-                icon="ph-arrows-out-line-horizontal"
-                size="x-small"
-                variant="text"
-                aria-label="Resize video"
-                @pointerdown.stop.prevent="startResize('left', $event)"
-                />
-            </template>
-        </v-tooltip>
-    </v-sheet>
+<v-btn
+v-show="showResizeHandle"
+position="absolute"
+location="bottom right"
+color="surface-dark"
+rounded="xl"
+variant="flat"
+icon="ph-notches"
+size="small"
+class="youtube-embed-resize-handle ma-2 border"
+@pointerdown.stop.prevent="startResize($event)"
+/>
 
-    <v-sheet
-    v-if="showResizeHandle('right')"
-    class="note-youtube-node__handle note-youtube-node__handle--right note-youtube-node__toolbar--single d-flex align-center justify-center pa-1 rounded-xl"
-    color="surface"
-    border
-    elevation="6"
-    >
-        <v-tooltip text="Resize" location="top">
-            <template v-slot:activator="{ props }">
-                <v-btn
-                v-bind="props"
-                icon="ph-arrows-out-line-horizontal"
-                size="x-small"
-                variant="text"
-                aria-label="Resize video"
-                @pointerdown.stop.prevent="startResize('right', $event)"
-                />
-            </template>
-        </v-tooltip>
-    </v-sheet>
+<div
+v-if="embedUrl"
+class="position-relative bg-black rounded-lg overflow-hidden youtube-embed-frame-wrapper"
+contenteditable="false"
+>
+<iframe
+class="youtube-embed-frame position-absolute top-0 left-0 d-block w-100 h-100"
+:src="embedUrl"
+:title="node.attrs.title || 'YouTube video'"
+:style="frameStyle"
+allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+allowfullscreen
+/>
+<button
+v-if="!selected"
+type="button"
+class="position-absolute top-0 left-0 w-100 h-100 pa-0 ma-0 border-0 bg-transparent youtube-embed-selection-scrim"
+@click.stop.prevent="selectNode"
+@pointerdown.stop.prevent="selectNode"
+/>
+</div>
 
-    <div
-    v-if="embedUrl"
-    class="note-youtube-node__frame-wrapper"
-    contenteditable="false"
-    >
-        <iframe
-        class="note-youtube-node__frame"
-        :class="{ 'note-youtube-node__frame--interactive': selected }"
-        :src="embedUrl"
-        :title="node.attrs.title || 'YouTube video'"
-        frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowfullscreen
-        />
-        <button
-        v-if="!selected"
-        type="button"
-        class="note-youtube-node__selection-scrim"
-        aria-label="Select video"
-        @click.stop.prevent="selectNode"
-        @pointerdown.stop.prevent="selectNode"
-        />
-    </div>
-
-    <div v-else class="note-youtube-node__invalid text-medium-emphasis">
-        Invalid YouTube URL
-    </div>
+<div
+v-else
+class="youtube-embed-frame-wrapper youtube-embed-invalid-frame d-flex align-center justify-center"
+contenteditable="false"
+>
+<v-card
+class="youtube-embed-invalid-alert d-flex align-center justify-center text-center"
+color="error"
+variant="tonal"
+rounded="lg"
+height="100%"
+>
+<v-card-text class="d-flex flex-column align-center ga-2 pa-4">
+    <v-icon
+    icon="ph-warning"
+    size="32"
+    />
+    <div class="text-title-large">Invalid YouTube URL</div>
+    <div class="text-body-medium">Please check the URL and try again.</div>
+</v-card-text>
+</v-card>
+</div>
 </node-view-wrapper>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3'
+import { getEmbedUrlFromYoutubeUrl } from '@tiptap/extension-youtube'
 
 const VIDEO_MUTATION_EVENT = 'lumos-note-video-mutation'
+const VIDEO_ASPECT_RATIO = 16 / 9
 
 const props = defineProps(nodeViewProps)
 
 const wrapperRef = ref(null)
 const isResizing = ref(false)
+const isCommittingResize = ref(false)
 const liveWidth = ref(null)
+const fallbackWidthPercent = ref(null)
+const parentWidth = ref(null)
 const resizeState = ref(null)
+let resizeObserver = null
 
-const getWrapperElement = () => {
-    const candidate = wrapperRef.value
-    return candidate?.$el || candidate || null
-}
+const alignmentControls = [
+{ value: 'left', icon: 'ph-text-align-left' },
+{ value: 'center', icon: 'ph-text-align-center' },
+{ value: 'right', icon: 'ph-text-align-right' },
+]
 
 const resizeOptions = computed(() => ({
     enabled: props.extension.options.resize?.enabled !== false,
-    directions: props.extension.options.resize?.directions || ['right'],
     minWidth: props.extension.options.resize?.minWidth || 240,
     maxWidth: props.extension.options.resize?.maxWidth || null,
 }))
 
-const currentWidth = computed(() => liveWidth.value ?? props.node.attrs.width ?? null)
-
-const wrapperStyle = computed(() => {
-    const width = currentWidth.value
-    const align = props.node.attrs.align || 'center'
-    const styles = {
-        width: width ? `${width}px` : '640px',
-        maxWidth: '100%',
+const alignment = computed(() => props.node.attrs.align || 'center')
+const currentWidth = computed(() => liveWidth.value ?? props.node.attrs.width ?? 640)
+const configuredWidth = computed(() => props.extension.options.width || 640)
+const toWidthNumber = (width) => {
+    const value = Number.parseFloat(width)
+    
+    return Number.isFinite(value) ? value : null
+}
+const usesDefaultWidth = computed(
+() => (!liveWidth.value && (!props.node.attrs.width || toWidthNumber(props.node.attrs.width) === toWidthNumber(configuredWidth.value))
+))
+const widthPercent = computed(() => {
+    const savedPercent = toWidthNumber(props.node.attrs.widthPercent)
+    
+    if (savedPercent) {
+        return savedPercent
     }
-
-    if (align === 'left') {
-        styles.marginLeft = '0'
-        styles.marginRight = 'auto'
-    } else if (align === 'right') {
-        styles.marginLeft = 'auto'
-        styles.marginRight = '0'
-    } else {
-        styles.marginLeft = 'auto'
-        styles.marginRight = 'auto'
-    }
-
-    return styles
+    
+    return fallbackWidthPercent.value
 })
 
-const emitMutation = () => {
-    window.dispatchEvent(new CustomEvent(VIDEO_MUTATION_EVENT))
+// Wrapper style dynamically adjusts based on alignment, width, and selection state.
+// Add a box shadow when selected or resizing for better visibility.
+const wrapperStyle = computed(() => {
+    const margin = {
+        left: { marginLeft: 0, marginRight: 'auto' },
+        right: { marginLeft: 'auto', marginRight: 0 },
+        center: { marginLeft: 'auto', marginRight: 'auto' },
+    }[alignment.value] || { marginLeft: 'auto', marginRight: 'auto' }
+    
+    return {
+        width: getWrapperWidth(),
+        maxWidth: '100%',
+        lineHeight: 0,
+        boxShadow: props.selected || isResizing.value
+        ? `0 0 0 2px rgba(var(--v-theme-primary), ${isResizing.value ? 0.9 : 0.72})`
+        : undefined,
+        ...margin,
+    }
+})
+
+const frameStyle = computed(() => ({
+    border: 0,
+    pointerEvents: props.selected ? 'auto' : 'none',
+    userSelect: 'none',
+}))
+
+const getWrapperElement = () => wrapperRef.value?.$el || wrapperRef.value || null
+const emitMutation = () => window.dispatchEvent(new CustomEvent(VIDEO_MUTATION_EVENT))
+const getContentBoxWidth = (element) => {
+    if (!element) {
+        return 0
+    }
+    
+    const style = window.getComputedStyle(element)
+    const horizontalPadding = (Number.parseFloat(style.paddingLeft) || 0) + (Number.parseFloat(style.paddingRight) || 0)
+    
+    return Math.max(0, element.clientWidth - horizontalPadding)
+}
+const getParentWidth = (wrapperElement = getWrapperElement()) => getContentBoxWidth(wrapperElement?.parentElement)
+const getFallbackWidthPercent = () => {
+    const savedWidth = toWidthNumber(props.node.attrs.width)
+    
+    if (!savedWidth || usesDefaultWidth.value || !parentWidth.value) {
+        return null
+    }
+    
+    return Math.min(100, (savedWidth / parentWidth.value) * 100)
+}
+const captureFallbackWidthPercent = () => {
+    if (fallbackWidthPercent.value) {
+        return
+    }
+    
+    fallbackWidthPercent.value = getFallbackWidthPercent()
+}
+const persistFallbackWidthPercent = () => {
+    if (props.node.attrs.widthPercent) {
+        return
+    }
+    
+    const nextWidthPercent = getFallbackWidthPercent()
+    
+    if (!nextWidthPercent) {
+        return
+    }
+    
+    props.updateAttributes({ widthPercent: nextWidthPercent.toFixed(4) })
+}
+const getWrapperWidth = () => {
+    if (liveWidth.value) {
+        return `${liveWidth.value}px`
+    }
+    
+    if (usesDefaultWidth.value) {
+        return '100%'
+    }
+    
+    if (widthPercent.value) {
+        return `${Math.min(Math.max(widthPercent.value, 1), 100)}%`
+    }
+    
+    return `${currentWidth.value}px`
+}
+
+const getStartAt = (source) => {
+    try {
+        const url = new URL(source)
+        const start = url.searchParams.get('t')?.replace(/s$/u, '') || url.searchParams.get('start')
+        const startAt = Number.parseInt(start, 10)
+        
+        return Number.isFinite(startAt) ? startAt : undefined
+    } catch {
+        return undefined
+    }
 }
 
 const getEmbedUrl = (source) => {
-    try {
-        if (!source) {
-            return null
-        }
-
-        if (source.includes('/embed/')) {
-            return source
-        }
-
-        const url = new URL(source)
-        const hostname = url.hostname.replace(/^www\./, '')
-        const pathSegments = url.pathname.split('/').filter(Boolean)
-
-        let id = null
-        let isPlaylist = false
-
-        if (url.searchParams.has('v')) {
-            id = url.searchParams.get('v')
-        } else if (hostname === 'youtu.be') {
-            id = pathSegments.at(-1) || null
-        } else if (url.pathname.includes('/shorts/') || url.pathname.includes('/live/')) {
-            id = pathSegments.at(-1) || null
-        }
-
-        if (!id && url.searchParams.has('list')) {
-            id = url.searchParams.get('list')
-            isPlaylist = true
-        }
-
-        if (!id) {
-            return null
-        }
-
-        const embedUrl = new URL(
-            isPlaylist
-                ? `https://www.youtube-nocookie.com/embed/videoseries?list=${id}`
-                : `https://www.youtube-nocookie.com/embed/${id}`
-        )
-
-        const start = url.searchParams.get('t')?.replace(/s$/u, '') || url.searchParams.get('start')
-
-        if (start) {
-            embedUrl.searchParams.set('start', start)
-        }
-
-        embedUrl.searchParams.set('modestbranding', '1')
-
-        return embedUrl.toString()
-    } catch {
+    if (!source) {
         return null
     }
+    
+    return getEmbedUrlFromYoutubeUrl({
+        url: source,
+        controls: props.extension.options.controls !== false,
+        modestBranding: props.extension.options.modestBranding !== false,
+        nocookie: props.extension.options.nocookie !== false,
+        startAt: getStartAt(source),
+    })
 }
 
 const embedUrl = computed(() => getEmbedUrl(props.node.attrs.src))
@@ -261,231 +272,179 @@ const handleDelete = () => {
 }
 
 const updateAlignment = (align) => {
-    if (!align || align === props.node.attrs.align) {
+    if (!align || align === alignment.value) {
         return
     }
-
+    
     props.updateAttributes({ align })
     emitMutation()
 }
 
-const showResizeHandle = (direction) => (
-    props.selected
-    && resizeOptions.value.enabled
-    && resizeOptions.value.directions.includes(direction)
+const showResizeHandle = computed(() => (props.selected && resizeOptions.value.enabled))
+
+const getMaxWidth = (wrapperElement) => Math.max(
+resizeOptions.value.minWidth,
+Math.min(
+resizeOptions.value.maxWidth || Infinity,
+getParentWidth(wrapperElement) || Infinity
+)
 )
 
-const getMaxWidth = (wrapperElement) => {
-    const parentWidth = wrapperElement?.parentElement?.clientWidth || 0
-    const configuredMaxWidth = resizeOptions.value.maxWidth || Infinity
-    const domMaxWidth = parentWidth || Infinity
+const clampWidth = (width, wrapperElement) => Math.min(
+Math.max(width, resizeOptions.value.minWidth),
+getMaxWidth(wrapperElement)
+)
 
-    return Math.max(resizeOptions.value.minWidth, Math.min(configuredMaxWidth, domMaxWidth))
+const selectNode = () => {
+    const position = props.getPos?.()
+    
+    if (typeof position === 'number') {
+        props.editor.chain().focus().setNodeSelection(position).run()
+    }
 }
 
-const clampWidth = (width, wrapperElement) => {
-    const minWidth = resizeOptions.value.minWidth
-    const maxWidth = getMaxWidth(wrapperElement)
-
-    return Math.min(Math.max(width, minWidth), maxWidth)
-}
-
-const cleanupResize = () => {
+const cleanupResize = ({ clearLiveWidth = true } = {}) => {
     window.removeEventListener('pointermove', handlePointerMove)
     window.removeEventListener('pointerup', stopResize)
     window.removeEventListener('pointercancel', stopResize)
     resizeState.value = null
     isResizing.value = false
-    liveWidth.value = null
-}
-
-const selectNode = () => {
-    const position = props.getPos?.()
-
-    if (typeof position !== 'number') {
-        return
+    
+    if (clearLiveWidth) {
+        liveWidth.value = null
     }
-
-    props.editor.chain().focus().setNodeSelection(position).run()
 }
 
-const stopResize = () => {
+const stopResize = async () => {
     if (!resizeState.value) {
         return
     }
-
+    
     const nextWidth = Math.round(liveWidth.value || resizeState.value.startWidth)
     const previousWidth = props.node.attrs.width || null
-
-    cleanupResize()
-
-    if (!nextWidth || nextWidth === previousWidth) {
-        return
+    const nextWidthPercent = resizeState.value.parentWidth
+    ? Math.min(100, (nextWidth / resizeState.value.parentWidth) * 100)
+    : null
+    
+    isCommittingResize.value = true
+    cleanupResize({ clearLiveWidth: false })
+    
+    if (nextWidth && nextWidth !== previousWidth) {
+        props.updateAttributes({
+            width: nextWidth,
+            widthPercent: nextWidthPercent ? nextWidthPercent.toFixed(4) : null,
+        })
+        emitMutation()
     }
-
-    props.updateAttributes({ width: nextWidth })
-    emitMutation()
+    
+    await nextTick()
+    isCommittingResize.value = false
+    liveWidth.value = null
 }
 
 const handlePointerMove = (event) => {
     if (!resizeState.value) {
         return
     }
-
+    
     const deltaX = event.clientX - resizeState.value.startX
-    const directionalDelta = resizeState.value.direction === 'left' ? -deltaX : deltaX
-
+    const deltaY = event.clientY - resizeState.value.startY
+    const projectedDelta = (
+    deltaX + (deltaY / VIDEO_ASPECT_RATIO)
+    ) / (1 + (1 / VIDEO_ASPECT_RATIO ** 2))
+    
     liveWidth.value = clampWidth(
-        resizeState.value.startWidth + directionalDelta,
-        resizeState.value.wrapperElement
+    resizeState.value.startWidth + projectedDelta,
+    resizeState.value.wrapperElement
     )
 }
 
-const startResize = (direction, event) => {
+const startResize = (event) => {
     const wrapperElement = getWrapperElement()
-
+    
     if (!wrapperElement) {
         return
     }
-
+    
     const widthFromDom = Math.round(wrapperElement.getBoundingClientRect().width)
-    const startWidth = clampWidth(
-        widthFromDom || props.node.attrs.width || resizeOptions.value.minWidth,
-        wrapperElement
-    )
-
+    
     selectNode()
     isResizing.value = true
-    liveWidth.value = startWidth
+    liveWidth.value = clampWidth(
+    widthFromDom || props.node.attrs.width || resizeOptions.value.minWidth,
+    wrapperElement
+    )
     resizeState.value = {
-        direction,
+        parentWidth: getParentWidth(wrapperElement),
         startX: event.clientX,
-        startWidth,
+        startY: event.clientY,
+        startWidth: liveWidth.value,
         wrapperElement,
     }
-
-    if (event.pointerId !== undefined) {
-        event.currentTarget?.setPointerCapture?.(event.pointerId)
-    }
-
+    
+    event.currentTarget?.setPointerCapture?.(event.pointerId)
     window.addEventListener('pointermove', handlePointerMove)
     window.addEventListener('pointerup', stopResize)
     window.addEventListener('pointercancel', stopResize)
 }
 
 watch(() => props.node.attrs.width, () => {
-    if (!isResizing.value) {
+    if (!isResizing.value && !isCommittingResize.value) {
         liveWidth.value = null
     }
 })
 
+onMounted(async () => {
+    await nextTick()
+    
+    const parentElement = getWrapperElement()?.parentElement
+    
+    if (!parentElement) {
+        return
+    }
+    
+    parentWidth.value = getContentBoxWidth(parentElement)
+    captureFallbackWidthPercent()
+    persistFallbackWidthPercent()
+    resizeObserver = new ResizeObserver(([entry]) => {
+        parentWidth.value = entry.contentRect.width
+    })
+    resizeObserver.observe(parentElement)
+})
+
 onBeforeUnmount(() => {
     cleanupResize()
+    resizeObserver?.disconnect()
 })
 </script>
 
 <style scoped>
-.note-youtube-node {
-    position: relative;
-    display: block;
-    margin: 1rem 0;
-    max-width: 100%;
-    overflow: hidden;
-    border-radius: 16px;
-    line-height: 0;
+.youtube-embed-floating-control {
+    z-index: 2;
 }
 
-.note-youtube-node--selected {
-    box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.72);
+.youtube-embed-resize-handle {
+    z-index: 2;
+    cursor: nwse-resize;
+    touch-action: none;
 }
 
-.note-youtube-node--resizing {
-    box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.9);
-}
-
-.note-youtube-node__frame-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-.note-youtube-node__frame {
-    display: block;
-    width: 100%;
-    max-width: 100%;
+.youtube-embed-frame-wrapper {
     aspect-ratio: 16 / 9;
-    border: 0;
-    border-radius: 16px;
-    background: #000;
-    user-select: none;
-    pointer-events: none;
-}
-
-.note-youtube-node__frame--interactive {
-    pointer-events: auto;
-}
-
-.note-youtube-node__selection-scrim {
-    position: absolute;
-    inset: 0;
     width: 100%;
-    height: 100%;
-    border: 0;
-    border-radius: 16px;
-    background: transparent;
+}
+
+.youtube-embed-invalid-frame {
+    line-height: normal;
+}
+
+.youtube-embed-invalid-alert {
+    width: 100%;
+}
+
+.youtube-embed-selection-scrim {
+    inset: 0;
     cursor: default;
     z-index: 1;
-}
-
-.note-youtube-node__invalid {
-    padding: 1rem;
-    border: 1px dashed rgba(0, 0, 0, 0.2);
-    border-radius: 12px;
-    line-height: 1.4;
-}
-
-.note-youtube-node__toolbar {
-    position: absolute;
-    z-index: 2;
-    display: flex;
-}
-
-.note-youtube-node__toolbar--single {
-    min-width: 40px;
-    min-height: 40px;
-}
-
-.note-youtube-node__toolbar--top-right {
-    top: 10px;
-    right: 10px;
-}
-
-.note-youtube-node__toolbar--bottom-center {
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: 10px;
-}
-
-.note-youtube-node__handle {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: ew-resize;
-    touch-action: none;
-    z-index: 2;
-}
-
-.note-youtube-node__handle :deep(.v-btn),
-.note-youtube-node__handle :deep(.v-btn:hover),
-.note-youtube-node__handle :deep(.v-btn__content),
-.note-youtube-node__handle :deep(.v-icon) {
-    cursor: ew-resize;
-}
-
-.note-youtube-node__handle--left {
-    left: 10px;
-}
-
-.note-youtube-node__handle--right {
-    right: 10px;
 }
 </style>

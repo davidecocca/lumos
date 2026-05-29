@@ -11,7 +11,6 @@ export default Image.extend({
             ...this.parent?.(),
             resize: {
                 enabled: true,
-                directions: ['left', 'right'],
                 minWidth: 120,
                 maxWidth: null,
                 alwaysPreserveAspectRatio: true,

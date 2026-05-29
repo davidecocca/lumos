@@ -71,7 +71,12 @@
                                     </template>
                                     <v-list-item-title>Move</v-list-item-title>
                                 </v-list-item>
-                                <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)" rounded="lg">
+                                <v-list-item
+                                class="delete-menu-action"
+                                base-color="error"
+                                @click="store.openDeleteNoteConfirmationDialog(note.id)"
+                                rounded="lg"
+                                >
                                     <template v-slot:prepend>
                                         <v-icon>ph-trash</v-icon>
                                     </template>
@@ -1028,8 +1033,6 @@ const handleYoutubeEmbed = ({ src }) => {
     .setYoutubeVideo({
         src,
         align: 'center',
-        width: 640,
-        height: 360,
     })
     .run()
 }
@@ -1554,7 +1557,7 @@ onBeforeUnmount(() => {
 }
 
 .ProseMirror .iframe-wrapper,
-.ProseMirror iframe {
+.ProseMirror iframe:not(.youtube-embed-frame) {
     max-width: 100%;
 }
 
@@ -1562,7 +1565,7 @@ onBeforeUnmount(() => {
     margin: 1rem 0;
 }
 
-.ProseMirror iframe {
+.ProseMirror iframe:not(.youtube-embed-frame) {
     display: block;
     border: 0;
     border-radius: 12px;

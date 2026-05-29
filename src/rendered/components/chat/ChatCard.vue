@@ -5,7 +5,7 @@
     :text="props.message.text"
     rounded="lg"
     >
-    <div v-if="props.message.sources !== null && props.message.sources.length > 0">
+    <div v-if="props.showSources && props.message.sources !== null && props.message.sources.length > 0">
         <v-card-actions
         style="flex-direction: column; align-items: flex-start; gap: 8px;"
         >
@@ -31,6 +31,10 @@
         message: {
             type: Object,
             required: true
+        },
+        showSources: {
+            type: Boolean,
+            default: true
         }
     })
 

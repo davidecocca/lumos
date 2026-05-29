@@ -4,19 +4,18 @@ import EmbeddedYoutubeNodeView from './EmbeddedYoutubeNodeView.vue'
 
 export default Youtube.extend({
     draggable: false,
-
+    
     addOptions() {
         return {
             ...this.parent?.(),
             resize: {
                 enabled: true,
-                directions: ['left', 'right'],
                 minWidth: 240,
                 maxWidth: null,
             },
         }
     },
-
+    
     addAttributes() {
         return {
             ...this.parent?.(),
@@ -27,9 +26,18 @@ export default Youtube.extend({
                     'data-align': attributes.align || 'center',
                 }),
             },
+            widthPercent: {
+                default: null,
+                parseHTML: (element) => element.getAttribute('data-width-percent'),
+                renderHTML: (attributes) => (
+                    attributes.widthPercent
+                    ? { 'data-width-percent': attributes.widthPercent }
+                    : {}
+                ),
+            },
         }
     },
-
+    
     addNodeView() {
         return VueNodeViewRenderer(EmbeddedYoutubeNodeView)
     },
