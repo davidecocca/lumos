@@ -518,7 +518,7 @@
     
     <EmbedYoutubeDialog
     v-model="embedYoutubeDialog"
-    @embed="handleYoutubeEmbed"
+    @embed="handleyoutube"
     />
 </div>
 </template>
@@ -565,8 +565,8 @@ import { Color } from '@tiptap/extension-color'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
 import FileHandler from '@tiptap/extension-file-handler'
-import Youtube from '../components/editor/youtubeEmbed'
-import ResizableImage from '../components/editor/resizableImage'
+import EmbeddedYoutube from '../components/editor/custom-node-views/embedded-youtube/embeddedYoutube'
+import ResizableImage from '../components/editor/custom-node-views/resizable-image/resizableImage'
 
 // Code block highlighting: load all languages with "all" and common languages with "common"
 import { all, createLowlight } from 'lowlight'
@@ -1021,7 +1021,7 @@ const handleApply = (aiText) => {
     editor.value.chain().focus().setTextSelection({ from: selectionFrom.value, to: selectionTo.value }).insertContent(aiText).run();
 }
 
-const handleYoutubeEmbed = ({ src }) => {
+const handleyoutube = ({ src }) => {
     if (!editor.value) {
         console.error('Editor not ready')
         return
@@ -1037,7 +1037,7 @@ const handleYoutubeEmbed = ({ src }) => {
     .run()
 }
 
-const openYoutubeEmbedDialog = () => {
+const openyoutubeDialog = () => {
     embedYoutubeDialog.value = true
 }
 
@@ -1478,7 +1478,7 @@ onMounted(async () => {
             },
         }),
         ResizableImage,
-        Youtube.configure({
+        EmbeddedYoutube.configure({
             addPasteHandler: true,
             width: 640,
             height: 360,
@@ -1494,7 +1494,7 @@ onMounted(async () => {
     window.addEventListener('keydown', handleKeyDown)
     window.addEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
     window.addEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
-    window.addEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openYoutubeEmbedDialog)
+    window.addEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openyoutubeDialog)
 })
 
 watch(() => props.noteId, async (nextNoteId, previousNoteId) => {
@@ -1514,7 +1514,7 @@ onBeforeUnmount(() => {
     window.removeEventListener('keydown', handleKeyDown)
     window.removeEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
     window.removeEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
-    window.removeEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openYoutubeEmbedDialog)
+    window.removeEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openyoutubeDialog)
 })
 </script>
 

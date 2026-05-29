@@ -1,23 +1,23 @@
 import Image from '@tiptap/extension-image'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
-import ResizableImageNodeView from './ResizableImageNodeView.vue'
+import ResizableImageNodeView from './resizableImageNodeView.vue'
 
 export default Image.extend({
     name: 'noteImage',
     draggable: false,
-
+    
     addOptions() {
         return {
             ...this.parent?.(),
             resize: {
                 enabled: true,
-                minWidth: 120,
+                minWidth: 240,
                 maxWidth: null,
                 alwaysPreserveAspectRatio: true,
             },
         }
     },
-
+    
     addAttributes() {
         return {
             ...this.parent?.(),
@@ -39,19 +39,19 @@ export default Image.extend({
                 },
                 renderHTML: (attributes) => (
                     attributes.width
-                        ? {
-                            width: attributes.width,
-                            'data-width': attributes.width,
-                        }
-                        : {}
+                    ? {
+                        width: attributes.width,
+                        'data-width': attributes.width,
+                    }
+                    : {}
                 ),
             },
         }
     },
-
+    
     addCommands() {
         const parentCommands = this.parent?.() ?? {}
-
+        
         return {
             ...parentCommands,
             setImage: (attributes) => ({ commands }) => commands.insertContent({
@@ -64,7 +64,7 @@ export default Image.extend({
             }),
         }
     },
-
+    
     addNodeView() {
         return VueNodeViewRenderer(ResizableImageNodeView)
     },
