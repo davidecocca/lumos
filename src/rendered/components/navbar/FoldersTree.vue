@@ -78,7 +78,7 @@ nav
 density="compact"
 indent="16px"
 >
-<v-list-item class="notes-header">
+<v-list-item class="pr-1">
     <template v-slot:title>
         <v-list-subheader class="pa-0">Notes</v-list-subheader>
     </template>
@@ -89,10 +89,10 @@ indent="16px"
                 <v-btn
                 v-bind="props"
                 icon="ph-folder-plus"
+                variant="text"
                 size="small"
                 density="compact"
                 rounded="xl"
-                class="mr-n2"
                 @click="store.openCreateFolderDialog()"
                 />
             </template>
