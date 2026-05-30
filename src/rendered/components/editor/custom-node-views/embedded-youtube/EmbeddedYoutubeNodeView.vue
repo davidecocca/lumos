@@ -5,7 +5,7 @@
     :style="wrapperStyle"
     @click.stop="selectNode"
     >
-    <NodeViewOverlayControls
+    <CommonOverlayControls
     :selected="selected"
     :alignment="alignment"
     :show-resize-handle="showResizeHandle"
@@ -67,7 +67,7 @@ height="100%"
 </template>
 
 <script setup>
-import NodeViewOverlayControls from '../commons/NodeViewOverlayControls.vue'
+import CommonOverlayControls from '../../overlay-controls/CommonOverlayControls.vue'
 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3'

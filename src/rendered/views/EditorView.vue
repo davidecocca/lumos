@@ -530,7 +530,7 @@ import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDial
 import GenerateAIDialog from '../components/editor/GenerateAIDialog.vue'
 import EditAIDialog from '../components/editor/EditAIDialog.vue'
 import EmbedYoutubeDialog from '../components/editor/EmbedYoutubeDialog.vue'
-import TableOverlayControls from '../components/editor/TableOverlayControls.vue'
+import TableOverlayControls from '../components/editor/overlay-controls/TableOverlayControls.vue'
 import TableSlashCommand, { OPEN_YOUTUBE_DIALOG_EVENT } from '../components/editor/tableSlashCommand'
 
 import { createLlmService } from '../services/llmService';
