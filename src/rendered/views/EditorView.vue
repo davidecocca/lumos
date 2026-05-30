@@ -531,7 +531,7 @@ import GenerateAIDialog from '../components/editor/dialogs/GenerateAIDialog.vue'
 import EditAIDialog from '../components/editor/dialogs/EditAIDialog.vue'
 import EmbedYoutubeDialog from '../components/editor/dialogs/EmbedYoutubeDialog.vue'
 import TableOverlayControls from '../components/editor/overlay-controls/TableOverlayControls.vue'
-import TableSlashCommand, { OPEN_YOUTUBE_DIALOG_EVENT } from '../components/editor/tableSlashCommand'
+import TableSlashCommand, { OPEN_YOUTUBE_DIALOG_EVENT } from '../components/editor/slash-menu/slashCommand'
 
 import { createLlmService } from '../services/llmService';
 import fixGrammarPrompt from '../prompts/fixGrammarPrompt'
@@ -1447,7 +1447,7 @@ onMounted(async () => {
         }),
         Placeholder.configure({
             // Use a placeholder:
-            placeholder: 'Start writing or press "/" for commands',
+            placeholder: 'Start writing or type "/" for commands',
         }),
         CodeBlockLowlight.configure({
             lowlight,
@@ -1579,11 +1579,7 @@ onBeforeUnmount(() => {
     grid-template-columns: auto minmax(0, 1fr);
     column-gap: 0.75rem;
     align-items: start;
-    margin: 1rem 0;
-    padding: 0.9rem 1rem;
-    border: 1px solid rgba(98, 108, 125, 0.22);
-    border-radius: 14px;
-    background: transparent;
+    padding: 1rem 0rem;
 }
 
 .ProseMirror .tiptap-details > div {

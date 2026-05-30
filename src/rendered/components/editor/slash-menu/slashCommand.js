@@ -3,51 +3,51 @@ import { PluginKey } from '@tiptap/pm/state'
 import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom'
 import Suggestion from '@tiptap/suggestion'
 import { VueRenderer } from '@tiptap/vue-3'
-import TableSlashMenu from './TableSlashMenu.vue'
+import SlashMenu from './slashMenu.vue'
 
 export const tableSlashCommandPluginKey = new PluginKey('tableSlashCommand')
 export const OPEN_YOUTUBE_DIALOG_EVENT = 'lumos-open-youtube-embed-dialog'
 
 const slashItems = [
     {
+        title: 'Divider',
+        subtitle: 'Insert a horizontal divider to separate content',
+        icon: 'ph-minus',
+        command: ({ editor, range }) => editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setHorizontalRule()
+        .run(),
+    },
+    {
+        title: 'Details',
+        subtitle: 'Insert a collapsible details block to hide content',
+        icon: 'ph-caret-right',
+        command: ({ editor, range }) => editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setDetails()
+        .updateAttributes('details', {
+            open: true,
+        })
+        .run(),
+    },
+    {
         title: 'Table',
         subtitle: 'Insert a 3x3 table with a header row',
         icon: 'ph-table',
         command: ({ editor, range }) => editor
-            .chain()
-            .focus()
-            .deleteRange(range)
-            .insertTable({
-                rows: 3,
-                cols: 3,
-                withHeaderRow: true,
-            })
-            .run(),
-    },
-    {
-        title: 'Horizontal rule',
-        subtitle: 'Insert a divider line',
-        icon: 'ph-minus',
-        command: ({ editor, range }) => editor
-            .chain()
-            .focus()
-            .deleteRange(range)
-            .setHorizontalRule()
-            .run(),
-    },
-    {
-        title: 'Details',
-        subtitle: 'Insert a collapsible details block',
-        icon: 'ph-caret-right',
-        command: ({ editor, range }) => editor
-            .chain()
-            .focus()
-            .deleteRange(range)
-            .setDetails()
-            .updateAttributes('details', {
-                open: true,
-            })
-            .run(),
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertTable({
+            rows: 3,
+            cols: 3,
+            withHeaderRow: true,
+        })
+        .run(),
     },
     {
         title: 'YouTube video',
@@ -55,13 +55,13 @@ const slashItems = [
         icon: 'ph-youtube-logo',
         command: ({ editor, range }) => {
             editor
-                .chain()
-                .focus()
-                .deleteRange(range)
-                .run()
-
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .run()
+            
             window.dispatchEvent(new CustomEvent(OPEN_YOUTUBE_DIALOG_EVENT))
-
+            
             return true
         },
     },
@@ -69,7 +69,7 @@ const slashItems = [
 
 export default Extension.create({
     name: 'tableSlashCommand',
-
+    
     addOptions() {
         return {
             suggestion: {
@@ -79,11 +79,11 @@ export default Extension.create({
                 startOfLine: false,
                 items: ({ query }) => {
                     const normalizedQuery = query.trim().toLowerCase()
-
+                    
                     if (!normalizedQuery) {
                         return slashItems
                     }
-
+                    
                     return slashItems.filter((item) => (
                         item.title.toLowerCase().includes(normalizedQuery)
                     ))
@@ -94,39 +94,39 @@ export default Extension.create({
                 allow: ({ editor, state, range }) => {
                     const parentNode = state.selection.$from.parent
                     const textBeforeCursor = parentNode.textContent.slice(0, state.selection.$from.parentOffset)
-
+                    
                     return editor.isEditable
-                        && parentNode.type.name === 'paragraph'
-                        && !editor.isActive('table')
-                        && !editor.isActive('codeBlock')
-                        && textBeforeCursor.startsWith('/')
-                        && range.from === state.selection.$from.start()
+                    && parentNode.type.name === 'paragraph'
+                    && !editor.isActive('table')
+                    && !editor.isActive('codeBlock')
+                    && textBeforeCursor.startsWith('/')
+                    && range.from === state.selection.$from.start()
                 },
                 render: () => {
                     let component = null
                     let popup = null
                     let cleanupAutoUpdate = null
-
+                    
                     const destroyPopup = () => {
                         cleanupAutoUpdate?.()
                         cleanupAutoUpdate = null
-
+                        
                         if (popup?.parentNode) {
                             popup.parentNode.removeChild(popup)
                         }
-
+                        
                         popup = null
                     }
-
+                    
                     const createVirtualElement = (clientRect) => ({
                         getBoundingClientRect: () => clientRect(),
                     })
-
+                    
                     const updatePopupPosition = async (props) => {
                         if (!popup || !props.clientRect) {
                             return
                         }
-
+                        
                         const { x, y } = await computePosition(
                             createVirtualElement(props.clientRect),
                             popup,
@@ -140,21 +140,21 @@ export default Extension.create({
                                 ],
                             }
                         )
-
+                        
                         Object.assign(popup.style, {
                             left: `${x}px`,
                             top: `${y}px`,
                         })
                     }
-
+                    
                     const bindPopupAutoUpdate = (props) => {
                         cleanupAutoUpdate?.()
-
+                        
                         if (!popup || !props.clientRect) {
                             cleanupAutoUpdate = null
                             return
                         }
-
+                        
                         cleanupAutoUpdate = autoUpdate(
                             createVirtualElement(props.clientRect),
                             popup,
@@ -163,18 +163,18 @@ export default Extension.create({
                             }
                         )
                     }
-
+                    
                     return {
                         onStart: (props) => {
-                            component = new VueRenderer(TableSlashMenu, {
+                            component = new VueRenderer(SlashMenu, {
                                 editor: props.editor,
                                 props,
                             })
-
+                            
                             if (!props.clientRect) {
                                 return
                             }
-
+                            
                             popup = document.createElement('div')
                             Object.assign(popup.style, {
                                 position: 'fixed',
@@ -184,32 +184,32 @@ export default Extension.create({
                             })
                             popup.appendChild(component.element)
                             document.body.appendChild(popup)
-
+                            
                             bindPopupAutoUpdate(props)
                             void updatePopupPosition(props)
                         },
-
+                        
                         onUpdate: (props) => {
                             component?.updateProps(props)
-
+                            
                             if (!popup || !props.clientRect) {
                                 destroyPopup()
                                 return
                             }
-
+                            
                             bindPopupAutoUpdate(props)
                             void updatePopupPosition(props)
                         },
-
+                        
                         onKeyDown: (props) => {
                             if (props.event.key === 'Escape') {
                                 destroyPopup()
                                 return true
                             }
-
+                            
                             return component?.ref?.onKeyDown?.(props) ?? false
                         },
-
+                        
                         onExit: () => {
                             destroyPopup()
                             component?.destroy()
@@ -220,7 +220,7 @@ export default Extension.create({
             },
         }
     },
-
+    
     addProseMirrorPlugins() {
         return [
             Suggestion({
