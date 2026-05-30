@@ -527,9 +527,9 @@
 import RenameNoteDialog from '../components/navbar/RenameNoteDialog.vue'
 import MoveToFolderDialog from '../components/navbar/MoveToFolderDialog.vue'
 import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDialog.vue'
-import GenerateAIDialog from '../components/editor/GenerateAIDialog.vue'
-import EditAIDialog from '../components/editor/EditAIDialog.vue'
-import EmbedYoutubeDialog from '../components/editor/EmbedYoutubeDialog.vue'
+import GenerateAIDialog from '../components/editor/dialogs/GenerateAIDialog.vue'
+import EditAIDialog from '../components/editor/dialogs/EditAIDialog.vue'
+import EmbedYoutubeDialog from '../components/editor/dialogs/EmbedYoutubeDialog.vue'
 import TableOverlayControls from '../components/editor/overlay-controls/TableOverlayControls.vue'
 import TableSlashCommand, { OPEN_YOUTUBE_DIALOG_EVENT } from '../components/editor/tableSlashCommand'
 
