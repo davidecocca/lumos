@@ -60,7 +60,7 @@ class="h-100"
 <script setup>
 import NavigationDrawer from '../components/navbar/NavDrawer.vue';
 import LumosChatSidebar from '../components/chat/LumosChatSidebar.vue';
-import SearchDialog from '../components/navbar/SearchDialog.vue';
+import SearchDialog from '../components/navbar/dialogs/SearchDialog.vue';
 
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';
 import { useFoldersStore } from '../stores/foldersStore';
@@ -251,6 +251,11 @@ watch(() => route.name, (newRouteName) => {
         foldersStore.activeNoteId = null;
         foldersStore.activeNoteTitle = '';
         foldersStore.activeNoteCurrentFolderId = null;
+        foldersStore.editorNoteId = null;
+        foldersStore.editorNoteTitle = '';
+        foldersStore.editorNoteCurrentFolderId = null;
+        foldersStore.editorNoteFavorite = null;
+        foldersStore.editorNoteDeletedId = null;
         isChatOpen.value = false;
     }
 });

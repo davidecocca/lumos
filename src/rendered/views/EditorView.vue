@@ -12,7 +12,7 @@
         <v-spacer></v-spacer>
         
         <div class="d-flex align-center">
-            <v-btn-toggle divided class="ms-2" :max="0" multiple variant="text" rounded="lg" density="comfortable">
+            <v-btn-toggle divided class="ms-2" :max="0" multiple variant="text">
                 <v-tooltip text="Generate with AI" location="bottom">
                     <template v-slot:activator="{ props }">
                         <v-btn v-bind="props" @click="generateWithAIDialog = !generateWithAIDialog">
@@ -44,48 +44,19 @@
                         </v-btn>
                     </template>
                 </v-tooltip>
-                <v-tooltip text="More" location="bottom">
-                    <template v-slot:activator="{ props: tooltipProps }">
-                        <v-menu>
-                            <template v-slot:activator="{ props: menuProps }">
-                                <v-btn v-bind="{ ...tooltipProps, ...menuProps }">
-                                    <v-icon>ph-dots-three</v-icon>
-                                </v-btn>
-                            </template>
-                            <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
-                                <v-list-item @click="toggleFavorite(note.id)" rounded="lg">
-                                    <template v-slot:prepend>
-                                        <v-icon :icon="note.favorite === 1 ? 'ph-heart-break' : 'ph-heart'"></v-icon>
-                                    </template>
-                                    <v-list-item-title>{{ note.favorite === 1 ? 'Unfavorite' : 'Favorite' }}</v-list-item-title>
-                                </v-list-item>
-                                <v-list-item @click="renameNoteDialog = true" rounded="lg">
-                                    <template v-slot:prepend>
-                                        <v-icon>ph-pencil-line</v-icon>
-                                    </template>
-                                    <v-list-item-title>Rename</v-list-item-title>
-                                </v-list-item>
-                                <v-list-item @click="moveToFolderDialog = true" rounded="lg">
-                                    <template v-slot:prepend>
-                                        <v-icon>ph-file-arrow-up</v-icon>
-                                    </template>
-                                    <v-list-item-title>Move</v-list-item-title>
-                                </v-list-item>
-                                <v-list-item
-                                class="delete-menu-action"
-                                base-color="error"
-                                @click="store.openDeleteNoteConfirmationDialog(note.id)"
-                                rounded="lg"
-                                >
-                                    <template v-slot:prepend>
-                                        <v-icon>ph-trash</v-icon>
-                                    </template>
-                                    <v-list-item-title>Delete</v-list-item-title>
-                                </v-list-item>
-                            </v-list>
-                        </v-menu>
-                    </template>
-                </v-tooltip>
+                <NoteActionMenu
+                v-model="editorNoteActionMenu"
+                :note="note"
+                visible
+                button-size="default"
+                button-density="default"
+                button-class="editor-note-action-btn"
+                tooltip-location="bottom"
+                @toggle-favorite="toggleFavorite"
+                @rename-note="openRenameNoteDialog"
+                @move-note="openMoveNoteDialog"
+                @delete-note="store.openDeleteNoteConfirmationDialog"
+                />
             </v-btn-toggle>
             
         </div>
@@ -524,8 +495,9 @@
 </template>
 
 <script setup>
-import RenameNoteDialog from '../components/navbar/RenameNoteDialog.vue'
-import MoveToFolderDialog from '../components/navbar/MoveToFolderDialog.vue'
+import RenameNoteDialog from '../components/navbar/dialogs/RenameNoteDialog.vue'
+import MoveToFolderDialog from '../components/navbar/dialogs/MoveToFolderDialog.vue'
+import NoteActionMenu from '../components/navbar/menus/NoteActionMenu.vue'
 import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDialog.vue'
 import GenerateAIDialog from '../components/editor/dialogs/GenerateAIDialog.vue'
 import EditAIDialog from '../components/editor/dialogs/EditAIDialog.vue'
@@ -659,6 +631,7 @@ const confirmationDialogButtonColor = computed(() => store.confirmationDialogBut
 const generateWithAIDialog = ref(false)
 const editWithAIDialog = ref(false)
 const embedYoutubeDialog = ref(false)
+const editorNoteActionMenu = ref(false)
 
 const note = ref(null)
 const selectedText = ref('')
@@ -838,6 +811,10 @@ const getNote = async (id) => {
     store.activeNoteId = noteInfo.id
     store.activeNoteTitle = noteInfo.title
     store.activeNoteCurrentFolderId = noteInfo.folder_id
+    store.editorNoteId = noteInfo.id
+    store.editorNoteTitle = noteInfo.title
+    store.editorNoteCurrentFolderId = noteInfo.folder_id
+    store.editorNoteFavorite = noteInfo.favorite
     
     setEditorDocument(note.value?.content_json)
 }
@@ -960,24 +937,48 @@ const handleKeyDown = (event) => {
     }
 }
 
-const handleRenameNote = (noteId, newTitle) => {
-    note.value.title = newTitle
-    store.renameNote(noteId, newTitle)
+const handleRenameNote = async (noteId, newTitle) => {
+    await store.renameNote(noteId, newTitle)
+    
+    if (store.editorNoteTitle) {
+        note.value.title = store.editorNoteTitle
+    }
+}
+
+const openRenameNoteDialog = (noteId, title) => {
+    store.openRenameNoteDialog(noteId, title)
 }
 
 const toggleFavorite = async (noteId) => {
-    store.toggleNoteFavorite(noteId)
-    note.value.favorite = note.value.favorite === 0 ? 1 : 0
+    await store.toggleNoteFavorite(noteId)
+    
+    if (store.editorNoteFavorite !== null) {
+        note.value.favorite = store.editorNoteFavorite
+    }
 }
 
-const handleMoveNote = (noteId, newFolderId) => {
-    store.moveNote(noteId, newFolderId)
+const openMoveNoteDialog = (noteId, currentFolderId) => {
+    store.openMoveNoteDialog(noteId, currentFolderId)
+}
+
+const syncCurrentNoteFolder = (newFolderId) => {
+    if (!note.value) return
     
-    // Update note's folder id and name
     note.value.folder_id = newFolderId
+    note.value.folderId = newFolderId
+    
     const folderInfo = store.folders.find(folder => folder.id === newFolderId)
     if (folderInfo) {
         note.value.folder_name = folderInfo.name
+        note.value.folderName = folderInfo.name
+    }
+}
+
+const handleMoveNote = async (noteId, newFolderId) => {
+    await store.moveNote(noteId, newFolderId)
+    
+    if (store.editorNoteCurrentFolderId === newFolderId) {
+        syncCurrentNoteFolder(newFolderId)
     }
 }
 
@@ -1506,6 +1507,38 @@ watch(() => props.noteId, async (nextNoteId, previousNoteId) => {
     await getNote(nextNoteId)
 })
 
+watch(() => store.editorNoteCurrentFolderId, (newFolderId) => {
+    if (!note.value || store.editorNoteId !== note.value.id || !newFolderId) {
+        return
+    }
+    
+    syncCurrentNoteFolder(newFolderId)
+})
+
+watch(() => store.editorNoteFavorite, (newFavorite) => {
+    if (!note.value || store.editorNoteId !== note.value.id || newFavorite === null) {
+        return
+    }
+    
+    note.value.favorite = newFavorite
+})
+
+watch(() => store.editorNoteTitle, (newTitle) => {
+    if (!note.value || store.editorNoteId !== note.value.id || !newTitle) {
+        return
+    }
+    
+    note.value.title = newTitle
+})
+
+watch(() => store.editorNoteDeletedId, (deletedNoteId) => {
+    if (!note.value || deletedNoteId !== note.value.id) {
+        return
+    }
+    
+    router.push({ name: 'home' })
+})
+
 onBeforeUnmount(() => {
     noteRequestId += 1
     if (editor.value) {
@@ -1535,6 +1568,11 @@ onBeforeUnmount(() => {
 
 .editor-shell {
     position: relative;
+}
+
+.editor-note-action-btn.v-btn {
+    width: 64px;
+    min-width: 64px;
 }
 
 .bubble-menu {

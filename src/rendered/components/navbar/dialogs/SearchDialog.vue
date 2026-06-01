@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { useFoldersStore } from '../../stores/foldersStore'
+import { useFoldersStore } from '../../../stores/foldersStore'
 
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'

@@ -26,14 +26,16 @@
                 </div>
             </v-slide-x-transition>
         </div>
+        <FolderTreeDialogs />
     </div>
 </v-navigation-drawer>
 </template>
 
 <script setup>
-import PageRouter from './PageRouter.vue'
-import FoldersTree from './FoldersTree.vue'
-import CompactFoldersTree from './CompactFoldersTree.vue'
+import PageRouter from './layout/PageRouter.vue'
+import FoldersTree from './tree/FoldersTree.vue'
+import CompactFoldersTree from './tree/CompactFoldersTree.vue'
+import FolderTreeDialogs from './tree/FolderTreeDialogs.vue'
 
 import { computed } from 'vue'
 

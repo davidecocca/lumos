@@ -20,6 +20,11 @@ export const useFoldersStore = defineStore('folders', {
         activeNoteId: null,
         activeNoteTitle: '',
         activeNoteCurrentFolderId: null,
+        editorNoteId: null,
+        editorNoteTitle: '',
+        editorNoteCurrentFolderId: null,
+        editorNoteFavorite: null,
+        editorNoteDeletedId: null,
         // Error dialog state
         isErrorDialogVisible: false,
         errorDialogTitle: '',
@@ -260,6 +265,9 @@ export const useFoldersStore = defineStore('folders', {
                     if (recentIndex !== -1) {
                         this.recents[recentIndex].title = newNoteTitle
                     }
+                    if (this.editorNoteId === noteId) {
+                        this.editorNoteTitle = newNoteTitle
+                    }
                     this.renameNoteDialog = false
                 } catch (err) {
                     console.error('Error renaming note:', err)
@@ -311,7 +319,12 @@ export const useFoldersStore = defineStore('folders', {
                     this.syncNoteFolderReferences(noteId, newFolder)
                 }
                 
-                this.activeNoteCurrentFolderId = newFolderId
+                if (this.activeNoteId === noteId) {
+                    this.activeNoteCurrentFolderId = newFolderId
+                }
+                if (this.editorNoteId === noteId) {
+                    this.editorNoteCurrentFolderId = newFolderId
+                }
                 this.moveToFolderDialog = false
             } catch (err) {
                 console.error('Error moving note:', err)
@@ -339,6 +352,13 @@ export const useFoldersStore = defineStore('folders', {
                 this.favorites = this.favorites.filter(note => note.id !== noteId)
                 // Remove from recents if present
                 this.recents = this.recents.filter(note => note.id !== noteId)
+                if (this.editorNoteId === noteId) {
+                    this.editorNoteId = null
+                    this.editorNoteTitle = ''
+                    this.editorNoteCurrentFolderId = null
+                    this.editorNoteFavorite = null
+                    this.editorNoteDeletedId = noteId
+                }
                 this.deleteNoteDialog = false
             } catch (err) {
                 console.error('Error deleting note:', err)
@@ -392,6 +412,10 @@ export const useFoldersStore = defineStore('folders', {
                 } else if (newFav === 0 && favIndex !== -1) {
                     // Remove from favorites
                     this.favorites.splice(favIndex, 1)
+                }
+                
+                if (this.editorNoteId === noteId) {
+                    this.editorNoteFavorite = newFav
                 }
             } catch (err) {
                 console.error('Error toggling favorite:', err)

@@ -15,7 +15,7 @@
         variant="tonal"
         rounded="lg"
         size="small"
-        prepend-icon="ph-file-text"
+        prepend-icon="ph-file"
         @click="openNote(note.id)"
         class="text-none text-label-large"
         >
