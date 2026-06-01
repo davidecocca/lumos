@@ -51,7 +51,7 @@ indent="16px"
             <template v-slot:activator="{ props }">
                 <v-btn
                 v-bind="props"
-                icon="ph-folder-plus"
+                icon="ph-folder-simple-plus"
                 variant="text"
                 size="small"
                 density="compact"
