@@ -267,8 +267,8 @@ v-model="deleteChatDialog"
 import ChatCard from './ChatCard.vue'
 import EmptyChatState from './EmptyChatState.vue'
 import ModelProviderMark from '../ai/ModelProviderMark.vue'
-import RenameChatDialog from './RenameChatDialog.vue'
-import ConfirmDeleteChatDialog from './ConfirmDeleteChatDialog.vue'
+import RenameChatDialog from './dialogs/RenameChatDialog.vue'
+import ConfirmDeleteChatDialog from './dialogs/ConfirmDeleteChatDialog.vue'
 
 import { createLlmService } from '../../services/llmService'
 import { aiPreferencesStore } from '../../stores/aiPreferencesStore';

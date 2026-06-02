@@ -148,8 +148,8 @@ v-model="deleteChatDialog"
 
 <script setup>
 import LumosChatPanel from '../components/chat/LumosChatPanel.vue';
-import RenameChatDialog from '../components/chat/RenameChatDialog.vue';
-import ConfirmDeleteChatDialog from '../components/chat/ConfirmDeleteChatDialog.vue';
+import RenameChatDialog from '../components/chat/dialogs/RenameChatDialog.vue';
+import ConfirmDeleteChatDialog from '../components/chat/dialogs/ConfirmDeleteChatDialog.vue';
 import { useChatStore } from '../stores/chatStore';
 import { onMounted, ref } from 'vue'
 

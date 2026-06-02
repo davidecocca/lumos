@@ -1,24 +1,18 @@
 <template>
-    <v-dialog
-    :model-value="modelValue"
-    @update:model-value="onDialogModelUpdate"
-    max-width="720"
+    <BaseDialog
+        :model-value="modelValue"
+        @update:model-value="onDialogModelUpdate"
+        max-width="720"
+        title="Generate with AI"
+        subtitle="Describe what you want to create."
+        icon="ph-lightbulb"
     >
-    <v-card rounded="xl" elevation="8">
-        <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-            <v-avatar color="amber-lighten-4" size="36" class="mr-3">
-                <v-icon size="24" color="amber-darken-2">ph-lightbulb</v-icon>
-            </v-avatar>
-            <div>
-                <div class="text-headline-small">Generate with AI</div>
-                <div class="text-label-large text-medium-emphasis">Type your idea and watch it come alive.</div>
-            </div>
+        <template #title-extra>
             <v-spacer />
-        </v-card-title>
-        
-        <v-card-text class="px-6 pb-4">
-            <div class="d-flex flex-column align-center">
-                <v-textarea
+        </template>
+
+        <div class="d-flex flex-column align-center">
+            <v-textarea
                 placeholder="Type your idea..."
                 width="100%"
                 rows="3"
@@ -28,11 +22,13 @@
                 v-model="userText"
                 class="mt-2"
                 variant="outlined"
+                density="comfortable"
                 rounded="lg"
+                label="Instruction"
                 @keydown="onPromptKeydown"
-                />
-                
-                <v-textarea
+            />
+
+            <v-textarea
                 v-if="aiText"
                 class="mt-4 ai-output"
                 width="100%"
@@ -42,49 +38,46 @@
                 no-resize
                 readonly
                 variant="outlined"
+                density="comfortable"
                 v-model="aiText"
                 id="aiTextAreaId"
+                label="Preview"
                 :max-rows="14"
-                >
+            >
                 <template #append-inner>
                     <v-icon
-                    @click="copyToClipboard(aiText)"
-                    :color="copyIconState.color"
-                    class="copy-icon"
-                    :class="{ 'copy-animation': copyIconState.animate }"
+                        @click="copyToClipboard(aiText)"
+                        :color="copyIconState.color"
+                        class="copy-icon"
+                        :class="{ 'copy-animation': copyIconState.animate }"
                     >
-                    {{ copyIconState.icon }}
-                </v-icon>
-            </template>
-        </v-textarea>
-    </div>
-</v-card-text>
+                        {{ copyIconState.icon }}
+                    </v-icon>
+                </template>
+            </v-textarea>
+        </div>
 
-<v-divider />
-
-<v-card-actions class="px-6 py-3">
-    <span class="text-body-small text-medium-emphasis">Tip: Press ⌘⏎ to generate</span>
-    <v-spacer />
-    <v-btn
-    variant="text"
-    rounded="lg"
-    @click="closeDialog"
-    >
-    Close
-</v-btn>
-<v-btn
-color="primary"
-rounded="lg"
-prepend-icon="ph-sparkle"
-:disabled="!userText || isAITextLoading"
-:loading="isAITextLoading"
-@click="generateWithAI"
->
-Generate
-</v-btn>
-</v-card-actions>
-</v-card>
-</v-dialog>
+        <template #actions>
+            <span class="text-body-small text-medium-emphasis">Tip: Press ⌘⏎ to generate</span>
+            <v-spacer />
+            <v-btn
+                variant="text"
+                @click="closeDialog"
+            >
+                Cancel
+            </v-btn>
+            <v-btn
+                color="primary"
+                variant="tonal"
+                prepend-icon="ph-sparkle"
+                :disabled="!userText || isAITextLoading"
+                :loading="isAITextLoading"
+                @click="generateWithAI"
+            >
+                {{ aiText ? 'Regenerate' : 'Generate' }}
+            </v-btn>
+        </template>
+    </BaseDialog>
 </template>
 
 <script setup>
@@ -92,6 +85,7 @@ import { createLlmService } from '../../../services/llmService';
 import generateWithAIPrompt from '../../../prompts/generateWithAIPrompt';
 
 import { ref, reactive, computed, nextTick } from 'vue'
+import BaseDialog from '../../commons/BaseDialog.vue'
 
 const props = defineProps({
     modelValue: {

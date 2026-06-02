@@ -1,24 +1,18 @@
 <template>
-    <v-dialog
-    :model-value="modelValue"
-    @update:model-value="onDialogModelUpdate"
-    max-width="720"
+    <BaseDialog
+        :model-value="modelValue"
+        @update:model-value="onDialogModelUpdate"
+        max-width="720"
+        title="Edit with AI"
+        subtitle="Describe how you want to change the text."
+        icon="ph-pencil-simple"
     >
-    <v-card rounded="xl" elevation="8">
-        <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-            <v-avatar color="indigo-lighten-4" size="36" class="mr-3">
-                <v-icon size="24" color="indigo-darken-2">ph-pencil-simple</v-icon>
-            </v-avatar>
-            <div>
-                <div class="text-headline-small">Edit with AI</div>
-                <div class="text-label-large text-medium-emphasis">Describe what to change and watch it happen.</div>
-            </div>
+        <template #title-extra>
             <v-spacer />
-        </v-card-title>
-        
-        <v-card-text class="px-6 pb-4">
-            <div class="d-flex flex-column align-center">
-                <v-textarea
+        </template>
+
+        <div class="d-flex flex-column align-center">
+            <v-textarea
                 :model-value="props.selectedText"
                 width="100%"
                 rows="6"
@@ -27,10 +21,12 @@
                 readonly
                 class="mt-2"
                 variant="outlined"
+                density="comfortable"
                 rounded="lg"
-                />
-                
-                <v-textarea
+                label="Original text"
+            />
+
+            <v-textarea
                 placeholder="Describe what to change..."
                 width="100%"
                 rows="3"
@@ -40,11 +36,13 @@
                 v-model="userText"
                 class="mt-4"
                 variant="outlined"
+                density="comfortable"
                 rounded="lg"
+                label="Instruction"
                 @keydown="onPromptKeydown"
-                />
-                
-                <v-textarea
+            />
+
+            <v-textarea
                 v-if="aiText"
                 class="mt-4 ai-output"
                 width="100%"
@@ -54,59 +52,54 @@
                 no-resize
                 readonly
                 variant="outlined"
+                density="comfortable"
                 v-model="aiText"
                 id="aiTextAreaId"
                 rounded="lg"
+                label="Preview"
                 :max-rows="14"
-                >
+            >
                 <template #append-inner>
                     <v-icon
-                    @click="copyToClipboard(aiText)"
-                    :color="copyIconState.color"
-                    class="copy-icon"
-                    :class="{ 'copy-animation': copyIconState.animate }"
+                        @click="copyToClipboard(aiText)"
+                        :color="copyIconState.color"
+                        class="copy-icon"
+                        :class="{ 'copy-animation': copyIconState.animate }"
                     >
-                    {{ copyIconState.icon }}
-                </v-icon>
-            </template>
-        </v-textarea>
-    </div>
-</v-card-text>
+                        {{ copyIconState.icon }}
+                    </v-icon>
+                </template>
+            </v-textarea>
+        </div>
 
-<v-divider />
-
-<v-card-actions class="px-6 py-3">
-    <span class="text-body-small text-medium-emphasis">Tip: Press ⌘⏎ to generate</span>
-    <v-spacer />
-    <v-btn
-    variant="text"
-    rounded="lg"
-    @click="closeDialog"
-    >
-    Close
-</v-btn>
-<v-btn
-color="success"
-rounded="lg"
-prepend-icon="ph-check"
-:disabled="!aiText || isAITextLoading"
-@click="applyText"
->
-Apply
-</v-btn>
-<v-btn
-color="primary"
-rounded="lg"
-prepend-icon="ph-sparkle"
-:disabled="!userText || isAITextLoading"
-:loading="isAITextLoading"
-@click="editWithAI"
->
-Generate
-</v-btn>
-</v-card-actions>
-</v-card>
-</v-dialog>
+        <template #actions>
+            <span class="text-body-small text-medium-emphasis">Tip: Press ⌘⏎ to generate</span>
+            <v-spacer />
+            <v-btn
+                variant="text"
+                @click="closeDialog"
+            >
+                Cancel
+            </v-btn>
+            <v-btn
+                color="primary"
+                prepend-icon="ph-sparkle"
+                :disabled="!userText || isAITextLoading"
+                :loading="isAITextLoading"
+                @click="editWithAI"
+            >
+                {{ aiText ? 'Regenerate' : 'Generate' }}
+            </v-btn>
+            <v-btn
+                color="success"
+                variant="tonal"
+                :disabled="!aiText || isAITextLoading"
+                @click="applyText"
+            >
+                Apply
+            </v-btn>
+        </template>
+    </BaseDialog>
 </template>
 
 <script setup>
@@ -114,6 +107,7 @@ import { createLlmService } from '../../../services/llmService';
 import editWithAIPrompt from '../../../prompts/editWithAIPrompt';
 
 import { ref, reactive, computed, nextTick, watch } from 'vue'
+import BaseDialog from '../../commons/BaseDialog.vue'
 
 const props = defineProps({
     modelValue: {

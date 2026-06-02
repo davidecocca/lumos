@@ -14,6 +14,7 @@
             <v-text-field
             v-model="searchQuery"
             variant="text"
+            density="comfortable"
             rounded="lg"
             placeholder="Search..."
             prepend-icon="ph-magnifying-glass"

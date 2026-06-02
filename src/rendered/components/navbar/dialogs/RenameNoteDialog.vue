@@ -1,44 +1,32 @@
 <template>
-    <v-dialog
+    <BaseDialog
         :model-value="modelValue"
         @update:model-value="$emit('update:modelValue', $event)"
-        max-width="520"
+        title="Rename note"
+        subtitle="Enter a new title for the note."
+        icon="ph-pencil-simple-line"
     >
-        <v-card rounded="xl" elevation="8">
-            <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-                <v-avatar color="primary" size="40" variant="tonal" class="mr-3">
-                    <v-icon size="24">ph-pencil-simple-line</v-icon>
-                </v-avatar>
-                <div>
-                    <div class="text-headline-small">Rename note</div>
-                    <div class="text-label-large text-medium-emphasis">Enter a new title for the note.</div>
-                </div>
-            </v-card-title>
+        <v-text-field
+            v-model="noteTitle"
+            label="Note title"
+            clearable
+            variant="outlined"
+            density="comfortable"
+            @click:clear="handleClear"
+            @keydown.enter="handleEnter"
+        />
 
-            <v-card-text class="px-6 pb-4">
-                <v-text-field
-                    v-model="noteTitle"
-                    label="Note title"
-                    clearable
-                    variant="outlined"
-                    density="comfortable"
-                    @click:clear="handleClear"
-                    @keydown.enter="handleEnter"
-                />
-            </v-card-text>
-
-            <v-divider />
-            <v-card-actions class="px-6 py-3">
-                <v-spacer />
-                <v-btn variant="text" @click="closeDialog()">Close</v-btn>
-                <v-btn color="primary" variant="tonal" @click="renameNote" :disabled="!noteTitle.trim()">Save</v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
+        <template #actions>
+            <v-spacer />
+            <v-btn variant="text" @click="closeDialog()">Close</v-btn>
+            <v-btn color="primary" variant="tonal" @click="renameNote" :disabled="!noteTitle.trim()">Save</v-btn>
+        </template>
+    </BaseDialog>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import BaseDialog from '../../commons/BaseDialog.vue'
 
 const props = defineProps({
     modelValue: {
