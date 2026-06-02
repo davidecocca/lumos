@@ -37,6 +37,8 @@
 </v-list-item>
 </v-list>
 
+<v-divider v-if="favoriteNotes.length > 0" />
+
 <!-- Folders and notes -->
 <v-list
 nav
