@@ -95,8 +95,8 @@ const menuItems = computed(() => {
         action: () => emit('rename-note', props.note.id, props.note.title)
     },
     {
-        title: 'Move',
-        icon: 'ph-file-arrow-up',
+        title: 'Move to',
+        icon: 'ph-arrow-right',
         action: () => emit('move-note', props.note.id, currentFolderId.value)
     },
     {

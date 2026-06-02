@@ -78,7 +78,7 @@ const menuItems = computed(() => [
 {
     value: 'rename',
     title: 'Rename',
-    icon: 'ph-pencil-line',
+    icon: 'ph-pencil-simple-line',
     action: () => store.openRenameFolderDialog(props.folder.id, props.folder.name)
 },
 {

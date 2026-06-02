@@ -6,24 +6,25 @@
     >
         <v-card rounded="xl" elevation="8">
             <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-                <v-avatar color="teal-lighten-5" size="36" class="mr-3">
-                    <v-icon size="22" color="teal-darken-2">ph-export</v-icon>
+                <v-avatar color="primary" size="40" variant="tonal" class="mr-3">
+                    <v-icon size="24">ph-arrow-right</v-icon>
                 </v-avatar>
                 <div>
-                    <div class="text-headline-small">Move note to</div>
-                    <div class="text-label-large text-medium-emphasis">Select a folder to move the note to.</div>
+                    <div class="text-headline-small">Move note</div>
+                    <div class="text-label-large text-medium-emphasis">Select the destination folder.</div>
                 </div>
             </v-card-title>
 
             <v-card-text class="px-6 pb-4">
                 <v-select
-                    label="Select"
+                    label="Choose a folder"
                     clearable
                     :items="filteredFolders"
                     item-title="name"
                     item-value="id"
                     v-model="newFolderId"
                     variant="outlined"
+                    density="comfortable"
                     @keydown.enter="handleEnter"
                     @click:clear="handleClear"
                 />
@@ -32,8 +33,8 @@
             <v-divider />
             <v-card-actions class="px-6 py-3">
                 <v-spacer />
-                <v-btn variant="text" @click="closeDialog()">Close</v-btn>
-                <v-btn color="primary" variant="tonal" @click="moveNote" :disabled="!newFolderId">Save</v-btn>
+                <v-btn variant="text" @click="closeDialog()">Cancel</v-btn>
+                <v-btn color="primary" variant="tonal" @click="moveNote" :disabled="!newFolderId">Move</v-btn>
             </v-card-actions>
         </v-card>
     </v-dialog>

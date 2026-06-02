@@ -6,8 +6,8 @@
     >
         <v-card rounded="xl" elevation="8">
             <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-                <v-avatar color="amber-lighten-5" size="36" class="mr-3">
-                    <v-icon size="22" color="amber-darken-2">ph-warning-circle</v-icon>
+                <v-avatar color="error" size="40" variant="tonal" class="mr-3">
+                    <v-icon size="24">ph-trash</v-icon>
                 </v-avatar>
                 <div class="text-headline-small">{{ confirmationDialogTitle }}</div>
             </v-card-title>
@@ -19,8 +19,8 @@
             <v-divider />
             <v-card-actions class="px-6 py-3">
                 <v-spacer />
-                <v-btn variant="text" @click="closeDialog">No</v-btn>
-                <v-btn :color="confirmationDialogButtonColor" variant="tonal" @click="deleteNote">Yes</v-btn>
+                <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
+                <v-btn :color="confirmationDialogButtonColor" variant="tonal" @click="deleteNote">Delete</v-btn>
             </v-card-actions>
         </v-card>
     </v-dialog>

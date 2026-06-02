@@ -6,8 +6,8 @@
     >
         <v-card rounded="xl" elevation="8">
             <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-                <v-avatar color="blue-lighten-5" size="36" class="mr-3">
-                    <v-icon size="22" color="blue-darken-2">ph-pencil-line</v-icon>
+                <v-avatar color="primary" size="40" variant="tonal" class="mr-3">
+                    <v-icon size="24">ph-pencil-simple-line</v-icon>
                 </v-avatar>
                 <div>
                     <div class="text-headline-small">Rename folder</div>
@@ -21,6 +21,7 @@
                     label="Folder name"
                     clearable
                     variant="outlined"
+                    density="comfortable"
                     @click:clear="handleClear"
                     @keydown.enter="handleEnter"
                 />

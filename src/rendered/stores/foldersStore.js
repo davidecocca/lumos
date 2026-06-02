@@ -155,9 +155,9 @@ export const useFoldersStore = defineStore('folders', {
         },
         openDeleteFolderConfirmationDialog(folderId) {
             this.activeFolderId = folderId
-            this.confirmationDialogTitle = 'Delete Folder'
-            this.confirmationDialogText = 'Are you sure you want to remove this folder and all its notes? This action cannot be undone.'
-            this.confirmationDialogButtonColor = 'warning'
+            this.confirmationDialogTitle = 'Delete folder'
+            this.confirmationDialogText = 'This folder will be permanently deleted, including all notes. This action cannot be undone.'
+            this.confirmationDialogButtonColor = 'error'
             this.deleteFolderDialog = true
         },
         async deleteFolder(folderId) {
@@ -336,9 +336,9 @@ export const useFoldersStore = defineStore('folders', {
         },
         openDeleteNoteConfirmationDialog(noteId) {
             this.activeNoteId = noteId
-            this.confirmationDialogTitle = 'Delete Note'
-            this.confirmationDialogText = 'Are you sure you want to remove this note? This action cannot be undone.'
-            this.confirmationDialogButtonColor = 'warning'
+            this.confirmationDialogTitle = 'Delete note'
+            this.confirmationDialogText = 'This note will be permanently deleted. This action cannot be undone.'
+            this.confirmationDialogButtonColor = 'error'
             this.deleteNoteDialog = true
         },
         async deleteNote(noteId) {

@@ -6,12 +6,12 @@
     >
         <v-card rounded="xl" elevation="8">
             <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-                <v-avatar color="blue-lighten-5" size="36" class="mr-3">
-                    <v-icon size="22" color="blue-darken-2">ph-folder-simple-plus</v-icon>
+                <v-avatar color="primary" size="40" variant="tonal" class="mr-3">
+                    <v-icon size="24">ph-folder-simple-plus</v-icon>
                 </v-avatar>
                 <div>
                     <div class="text-headline-small">New folder</div>
-                    <div class="text-label-large text-medium-emphasis">Keep your notes organized by creating a folder.</div>
+                    <div class="text-label-large text-medium-emphasis">Create a folder to organize your notes.</div>
                 </div>
             </v-card-title>
 
@@ -21,6 +21,7 @@
                     label="Folder name"
                     clearable
                     variant="outlined"
+                    density="comfortable"
                     @click:clear="handleClear"
                     @keydown.enter="handleEnter"
                 />
@@ -29,8 +30,8 @@
             <v-divider />
             <v-card-actions class="px-6 py-3">
                 <v-spacer />
-                <v-btn variant="text" @click="closeDialog()">Close</v-btn>
-                <v-btn color="primary" variant="tonal" @click="saveFolder" :disabled="!folderName.trim()">Save</v-btn>
+                <v-btn variant="text" @click="closeDialog()">Cancel</v-btn>
+                <v-btn color="primary" variant="tonal" @click="saveFolder" :disabled="!folderName.trim()">Create</v-btn>
             </v-card-actions>
         </v-card>
     </v-dialog>
@@ -48,11 +49,11 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'create-folder'])
 
-const folderName = ref('New Folder')
+const folderName = ref('Untitled folder')
 
 const closeDialog = () => {
     emit('update:modelValue', false)
-    folderName.value = 'New Folder'
+    folderName.value = 'Untitled folder'
 }
 
 const handleClear = () => {
@@ -62,7 +63,7 @@ const handleClear = () => {
 const saveFolder = () => {
     if (folderName.value.trim()) {
         emit('create-folder', folderName.value.trim())
-        folderName.value = 'New Folder'
+        folderName.value = 'Untitled folder'
     }
 }
 

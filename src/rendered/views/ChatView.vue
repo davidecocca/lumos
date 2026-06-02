@@ -78,7 +78,7 @@
                 <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
                     <v-list-item @click.stop="openRenameChatDialog(conversation)" rounded="lg">
                         <template v-slot:append>
-                            <v-icon icon="ph-pencil-line"></v-icon>
+                            <v-icon icon="ph-pencil-simple-line"></v-icon>
                         </template>
                         <v-list-item-title>Rename</v-list-item-title>
                     </v-list-item>

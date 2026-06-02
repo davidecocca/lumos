@@ -6,21 +6,21 @@
     >
         <v-card rounded="xl" elevation="8">
             <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-                <v-avatar color="amber-lighten-5" size="36" class="mr-3">
-                    <v-icon size="22" color="amber-darken-2">ph-warning-circle</v-icon>
+                <v-avatar color="error" size="40" variant="tonal" class="mr-3">
+                    <v-icon size="24">ph-trash</v-icon>
                 </v-avatar>
                 <div class="text-headline-small">Delete chat</div>
             </v-card-title>
 
             <v-card-text class="px-6 pb-4">
-                This chat and its messages will be permanently deleted.
+                This chat will be permanently deleted, including all messages. This action cannot be undone.
             </v-card-text>
 
             <v-divider />
             <v-card-actions class="px-6 py-3">
                 <v-spacer />
-                <v-btn variant="text" @click="closeDialog">No</v-btn>
-                <v-btn color="error" variant="tonal" @click="deleteChat">Yes</v-btn>
+                <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
+                <v-btn color="error" variant="tonal" @click="deleteChat">Delete</v-btn>
             </v-card-actions>
         </v-card>
     </v-dialog>

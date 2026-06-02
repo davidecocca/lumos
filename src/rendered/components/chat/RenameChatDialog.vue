@@ -6,12 +6,12 @@
     >
         <v-card rounded="xl" elevation="8">
             <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-                <v-avatar color="deep-purple-lighten-5" size="36" class="mr-3">
-                    <v-icon size="22" color="deep-purple-darken-2">ph-chat-circle-text</v-icon>
+                <v-avatar color="primary" size="40" variant="tonal" class="mr-3">
+                    <v-icon size="24">ph-pencil-simple-line</v-icon>
                 </v-avatar>
                 <div>
                     <div class="text-headline-small">Rename chat</div>
-                    <div class="text-label-large text-medium-emphasis">Enter a new title for the chat.</div>
+                    <div class="text-label-large text-medium-emphasis">Enter a new title for this chat.</div>
                 </div>
             </v-card-title>
 
@@ -21,6 +21,7 @@
                     label="Chat title"
                     clearable
                     variant="outlined"
+                    density="comfortable"
                     @click:clear="handleClear"
                     @keydown.enter="handleEnter"
                 />
@@ -29,7 +30,7 @@
             <v-divider />
             <v-card-actions class="px-6 py-3">
                 <v-spacer />
-                <v-btn variant="text" @click="closeDialog">Close</v-btn>
+                <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
                 <v-btn color="primary" variant="tonal" :disabled="!chatTitle.trim()" @click="renameChat">Save</v-btn>
             </v-card-actions>
         </v-card>
