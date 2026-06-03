@@ -200,21 +200,29 @@ const {
     editWithAIDialog,
 })
 
-const highlightColors = [
-{ name: 'Default', value: 'default', displayedColor: props.theme === 'dark' ? '#212121' : '#FFFFFF' },
-{ name: 'Cyan', value: '#4477bb', displayedColor: '#4477bb' },
-{ name: 'Yellow', value: '#aa6600', displayedColor: '#aa6600' },
-{ name: 'Green', value: '#008811', displayedColor: '#008811' },
-{ name: 'Red', value: '#dd3311', displayedColor: '#dd3311' },
-]
+const highlightColors = computed(() => {
+    const isDark = props.theme === 'dark'
 
-const textColors = [
-{ name: 'Default', value: '#212121', displayedColor: props.theme === 'dark' ? '#E0E0E0' : '#212121' },
-{ name: 'Red', value: '#F44336', displayedColor: '#F44336' },
-{ name: 'Blue', value: '#3F51B5', displayedColor: '#3F51B5' },
-{ name: 'Green', value: '#009688', displayedColor: '#009688' },
-{ name: 'Orange', value: '#FF9800', displayedColor: '#FF9800' },
-]
+    return [
+        { name: 'Default', value: 'default', displayedColor: isDark ? '#212121' : '#FFFFFF' },
+        { name: 'Red', value: 'var(--lumos-editor-highlight-red)', displayedColor: isDark ? '#E53935' : '#F8BBD0' },
+        { name: 'Blue', value: 'var(--lumos-editor-highlight-blue)', displayedColor: isDark ? '#039BE5' : '#C5CAE9' },
+        { name: 'Green', value: 'var(--lumos-editor-highlight-green)', displayedColor: isDark ? '#43A047' : '#B2DFDB' },
+        { name: 'Yellow', value: 'var(--lumos-editor-highlight-yellow)', displayedColor: isDark ? '#F4511E' : '#FFECB3' },
+    ]
+})
+
+const textColors = computed(() => {
+    const isDark = props.theme === 'dark'
+
+    return [
+        { name: 'Default', value: 'default', displayedColor: isDark ? '#E0E0E0' : '#212121' },
+        { name: 'Blue', value: 'var(--lumos-editor-text-blue)', displayedColor: isDark ? '#9FA8DA' : '#0D47A1' },
+        { name: 'Red', value: 'var(--lumos-editor-text-red)', displayedColor: isDark ? '#F48FB1' : '#B71C1C' },
+        { name: 'Green', value: 'var(--lumos-editor-text-green)', displayedColor: isDark ? '#80CBC4' : '#1B5E20' },
+        { name: 'Orange', value: 'var(--lumos-editor-text-orange)', displayedColor: isDark ? '#FFCC80' : '#E65100' },
+    ]
+})
 
 const breadcrumbsItems = computed(() => [
 {
@@ -240,7 +248,7 @@ const handleHighlight = (colorValue) => {
 const handleTextColor = (colorValue) => {
     if (!editor.value) return;
     
-    if (colorValue === '#212121') {
+    if (colorValue === 'default') {
         editor.value.chain().focus().unsetColor().run();
     } else {
         editor.value.chain().focus().setColor(colorValue).run();
