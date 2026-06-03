@@ -123,7 +123,7 @@ Lumos started as a side project—built to offer a simple, local, and AI-powered
 ## 📋 Todo
 
 ### Core Features
-- [ ] Add support for rich media in notes:
+- [✅] Add support for rich media in notes:
     - [✅] Add images with drag-and-drop
     - [✅] Add tables with formatting
     - [✅] Embed YouTube videos
@@ -142,9 +142,9 @@ Lumos started as a side project—built to offer a simple, local, and AI-powered
     - [ ] End-to-end (E2E) testing
 
 ### AI Features
-- [ ] Enhance chat functionality:
-    - [ ] Add conversation history
-    - [ ] Implement context retention
+- [✅] Enhance chat functionality:
+    - [✅] Add conversation history
+    - [✅] Implement context retention
 
 
 ## 📣 Contributing
