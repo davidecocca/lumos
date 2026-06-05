@@ -74,13 +74,12 @@ import ChatHistoryMenu from './ChatHistoryMenu.vue'
 import ChatMessageList from './ChatMessageList.vue'
 import RenameChatDialog from './dialogs/RenameChatDialog.vue'
 import ConfirmDeleteChatDialog from './dialogs/ConfirmDeleteChatDialog.vue'
+import { useChatConversations } from './composables/useChatConversations'
+import { useChatModelSelection } from './composables/useChatModelSelection'
 
 import { createLlmService } from '../../services/llmService'
-import { aiPreferencesStore } from '../../stores/aiPreferencesStore';
 import { useFoldersStore } from '../../stores/foldersStore';
-import { useChatStore } from '../../stores/chatStore';
 import chatRagPrompt from '../../prompts/chatRagPrompt';
-import { buildModelItems } from '../../utils/modelProviders'
 
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -115,226 +114,74 @@ const props = defineProps({
 
 const emit = defineEmits(['new-thread', 'select-conversation', 'conversation-updated'])
 
-// Store for AI preferences
-const aiStore = aiPreferencesStore();
-
 // Store for folders and notes
 const store = useFoldersStore()
 const router = useRouter()
 
-// Chat store
-const chatStore = useChatStore()
-
 const chatMessageList = ref(null)
+const scope = computed(() => props.scope)
+const conversationId = computed(() => props.conversationId)
+const startEmpty = computed(() => props.startEmpty)
 const activeNoteId = computed(() => props.scope === 'note' ? props.noteId : null)
-const session = computed(() => chatStore.getSession(props.scope, activeNoteId.value))
-const messages = computed(() => session.value.messages)
-const userInput = computed({
-    get: () => session.value.userInput,
-    set: (value) => chatStore.setUserInput(props.scope, value, activeNoteId.value),
-})
-const recentConversations = ref([])
-const renameChatDialog = ref(false)
-const deleteChatDialog = ref(false)
-const activeChatId = ref(null)
-const activeChatTitle = ref('')
 
 const showSources = computed(() => {
     return props.scope === 'all'
-})
-
-// Available models for chat from all providers
-const availableChatModels = computed(() => {
-    return buildModelItems(aiStore.availableProviders, aiStore.getProviderModels)
-});
-
-// Selected model for chat
-const selectedModel = computed({
-    get: () => ({ 
-        provider: aiStore.chat.provider, 
-        model: aiStore.chat.model 
-    }),
-    set: (value) => {
-        if (value) {
-            aiStore.setProvider('chat', value.provider);
-            aiStore.setModel('chat', value.model);
-        }
-    }
-});
-
-const selectModel = (modelValue) => {
-    selectedModel.value = modelValue
-}
-
-const selectedModelTitle = computed(() => {
-    const match = availableChatModels.value.find((item) => (
-    item.value.provider === aiStore.chat.provider &&
-    item.value.model === aiStore.chat.model
-    ))
-    return match?.title || 'Model'
 })
 
 const scrollToBottom = async () => {
     await chatMessageList.value?.scrollToBottom()
 }
 
+const {
+    loadModelPreferences,
+    availableChatModels,
+    selectedModel,
+    selectedModelTitle,
+    selectModel,
+} = useChatModelSelection()
+
+const {
+    chatStore,
+    session,
+    messages,
+    userInput,
+    recentConversations,
+    renameChatDialog,
+    deleteChatDialog,
+    activeChatId,
+    activeChatTitle,
+    resetSession,
+    resetChat,
+    loadRecentConversations,
+    loadConversationById,
+    initializeConversation,
+    selectConversation,
+    openRenameChatDialog,
+    openDeleteChatDialog,
+    handleRenameChat,
+    handleDeleteChat,
+    ensurePersistedConversation,
+} = useChatConversations({
+    scope,
+    activeNoteId,
+    conversationId,
+    startEmpty,
+    emit,
+    scrollToBottom,
+})
+
 // Load AI preferences on mount
 onMounted(() => {
-    aiStore.loadPreferences();
+    loadModelPreferences();
     initializeConversation()
 });
 
 watch(() => props.isVisible, async (isVisible) => {
     if (isVisible) {
-        chatStore.resetChat(props.scope, activeNoteId.value)
+        resetSession()
         await scrollToBottom()
     }
 })
-
-const resetChat = () => {
-    chatStore.resetChat(props.scope, activeNoteId.value)
-    emit('new-thread')
-}
-
-const normalizeTitle = (value) => {
-    const title = String(value || '').replace(/\s+/g, ' ').trim()
-    if (!title) return 'New chat'
-    return title.length > 48 ? `${title.slice(0, 45)}...` : title
-}
-
-const loadRecentConversations = async () => {
-    if (props.scope === 'note' && !activeNoteId.value) {
-        recentConversations.value = []
-        return []
-    }
-    
-    recentConversations.value = await chatStore.listChatConversations({
-        scope: props.scope,
-        noteId: activeNoteId.value,
-        limit: 30,
-    })
-    
-    return recentConversations.value
-}
-
-const filterMissingSourceNotes = async (conversation) => {
-    const noteIds = [
-    ...new Set((conversation.messages || [])
-    .flatMap((message) => message.sources || [])
-    .map((source) => Number(source.id))
-    .filter(Boolean)),
-    ]
-    
-    if (noteIds.length === 0) return conversation
-    
-    const existingNotes = await window.api.getNotesByIds(noteIds)
-    const existingIds = new Set(existingNotes.map((note) => Number(note.id)))
-    
-    return {
-        ...conversation,
-        messages: conversation.messages.map((message) => ({
-            ...message,
-            sources: (message.sources || []).filter((source) => existingIds.has(Number(source.id))),
-        })),
-    }
-}
-
-const loadConversationById = async (conversationId) => {
-    if (!conversationId) {
-        resetChat()
-        return
-    }
-    
-    const conversation = await chatStore.getChatConversation(Number(conversationId))
-    if (!conversation) {
-        resetChat()
-        return
-    }
-    
-    chatStore.loadConversation(await filterMissingSourceNotes(conversation))
-    emit('select-conversation', conversation.id)
-    await scrollToBottom()
-}
-
-const initializeConversation = async () => {
-    if (props.scope === 'note' && !activeNoteId.value) return
-    
-    if (props.startEmpty) {
-        chatStore.resetChat(props.scope, activeNoteId.value)
-        return
-    }
-    
-    if (props.conversationId) {
-        await loadConversationById(props.conversationId)
-        return
-    }
-    
-    chatStore.resetChat(props.scope, activeNoteId.value)
-}
-
-const selectConversation = async (conversationId) => {
-    await loadConversationById(conversationId)
-}
-
-const openRenameChatDialog = (conversation) => {
-    activeChatId.value = conversation.id
-    activeChatTitle.value = conversation.title || 'New chat'
-    renameChatDialog.value = true
-}
-
-const openDeleteChatDialog = (conversation) => {
-    activeChatId.value = conversation.id
-    activeChatTitle.value = conversation.title || 'New chat'
-    deleteChatDialog.value = true
-}
-
-const handleRenameChat = async (chatId, title) => {
-    await chatStore.renameChatConversation(chatId, title)
-    renameChatDialog.value = false
-    await loadRecentConversations()
-    
-    if (Number(session.value.conversationId) === Number(chatId)) {
-        chatStore.setConversationMeta(props.scope, activeNoteId.value, {
-            id: Number(chatId),
-            title,
-            createdAt: session.value.createdAt,
-            updatedAt: new Date().toISOString(),
-        })
-    }
-    
-    emit('conversation-updated', {
-        ...session.value,
-        id: session.value.conversationId,
-    })
-}
-
-const handleDeleteChat = async (chatId) => {
-    await chatStore.deleteChatConversation(chatId)
-    deleteChatDialog.value = false
-    await loadRecentConversations()
-    
-    if (Number(session.value.conversationId) === Number(chatId)) {
-        resetChat()
-    }
-    
-    emit('conversation-updated', {
-        ...session.value,
-        id: session.value.conversationId,
-    })
-}
-
-const ensurePersistedConversation = async (firstUserMessage) => {
-    if (session.value.conversationId) return session.value.conversationId
-    
-    const conversation = await chatStore.createChatConversation({
-        scope: props.scope,
-        noteId: activeNoteId.value,
-        title: normalizeTitle(firstUserMessage),
-    })
-    
-    chatStore.setConversationMeta(props.scope, activeNoteId.value, conversation)
-    return conversation.id
-}
 
 const openSourceNote = async (noteId) => {
     await store.openNote(noteId, router)
@@ -480,7 +327,7 @@ watch(() => [props.scope, activeNoteId.value], async () => {
 
 watch(() => props.conversationId, async (conversationId) => {
     if (!conversationId) {
-        chatStore.resetChat(props.scope, activeNoteId.value)
+        resetSession()
         return
     }
     
