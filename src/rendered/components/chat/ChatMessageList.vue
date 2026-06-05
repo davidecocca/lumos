@@ -3,14 +3,12 @@
         class="chat-content"
         :class="{ 'align-center justify-center pb-16': isEmpty }"
     >
-        <v-slide-y-transition leave-absolute>
-            <div
-                v-if="isEmpty"
-                class="w-100"
-            >
-                <EmptyChatState />
-            </div>
-        </v-slide-y-transition>
+        <div
+            v-if="isEmpty"
+            class="w-100"
+        >
+            <EmptyChatState />
+        </div>
 
         <div
             v-if="!isEmpty"
