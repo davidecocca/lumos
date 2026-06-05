@@ -18,7 +18,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import BaseDialog from './BaseDialog.vue'
+import BaseDialog from '../../commons/BaseDialog.vue'
 
 const props = defineProps({
     modelValue: {

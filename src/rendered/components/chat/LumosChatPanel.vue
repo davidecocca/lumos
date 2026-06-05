@@ -3,250 +3,55 @@
     fluid
     class="chat-panel pa-0"
     >
-    <div class="d-flex align-center ga-3 mb-4">
-        <v-card
-        class="w-100"
-        variant="text"
-        transparent
-        >
-        
-        <template v-slot:append>
-            <div class="d-flex align-center justify-end ga-2 ms-auto">
-                <v-menu
-                v-if="props.showHeaderActions"
-                v-model="isHistoryOpen"
-                location="bottom end"
-                >
-                <template v-slot:activator="{ props: menuProps }">
-                    <v-tooltip text="Recents" location="bottom">
-                        <template v-slot:activator="{ props: tooltipProps }">
-                            <v-btn
-                            v-bind="mergeProps(menuProps, tooltipProps)"
-                            variant="text"
-                            density="comfortable"
-                            icon="ph-clock-counter-clockwise"
-                            @click="loadRecentConversations"
-                            />
-                        </template>
-                    </v-tooltip>
-                </template>
-                
-                <v-list min-width="280" max-height="360" density="compact" class="overflow-y-auto pl-1 pr-1 pt-2 pb-2">
-                    <v-list-subheader>Recents</v-list-subheader>
-                    <v-list-item
-                    v-if="recentConversations.length === 0"
-                    prepend-icon="ph-clock-counter-clockwise"
-                    title="No recent chats"
-                    />
-                    <v-list-item
-                    v-for="conversation in recentConversations"
-                    :key="conversation.id"
-                    :active="conversation.id === session.conversationId"
-                    rounded="lg"
-                    density="compact"
-                    @click="selectConversation(conversation.id)"
-                    >
-                    <v-list-item-title>{{ conversation.title || 'New chat' }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ formatConversationTime(conversation.updatedAt) }}</v-list-item-subtitle>
-                    <template v-slot:append>
-                        <v-menu>
-                            <template v-slot:activator="{ props }">
-                                <v-tooltip text="More" location="top">
-                                    <template v-slot:activator="{ props: tooltipProps }">
-                                        <v-btn
-                                        v-bind="{ ...props, ...tooltipProps }"
-                                        icon="ph-dots-three"
-                                        size="small"
-                                        variant="text"
-                                        density="compact"
-                                        class="ml-2"
-                                        @click.stop
-                                        />
-                                    </template>
-                                </v-tooltip>
-                            </template>
-                            <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
-                                <v-list-item @click.stop="openRenameChatDialog(conversation)" rounded="lg">
-                                    <template v-slot:append>
-                                        <v-icon icon="ph-pencil-line"></v-icon>
-                                    </template>
-                                    <v-list-item-title>Rename</v-list-item-title>
-                                </v-list-item>
-                                <v-list-item
-                                class="delete-menu-action"
-                                base-color="error"
-                                @click.stop="openDeleteChatDialog(conversation)"
-                                rounded="lg"
-                                >
-                                    <template v-slot:append>
-                                        <v-icon icon="ph-trash"></v-icon>
-                                    </template>
-                                    <v-list-item-title>Delete</v-list-item-title>
-                                </v-list-item>
-                            </v-list>
-                        </v-menu>
-                    </template>
-                </v-list-item>
-            </v-list>
-        </v-menu>
-        
-        <v-tooltip text="New chat" location="bottom">
-            <template v-slot:activator="{ props }">
-                <v-btn
-                v-bind="props"
+        <div class="d-flex align-center ga-3 mb-4">
+            <v-card
+                class="w-100"
                 variant="text"
-                density="comfortable"
-                icon="ph-plus"
-                @click="resetChat"
-                />
-            </template>
-        </v-tooltip>
-    </div>
-</template>
-
-</v-card>
-</div>
-
-<div
-class="chat-content"
-:class="{ 'align-center justify-center pb-16': isChatEmpty }"
->
-<v-slide-y-transition leave-absolute>
-    <div
-    v-if="isChatEmpty"
-    class="w-100"
-    >
-    <EmptyChatState />
-</div>
-</v-slide-y-transition>
-
-<div
-v-if="!isChatEmpty"
-class="chat-container"
-ref="chatContainer"
->
-<v-list
-lines="one"
-style="background-color: transparent;"
->
-<v-list-item
-v-for="(message, index) in messages"
-:key="index"
-:data-message-index="index"
-class="mb-2"
->
-<div v-if="message.user === 'bot'" class="d-flex flex-grow-1 justify-start align-items-center" style="max-width: 80%;">
-    <ChatCard
-    class="flex-grow-1"
-    :message="message"
-    :showSources="showSources"
-    @open-source="openSourceNote"
-    />
-</div>
-<div v-if="message.user === 'user'" class="d-flex justify-end flex-grow-1">
-    <ChatCard
-    :message="message"
-    :showSources="showSources"
-    class="ms-auto"
-    style="max-width: 80%"
-    @open-source="openSourceNote"
-    />
-</div>
-</v-list-item>
-</v-list>
-</div>
-
-<!-- Input area -->
-<v-card
-class="border chat-input-card align-self-center"
-color="nav-background"
-elevation="0"
-rounded="xl"
-width="calc(100% - 32px)"
-max-width="800"
->
-<v-card-text class="ps-2 pt-1 pb-0">
-    <v-textarea
-    v-model="userInput"
-    placeholder="Ask something"
-    hide-details
-    rows="1"
-    max-rows="5"
-    variant="plain"
-    auto-grow
-    class="ml-2 mr-2"
-    @keydown.enter="handleInputEnter"
-    />
-</v-card-text>
-
-<v-card-actions class="pt-2 pb-2 px-4 d-flex ga-2 align-center flex-nowrap">
-    <v-spacer />
-    
-    <div class="d-flex align-center ga-2 justify-end" style="min-width: 0;">
-        <div class="model-trigger-wrap">
-            <v-menu location="top end">
-                <template v-slot:activator="{ props: menuProps }">
-                    <v-tooltip text="Pick model" location="top">
-                        <template v-slot:activator="{ props: tooltipProps }">
-                            <v-btn
-                            v-bind="mergeProps(menuProps, tooltipProps)"
-                            class="model-trigger text-none px-2"
-                            variant="text"
-                            rounded="lg"
-                            size="small"
-                            style="min-width: 0;"
-                            >
-                            <span class="model-trigger-label">{{ selectedModelTitle }}</span>
-                            <v-icon icon="ph-caret-down" size="small" class="ml-2 flex-shrink-0" />
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-            </template>
-            <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
-                <v-list-item
-                v-for="item in availableChatModels"
-                :key="`${item.value.provider}-${item.value.model}`"
-                rounded="lg"
-                @click="selectModel(item.value)"
-                >
-                <template v-slot:prepend>
-                    <ModelProviderMark :provider="item.value.provider" class="me-3" />
-                </template>
-                <v-list-item-title class="text-no-wrap">
-                    {{ item.title }}
-                </v-list-item-title>
+                transparent
+            >
                 <template v-slot:append>
-                    <v-icon
-                    v-if="isModelSelected(item.value)"
-                    icon="ph-check"
-                    size="small"
-                    />
-                </template>
-            </v-list-item>
-        </v-list>
-    </v-menu>
-</div>
+                    <div class="d-flex align-center justify-end ga-2 ms-auto">
+                        <ChatHistoryMenu
+                            v-if="props.showHeaderActions"
+                            :conversations="recentConversations"
+                            :active-conversation-id="session.conversationId"
+                            @load="loadRecentConversations"
+                            @select="selectConversation"
+                            @rename="openRenameChatDialog"
+                            @delete="openDeleteChatDialog"
+                        />
 
-<v-tooltip text="Send (⏎)" location="top">
-    <template v-slot:activator="{ props: activatorProps }">
-        <v-btn
-        v-bind="activatorProps"
-        class="flex-shrink-0"
-        icon
-        rounded="pill"
-        variant="tonal"
-        color="primary"
-        size="small"
-        @click="sendMessage()"
+                        <v-tooltip text="New chat" location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <v-btn
+                                    v-bind="props"
+                                    variant="text"
+                                    density="comfortable"
+                                    icon="ph-plus"
+                                    @click="resetChat"
+                                />
+                            </template>
+                        </v-tooltip>
+                    </div>
+                </template>
+            </v-card>
+        </div>
+
+        <ChatMessageList
+            ref="chatMessageList"
+            :messages="messages"
+            :show-sources="showSources"
+            @open-source="openSourceNote"
         >
-        <v-icon icon="ph-arrow-up" />
-    </v-btn>
-</template>
-</v-tooltip>
-</div>
-</v-card-actions>
-</v-card>
-</div>
+            <ChatComposer
+                v-model="userInput"
+                :model-items="availableChatModels"
+                :selected-model="selectedModel"
+                :selected-model-title="selectedModelTitle"
+                @select-model="selectModel"
+                @send="sendMessage"
+            />
+        </ChatMessageList>
 </v-container>
 
 <RenameChatDialog
@@ -264,9 +69,9 @@ v-model="deleteChatDialog"
 </template>
 
 <script setup>
-import ChatCard from './ChatCard.vue'
-import EmptyChatState from './EmptyChatState.vue'
-import ModelProviderMark from '../ai/ModelProviderMark.vue'
+import ChatComposer from './ChatComposer.vue'
+import ChatHistoryMenu from './ChatHistoryMenu.vue'
+import ChatMessageList from './ChatMessageList.vue'
 import RenameChatDialog from './dialogs/RenameChatDialog.vue'
 import ConfirmDeleteChatDialog from './dialogs/ConfirmDeleteChatDialog.vue'
 
@@ -277,7 +82,7 @@ import { useChatStore } from '../../stores/chatStore';
 import chatRagPrompt from '../../prompts/chatRagPrompt';
 import { buildModelItems } from '../../utils/modelProviders'
 
-import { ref, nextTick, computed, onMounted, watch, mergeProps } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -320,17 +125,15 @@ const router = useRouter()
 // Chat store
 const chatStore = useChatStore()
 
-const chatContainer = ref(null)
+const chatMessageList = ref(null)
 const activeNoteId = computed(() => props.scope === 'note' ? props.noteId : null)
 const session = computed(() => chatStore.getSession(props.scope, activeNoteId.value))
 const messages = computed(() => session.value.messages)
-const isChatEmpty = computed(() => messages.value.length === 0)
 const userInput = computed({
     get: () => session.value.userInput,
     set: (value) => chatStore.setUserInput(props.scope, value, activeNoteId.value),
 })
 const recentConversations = ref([])
-const isHistoryOpen = ref(false)
 const renameChatDialog = ref(false)
 const deleteChatDialog = ref(false)
 const activeChatId = ref(null)
@@ -363,10 +166,6 @@ const selectModel = (modelValue) => {
     selectedModel.value = modelValue
 }
 
-const isModelSelected = (modelValue) => {
-    return modelValue.provider === aiStore.chat.provider && modelValue.model === aiStore.chat.model
-}
-
 const selectedModelTitle = computed(() => {
     const match = availableChatModels.value.find((item) => (
     item.value.provider === aiStore.chat.provider &&
@@ -376,13 +175,7 @@ const selectedModelTitle = computed(() => {
 })
 
 const scrollToBottom = async () => {
-    await nextTick()
-    
-    requestAnimationFrame(() => {
-        const el = chatContainer.value
-        if (!el) return
-        el.scrollTop = el.scrollHeight
-    })
+    await chatMessageList.value?.scrollToBottom()
 }
 
 // Load AI preferences on mount
@@ -480,7 +273,6 @@ const initializeConversation = async () => {
 }
 
 const selectConversation = async (conversationId) => {
-    isHistoryOpen.value = false
     await loadConversationById(conversationId)
 }
 
@@ -544,28 +336,11 @@ const ensurePersistedConversation = async (firstUserMessage) => {
     return conversation.id
 }
 
-const formatConversationTime = (value) => {
-    if (!value) return ''
-    return new Intl.DateTimeFormat(undefined, {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(new Date(value))
-}
-
 const openSourceNote = async (noteId) => {
     await store.openNote(noteId, router)
 }
 
 const chunkDivederText = '\n\n-------\n\n'
-
-const handleInputEnter = (event) => {
-    if (event.shiftKey) return
-    
-    event.preventDefault()
-    sendMessage()
-}
 
 const sendMessage = async () => {
     try {
@@ -726,48 +501,4 @@ watch(() => props.conversationId, async (conversationId) => {
     box-sizing: border-box;
 }
 
-.chat-content {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.chat-container {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding-bottom: 8px;
-}
-
-.chat-input-card {
-    flex-shrink: 0;
-    margin-inline: 16px;
-    margin-bottom: 16px;
-}
-
-/* Styles for model trigger button to handle model names of varying lengths */
-.model-trigger {
-    min-width: 0;
-    max-width: 100%;
-}
-
-.model-trigger-wrap {
-    max-width: min(280px, 100%);
-    flex: 0 1 auto;
-    min-width: 0;
-}
-
-.model-trigger :deep(.v-btn__content) {
-    min-width: 0;
-    flex-wrap: nowrap;
-}
-
-.model-trigger-label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
 </style>

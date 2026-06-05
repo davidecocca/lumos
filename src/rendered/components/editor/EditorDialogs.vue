@@ -51,7 +51,7 @@
 <script setup>
 import RenameNoteDialog from '../navbar/dialogs/RenameNoteDialog.vue'
 import MoveToFolderDialog from '../navbar/dialogs/MoveToFolderDialog.vue'
-import ConfirmDeleteNoteDialog from '../commons/ConfirmDeleteNoteDialog.vue'
+import ConfirmDeleteNoteDialog from '../navbar/dialogs/ConfirmDeleteNoteDialog.vue'
 import GenerateAIDialog from './dialogs/GenerateAIDialog.vue'
 import EditAIDialog from './dialogs/EditAIDialog.vue'
 import EmbedYoutubeDialog from './dialogs/EmbedYoutubeDialog.vue'

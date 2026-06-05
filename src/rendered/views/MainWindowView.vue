@@ -50,7 +50,7 @@ location="right"
 :class="['chat-drawer', { 'no-transition': isResizing }, 'bg-background']"
 >
 <div class="chat-resizer" @mousedown="startResize"></div>
-<LumosChatSidebar 
+<LumosChat 
 class="h-100"
 :isVisible="isChatOpen"
 />
@@ -59,7 +59,7 @@ class="h-100"
 
 <script setup>
 import NavigationDrawer from '../components/navbar/NavDrawer.vue';
-import LumosChatSidebar from '../components/chat/LumosChatSidebar.vue';
+import LumosChat from '../components/chat/LumosChat.vue';
 import SearchDialog from '../components/navbar/dialogs/SearchDialog.vue';
 
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';

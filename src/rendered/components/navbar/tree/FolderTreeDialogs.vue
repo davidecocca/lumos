@@ -16,7 +16,7 @@ import ConfirmDeleteFolderDialog from '../dialogs/ConfirmDeleteFolderDialog.vue'
 import CreateNoteDialog from '../dialogs/CreateNoteDialog.vue'
 import RenameNoteDialog from '../dialogs/RenameNoteDialog.vue'
 import MoveToFolderDialog from '../dialogs/MoveToFolderDialog.vue'
-import ConfirmDeleteNoteDialog from '../../commons/ConfirmDeleteNoteDialog.vue'
+import ConfirmDeleteNoteDialog from '../dialogs/ConfirmDeleteNoteDialog.vue'
 import ErrorDialog from '../../commons/ErrorDialog.vue'
 
 import { computed } from 'vue'
