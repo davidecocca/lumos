@@ -1,66 +1,83 @@
 <template>
-    <EditorHeader
-        v-model:note-action-menu="editorNoteActionMenu"
-        :note="note"
-        :breadcrumbs-items="breadcrumbsItems"
-        :editor="editor"
-        @generate-ai="generateWithAIDialog = !generateWithAIDialog"
-        @chat="openChatSidebar"
-        @save="saveNoteManually"
-        @toggle-favorite="toggleFavorite"
-        @rename-note="openRenameNoteDialog"
-        @move-note="openMoveNoteDialog"
-        @delete-note="store.openDeleteNoteConfirmationDialog"
-    />
+    <v-layout class="editor-view-layout">
+        <v-main class="editor-view-main">
+            <EditorHeader
+                v-model:note-action-menu="editorNoteActionMenu"
+                :note="note"
+                :breadcrumbs-items="breadcrumbsItems"
+                :editor="editor"
+                @generate-ai="generateWithAIDialog = !generateWithAIDialog"
+                @chat="toggleSidebarChat"
+                @save="saveNoteManually"
+                @toggle-favorite="toggleFavorite"
+                @rename-note="openRenameNoteDialog"
+                @move-note="openMoveNoteDialog"
+                @delete-note="store.openDeleteNoteConfirmationDialog"
+            />
 
-    <EditorBubbleMenu
-        :editor="editor"
-        :should-show="shouldShowBubbleMenu"
-        :append-to="getBubbleMenuAppendTarget"
-        :can-remove-details="canRemoveDetails"
-        :highlight-colors="highlightColors"
-        :text-colors="textColors"
-        :supported-tones="supportedTones"
-        :supported-languages="supportedLanguages"
-        @insert-details="insertDetails"
-        @remove-details="removeDetails"
-        @highlight="handleHighlight"
-        @text-color="handleTextColor"
-        @ai-edit="aiEdit"
-        @ai-fix-grammar="aiFixGrammar"
-        @ai-format-text="aiFormatText"
-        @ai-improve-writing="aiImproveWriting"
-        @ai-make-shorter="aiMakeShorter"
-        @ai-make-longer="aiMakeLonger"
-        @ai-simplify="aiSimplify"
-        @ai-change-tone="aiChangeTone"
-        @ai-translate-to="aiTranslateTo"
-    />
+            <EditorBubbleMenu
+                :editor="editor"
+                :should-show="shouldShowBubbleMenu"
+                :append-to="getBubbleMenuAppendTarget"
+                :can-remove-details="canRemoveDetails"
+                :highlight-colors="highlightColors"
+                :text-colors="textColors"
+                :supported-tones="supportedTones"
+                :supported-languages="supportedLanguages"
+                @insert-details="insertDetails"
+                @remove-details="removeDetails"
+                @highlight="handleHighlight"
+                @text-color="handleTextColor"
+                @ai-edit="aiEdit"
+                @ai-fix-grammar="aiFixGrammar"
+                @ai-format-text="aiFormatText"
+                @ai-improve-writing="aiImproveWriting"
+                @ai-make-shorter="aiMakeShorter"
+                @ai-make-longer="aiMakeLonger"
+                @ai-simplify="aiSimplify"
+                @ai-change-tone="aiChangeTone"
+                @ai-translate-to="aiTranslateTo"
+            />
 
-    <EditorSurface
-        :editor="editor"
-        :is-loading="isLoading"
-    />
+            <EditorSurface
+                :editor="editor"
+                :is-loading="isLoading"
+            />
 
-    <EditorDialogs
-        v-model:rename-note-dialog="renameNoteDialog"
-        v-model:move-to-folder-dialog="moveToFolderDialog"
-        v-model:delete-note-dialog="deleteNoteDialog"
-        v-model:generateWithAIDialog="generateWithAIDialog"
-        v-model:editWithAIDialog="editWithAIDialog"
-        v-model:embed-youtube-dialog="embedYoutubeDialog"
-        :note="note"
-        :folders="store.folders"
-        :selected-text="selectedText"
-        :confirmation-dialog-title="confirmationDialogTitle"
-        :confirmation-dialog-text="confirmationDialogText"
-        :confirmation-dialog-button-color="confirmationDialogButtonColor"
-        @rename-note="handleRenameNote"
-        @move-note="handleMoveNote"
-        @delete-note="handleDeleteNote"
-        @apply-ai-edit="handleApply"
-        @embed-youtube="handleyoutube"
-    />
+            <EditorDialogs
+                v-model:rename-note-dialog="renameNoteDialog"
+                v-model:move-to-folder-dialog="moveToFolderDialog"
+                v-model:delete-note-dialog="deleteNoteDialog"
+                v-model:generateWithAIDialog="generateWithAIDialog"
+                v-model:editWithAIDialog="editWithAIDialog"
+                v-model:embed-youtube-dialog="embedYoutubeDialog"
+                :note="note"
+                :folders="store.folders"
+                :selected-text="selectedText"
+                :confirmation-dialog-title="confirmationDialogTitle"
+                :confirmation-dialog-text="confirmationDialogText"
+                :confirmation-dialog-button-color="confirmationDialogButtonColor"
+                @rename-note="handleRenameNote"
+                @move-note="handleMoveNote"
+                @delete-note="handleDeleteNote"
+                @apply-ai-edit="handleApply"
+                @embed-youtube="handleyoutube"
+            />
+        </v-main>
+
+        <v-navigation-drawer
+            v-model="isChatOpen"
+            location="right"
+            :width="chatWidth"
+            :class="['editor-chat-drawer', { 'no-transition': isResizing }, 'bg-background']"
+        >
+            <div class="editor-chat-resizer" @mousedown="startResize"></div>
+            <LumosChat
+                class="h-100"
+                :is-visible="isChatOpen"
+            />
+        </v-navigation-drawer>
+    </v-layout>
 </template>
 
 <script setup>
@@ -68,6 +85,7 @@ import EditorBubbleMenu from '../components/editor/EditorBubbleMenu.vue'
 import EditorDialogs from '../components/editor/EditorDialogs.vue'
 import EditorHeader from '../components/editor/EditorHeader.vue'
 import EditorSurface from '../components/editor/EditorSurface.vue'
+import LumosChat from '../components/chat/LumosChat.vue'
 import { useEditorAITransforms, supportedLanguages, supportedTones } from '../components/editor/composables/useEditorAITransforms'
 import TableSlashCommand, { OPEN_YOUTUBE_DIALOG_EVENT } from '../components/editor/slash-menu/slashCommand'
 
@@ -99,6 +117,7 @@ import { all, createLowlight } from 'lowlight'
 
 const IMAGE_MUTATION_EVENT = 'lumos-note-image-mutation'
 const VIDEO_MUTATION_EVENT = 'lumos-note-video-mutation'
+const TOGGLE_NOTE_CHAT_EVENT = 'lumos-toggle-note-chat'
 const DETAILS_OPEN_CLASS_NAME = 'is-open'
 const EMPTY_EDITOR_DOCUMENT = {
     type: 'doc',
@@ -119,8 +138,6 @@ const props = defineProps({
         mandatory: true,
     }
 })
-
-const emit = defineEmits(['chat'])
 
 const router = useRouter()
 
@@ -182,6 +199,9 @@ const editor = ref(null)
 let noteRequestId = 0
 
 const isLoading = ref(false)
+const isChatOpen = ref(false)
+const chatWidth = ref(450)
+const isResizing = ref(false)
 
 const {
     aiEdit,
@@ -508,8 +528,42 @@ const openMoveNoteDialog = (noteId, currentFolderId) => {
     store.openMoveNoteDialog(noteId, currentFolderId)
 }
 
-const openChatSidebar = () => {
-    emit('chat')
+const openSidebarChat = () => {
+    if (!note.value) return
+
+    isChatOpen.value = true
+}
+
+const closeSidebarChat = () => {
+    isChatOpen.value = false
+}
+
+const toggleSidebarChat = () => {
+    if (isChatOpen.value) {
+        closeSidebarChat()
+        return
+    }
+
+    openSidebarChat()
+}
+
+const startResize = () => {
+    isResizing.value = true
+    document.addEventListener('mousemove', resize)
+    document.addEventListener('mouseup', stopResize)
+}
+
+const resize = (event) => {
+    if (!isResizing.value) return
+
+    const newWidth = window.innerWidth - event.clientX
+    chatWidth.value = Math.max(300, Math.min(800, newWidth))
+}
+
+const stopResize = () => {
+    isResizing.value = false
+    document.removeEventListener('mousemove', resize)
+    document.removeEventListener('mouseup', stopResize)
 }
 
 const syncCurrentNoteFolder = (newFolderId) => {
@@ -638,6 +692,8 @@ onMounted(async () => {
     window.addEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
     window.addEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
     window.addEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openyoutubeDialog)
+    window.addEventListener(TOGGLE_NOTE_CHAT_EVENT, toggleSidebarChat)
+    chatWidth.value = parseInt(localStorage.getItem('chatWidth')) || 450
 })
 
 watch(() => props.noteId, async (nextNoteId, previousNoteId) => {
@@ -647,6 +703,10 @@ watch(() => props.noteId, async (nextNoteId, previousNoteId) => {
     
     await nextTick()
     await getNote(nextNoteId)
+})
+
+watch(chatWidth, (newWidth) => {
+    localStorage.setItem('chatWidth', newWidth)
 })
 
 watch(() => store.editorNoteCurrentFolderId, (newFolderId) => {
@@ -690,5 +750,44 @@ onBeforeUnmount(() => {
     window.removeEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
     window.removeEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
     window.removeEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openyoutubeDialog)
+    window.removeEventListener(TOGGLE_NOTE_CHAT_EVENT, toggleSidebarChat)
+    stopResize()
 })
 </script>
+
+<style scoped>
+.editor-view-layout {
+    min-height: 0;
+}
+
+.editor-view-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.editor-chat-resizer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    cursor: ew-resize;
+    background-color: transparent;
+    z-index: 10;
+    user-select: none;
+}
+
+.editor-chat-resizer:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.editor-chat-drawer {
+    position: relative;
+    will-change: width;
+    transition: width 0.2s ease;
+}
+
+.editor-chat-drawer.no-transition {
+    transition: none;
+}
+</style>

@@ -35,39 +35,22 @@ v-model:rail="isDrawerRail"
         :key="$route.fullPath"
         :theme="themePreference"
         @update:theme="themePreference = $event"
-        @chat="toggleSidebarChat"
         />
     </v-container>
 </v-main>
 
 <SearchDialog v-model="isSearchOpen" />
-
-<!-- Chat sidebar -->
-<v-navigation-drawer
-v-if="editorChatAvailable"
-v-model="isChatOpen"
-location="right"
-:width="chatWidth"
-:class="['chat-drawer', { 'no-transition': isResizing }, 'bg-background']"
->
-<div class="chat-resizer" @mousedown="startResize"></div>
-<LumosChat 
-class="h-100"
-:isVisible="isChatOpen"
-/>
-</v-navigation-drawer>
 </template>
 
 <script setup>
 import NavigationDrawer from '../components/navbar/NavDrawer.vue';
-import LumosChat from '../components/chat/LumosChat.vue';
 import SearchDialog from '../components/navbar/dialogs/SearchDialog.vue';
 
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';
 import { useFoldersStore } from '../stores/foldersStore';
 import LlmService from '../services/llmService';
 
-import { computed, watch, ref, onMounted, onBeforeUnmount } from 'vue';
+import { watch, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useTheme } from 'vuetify'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -76,10 +59,6 @@ const { api } = window;
 
 const isDrawerRail = ref(false);
 const isSearchOpen = ref(false);
-
-// State for chat sidebar
-const isChatOpen = ref(false);
-const chatWidth = ref(450);
 
 // State to manage fullscreen mode
 const isFullscreen = ref(false);
@@ -98,7 +77,7 @@ const llmService = new LlmService();
 // Get the current route
 const route = useRoute();
 const router = useRouter();
-const editorChatAvailable = computed(() => route.name === 'notes' && Boolean(foldersStore.activeNoteId));
+const TOGGLE_NOTE_CHAT_EVENT = 'lumos-toggle-note-chat'
 
 // Handler to update fullscreen state based on IPC messages
 const updateFullscreen = (event, isFs) => {
@@ -107,25 +86,6 @@ const updateFullscreen = (event, isFs) => {
 
 const toggleNavbar = () => {
     isDrawerRail.value = !isDrawerRail.value;
-}
-
-const openSidebarChat = () => {
-    isChatOpen.value = true
-}
-
-const closeSidebarChat = () => {
-    isChatOpen.value = false
-}
-
-const toggleSidebarChat = () => {
-    if (!editorChatAvailable.value) return
-
-    if (isChatOpen.value) {
-        closeSidebarChat()
-        return
-    }
-    
-    openSidebarChat()
 }
 
 const openSearch = () => {
@@ -149,35 +109,13 @@ const handleWindowKeyDown = (event) => {
         
         if (event.shiftKey) {
             isSearchOpen.value = false
-            isChatOpen.value = false
             router.push({ name: 'chat' })
             return
         }
         
-        toggleSidebarChat()
+        window.dispatchEvent(new Event(TOGGLE_NOTE_CHAT_EVENT))
     }
 }
-
-// Resize functionality
-const isResizing = ref(false);
-
-const startResize = (e) => {
-    isResizing.value = true;
-    document.addEventListener('mousemove', resize);
-    document.addEventListener('mouseup', stopResize);
-};
-
-const resize = (e) => {
-    if (!isResizing.value) return;
-    const newWidth = window.innerWidth - e.clientX;
-    chatWidth.value = Math.max(300, Math.min(800, newWidth));
-};
-
-const stopResize = () => {
-    isResizing.value = false;
-    document.removeEventListener('mousemove', resize);
-    document.removeEventListener('mouseup', stopResize);
-};
 
 // Media query to detect OS theme changes
 const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -225,9 +163,6 @@ onMounted(() => {
     aiStore.loadPreferences();
     fetchAllModels();
     
-    // Load chat width
-    chatWidth.value = parseInt(localStorage.getItem('chatWidth')) || 450;
-    
     window.addEventListener('keydown', handleWindowKeyDown);
 });
 
@@ -257,19 +192,7 @@ watch(() => route.name, (newRouteName) => {
         foldersStore.editorNoteCurrentFolderId = null;
         foldersStore.editorNoteFavorite = null;
         foldersStore.editorNoteDeletedId = null;
-        isChatOpen.value = false;
     }
-});
-
-watch(editorChatAvailable, (available) => {
-    if (!available) {
-        isChatOpen.value = false
-    }
-})
-
-// Watch for chat width changes and persist
-watch(chatWidth, (newVal) => {
-    localStorage.setItem('chatWidth', newVal);
 });
 </script>
 
@@ -295,10 +218,6 @@ watch(chatWidth, (newVal) => {
     padding: 0 12px;
 }
 
-.detail-chrome--chat-open {
-    right: var(--chat-drawer-width);
-}
-
 .detail-chrome--rail {
     left: 72px;
 }
@@ -321,33 +240,6 @@ watch(chatWidth, (newVal) => {
 .detail-content {
     min-height: 100vh;
     padding-top: 56px;
-}
-
-/* Chat resizer */
-.chat-resizer {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 5px;
-    cursor: ew-resize;
-    background-color: transparent;
-    z-index: 10;
-    user-select: none;
-}
-
-.chat-resizer:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-}
-
-.chat-drawer {
-    position: relative;
-    will-change: width;
-    transition: width 0.2s ease;
-}
-
-.chat-drawer.no-transition {
-    transition: none;
 }
 
 </style>
