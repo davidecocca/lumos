@@ -1,10 +1,12 @@
 import { ChatOllama } from "@langchain/ollama";
 import { ChatGroq } from "@langchain/groq";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';
 
 const ollamaBaseUrl = "http://localhost:11434";
 const ollamaListModelsUrl = `${ollamaBaseUrl}/api/tags`;
+const defaultChatHistoryCharacterLimit = 8000;
 
 const normalizeModelForProvider = (provider, model) => {
     if (provider !== 'ollama') return model;
@@ -13,6 +15,46 @@ const normalizeModelForProvider = (provider, model) => {
         return model.name;
     }
     return null;
+};
+
+export const createChatHistoryMessages = (messages = [], characterLimit = defaultChatHistoryCharacterLimit) => {
+    const normalizedMessages = messages
+        .map((message) => {
+            const content = String(message?.text || message?.content || '').trim();
+            if (!content || content === 'Generating...') return null;
+
+            if (message?.user === 'user' || message?.role === 'user') {
+                return {
+                    characterCount: content.length,
+                    message: new HumanMessage(content),
+                };
+            }
+
+            if (message?.user === 'bot' || message?.role === 'assistant') {
+                return {
+                    characterCount: content.length,
+                    message: new AIMessage(content),
+                };
+            }
+
+            return null;
+        })
+        .filter(Boolean);
+
+    const trimmedMessages = [];
+    let totalCharacters = 0;
+
+    for (let index = normalizedMessages.length - 1; index >= 0; index -= 1) {
+        const nextMessage = normalizedMessages[index];
+        if (trimmedMessages.length > 0 && totalCharacters + nextMessage.characterCount > characterLimit) {
+            break;
+        }
+
+        trimmedMessages.unshift(nextMessage.message);
+        totalCharacters += nextMessage.characterCount;
+    }
+
+    return trimmedMessages;
 };
 
 /**
@@ -28,6 +70,7 @@ class LlmService {
         
         this.prompt = ChatPromptTemplate.fromMessages([
             ["system", "You are a helpful assistant."],
+            new MessagesPlaceholder("history"),
             ["human", "{input}"],
         ]);
         
@@ -39,10 +82,11 @@ class LlmService {
     * @param {string} message - The user's message
     * @returns {Promise<object>} - The LLM's response
     */
-    async generate(message) {
+    async generate(message, history = []) {
         try {
             const response = await this.chain.invoke({
                 input: message,
+                history,
             });
             return response.content;
         } catch (error) {
@@ -56,10 +100,11 @@ class LlmService {
     * @param {string} message - The user's message
     * @returns {AsyncGenerator<string>} - Generator yielding response chunks
     */
-    async *stream(message) {
+    async *stream(message, history = []) {
         try {
             const stream = await this.chain.stream({
                 input: message,
+                history,
             });
             
             for await (const chunk of stream) {
@@ -78,6 +123,7 @@ class LlmService {
     setSystemPrompt(systemPrompt) {
         this.prompt = ChatPromptTemplate.fromMessages([
             ["system", systemPrompt],
+            new MessagesPlaceholder("history"),
             ["human", "{input}"],
         ]);
         this.chain = this.prompt.pipe(this.llm);

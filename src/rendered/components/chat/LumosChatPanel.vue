@@ -77,7 +77,7 @@ import ConfirmDeleteChatDialog from './dialogs/ConfirmDeleteChatDialog.vue'
 import { useChatConversations } from './composables/useChatConversations'
 import { useChatModelSelection } from './composables/useChatModelSelection'
 
-import { createLlmService } from '../../services/llmService'
+import { createChatHistoryMessages, createLlmService } from '../../services/llmService'
 import { useFoldersStore } from '../../stores/foldersStore';
 import chatRagPrompt from '../../prompts/chatRagPrompt';
 
@@ -196,6 +196,7 @@ const sendMessage = async () => {
         
         const userMessage = userInput.value
         const conversationId = await ensurePersistedConversation(userMessage)
+        const chatHistory = createChatHistoryMessages(messages.value)
         
         chatStore.addMessage(props.scope, {
             text: userMessage,
@@ -267,7 +268,7 @@ const sendMessage = async () => {
         }, activeNoteId.value)
         
         // Stream the response
-        const stream = await ragChatLLMService.stream(userMessage)
+        const stream = await ragChatLLMService.stream(userMessage, chatHistory)
         let accumulatedText = ''
         
         for await (const chunk of stream) {
