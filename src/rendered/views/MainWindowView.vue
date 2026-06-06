@@ -35,6 +35,7 @@ v-model:rail="isDrawerRail"
         :key="$route.fullPath"
         :theme="themePreference"
         @update:theme="themePreference = $event"
+        @chat="toggleSidebarChat"
         />
     </v-container>
 </v-main>

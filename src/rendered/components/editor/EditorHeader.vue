@@ -70,6 +70,7 @@ const props = defineProps({
 const emit = defineEmits([
     'update:noteActionMenu',
     'generate-ai',
+    'chat',
     'save',
     'toggle-favorite',
     'rename-note',
@@ -85,20 +86,26 @@ const toolbarButtons = computed(() => [
         action: () => emit('generate-ai'),
     },
     {
+        value: 'chat',
+        tooltip: 'Toggle note chat (⌘L)',
+        icon: 'ph-chat-circle',
+        action: () => emit('chat'),
+    },
+    {
         value: 'undo',
-        tooltip: 'Undo',
+        tooltip: 'Undo (⌘Z)',
         icon: 'ph-arrow-counter-clockwise',
         action: () => props.editor?.chain().focus().undo().run(),
     },
     {
         value: 'redo',
-        tooltip: 'Redo',
+        tooltip: 'Redo (⌘⇧Z)',
         icon: 'ph-arrow-clockwise',
         action: () => props.editor?.chain().focus().redo().run(),
     },
     {
         value: 'save',
-        tooltip: 'Save',
+        tooltip: 'Save (⌘S)',
         icon: 'ph-floppy-disk',
         action: () => emit('save'),
     },

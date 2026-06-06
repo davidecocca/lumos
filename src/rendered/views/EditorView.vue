@@ -5,6 +5,7 @@
         :breadcrumbs-items="breadcrumbsItems"
         :editor="editor"
         @generate-ai="generateWithAIDialog = !generateWithAIDialog"
+        @chat="openChatSidebar"
         @save="saveNoteManually"
         @toggle-favorite="toggleFavorite"
         @rename-note="openRenameNoteDialog"
@@ -118,6 +119,8 @@ const props = defineProps({
         mandatory: true,
     }
 })
+
+const emit = defineEmits(['chat'])
 
 const router = useRouter()
 
@@ -503,6 +506,10 @@ const toggleFavorite = async (noteId) => {
 
 const openMoveNoteDialog = (noteId, currentFolderId) => {
     store.openMoveNoteDialog(noteId, currentFolderId)
+}
+
+const openChatSidebar = () => {
+    emit('chat')
 }
 
 const syncCurrentNoteFolder = (newFolderId) => {
