@@ -69,7 +69,6 @@ const props = defineProps({
 
 const emit = defineEmits([
     'update:noteActionMenu',
-    'generate-ai',
     'chat',
     'save',
     'toggle-favorite',
@@ -79,12 +78,6 @@ const emit = defineEmits([
 ])
 
 const toolbarButtons = computed(() => [
-    {
-        value: 'generate-ai',
-        tooltip: 'Generate with AI',
-        icon: 'ph-lightbulb',
-        action: () => emit('generate-ai'),
-    },
     {
         value: 'chat',
         tooltip: 'Toggle note chat (⌘L)',

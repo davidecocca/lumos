@@ -6,7 +6,6 @@
                 :note="note"
                 :breadcrumbs-items="breadcrumbsItems"
                 :editor="editor"
-                @generate-ai="generateWithAIDialog = !generateWithAIDialog"
                 @chat="toggleSidebarChat"
                 @save="saveNoteManually"
                 @toggle-favorite="toggleFavorite"
@@ -48,7 +47,6 @@
                 v-model:rename-note-dialog="renameNoteDialog"
                 v-model:move-to-folder-dialog="moveToFolderDialog"
                 v-model:delete-note-dialog="deleteNoteDialog"
-                v-model:generateWithAIDialog="generateWithAIDialog"
                 v-model:editWithAIDialog="editWithAIDialog"
                 v-model:embed-youtube-dialog="embedYoutubeDialog"
                 :note="note"
@@ -88,6 +86,7 @@ import EditorSurface from '../components/editor/EditorSurface.vue'
 import LumosChat from '../components/chat/LumosChat.vue'
 import { useEditorAITransforms, supportedLanguages, supportedTones } from '../components/editor/composables/useEditorAITransforms'
 import TableSlashCommand, { OPEN_YOUTUBE_DIALOG_EVENT } from '../components/editor/slash-menu/slashCommand'
+import InlineGenerateAICommand from '../components/editor/inline-ai/inlineGenerateAICommand'
 
 import { createLlmService } from '../services/llmService';
 import getTopicPrompt from '../prompts/getTopicPrompt';
@@ -170,7 +169,6 @@ const confirmationDialogTitle = computed(() => store.confirmationDialogTitle)
 const confirmationDialogText = computed(() => store.confirmationDialogText)
 const confirmationDialogButtonColor = computed(() => store.confirmationDialogButtonColor)
 
-const generateWithAIDialog = ref(false)
 const editWithAIDialog = ref(false)
 const embedYoutubeDialog = ref(false)
 const editorNoteActionMenu = ref(false)
@@ -644,7 +642,7 @@ onMounted(async () => {
         }),
         Placeholder.configure({
             // Use a placeholder:
-            placeholder: 'Start writing or type "/" for commands',
+            placeholder: 'Press "space" for AI or "/" for commands',
         }),
         CodeBlockLowlight.configure({
             lowlight,
@@ -662,6 +660,7 @@ onMounted(async () => {
         TableRow,
         TableHeader,
         TableCell,
+        InlineGenerateAICommand,
         TableSlashCommand,
         FileHandler.configure({
             allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml'],
