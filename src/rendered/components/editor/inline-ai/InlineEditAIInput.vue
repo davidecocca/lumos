@@ -17,7 +17,7 @@
                 hide-details
                 autofocus
                 single-line
-                placeholder="Ask AI to write..."
+                placeholder="Tell AI how to edit..."
                 prepend-icon="ph-sparkle"
                 :disabled="loading"
                 @keydown="onKeydown"
@@ -28,7 +28,7 @@
                             <template #activator="{ props: tooltipProps }">
                                 <v-btn
                                     v-bind="tooltipProps"
-                                    :icon="hasPreview ? 'ph-arrows-counter-clockwise' : 'ph-arrow-up'"
+                                    :icon="hasPreview ? 'ph-arrows-clockwise' : 'ph-arrow-up'"
                                     size="small"
                                     :color="hasPreview ? '' : 'primary'"
                                     :variant="hasPreview ? 'text' : 'tonal'"
@@ -46,28 +46,28 @@
                                 <template #activator="{ props: tooltipProps }">
                                     <v-btn
                                         v-bind="tooltipProps"
-                                        variant="text"
                                         icon="ph-x"
                                         size="small"
                                         color="error"
-                                        :disabled="loading"
-                                        @click="cancel"
+                                        variant="text"
                                         rounded="xl"
+                                        :disabled="loading"
+                                        @click="reject"
                                     />
-                                    </template>
+                                </template>
                             </v-tooltip>
 
-                            <v-tooltip text="Insert at cursor" location="bottom">
+                            <v-tooltip text="Apply changes" location="bottom">
                                 <template #activator="{ props: tooltipProps }">
                                     <v-btn
                                         v-bind="tooltipProps"
-                                        variant="tonal"
                                         icon="ph-check"
-                                        size="small"
                                         color="primary"
-                                        :disabled="!generatedText || loading"
-                                        @click="insert"
+                                        variant="tonal"
+                                        size="small"
                                         rounded="xl"
+                                        :disabled="!editedText || loading"
+                                        @click="apply"
                                     />
                                 </template>
                             </v-tooltip>
@@ -75,85 +75,62 @@
                     </div>
                 </template>
             </v-text-field>
-
-            <template v-if="hasPreview">
-                <v-divider class="mt-1"/>
-                <div class="inline-ai-preview overflow-y-auto">
-                    <div
-                        class="inline-ai-preview-markdown"
-                        v-html="renderedPreview"
-                    />
-                </div>
-            </template>
         </v-card-text>
     </v-card>
 </template>
 
 <script setup>
 import { computed, nextTick, ref } from 'vue'
-import { marked, Renderer } from 'marked'
-
-const markdownRenderer = new Renderer()
-const escapeHtml = (value) => String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-
-markdownRenderer.html = ({ text }) => escapeHtml(text)
 
 const props = defineProps({
     loading: {
         type: Boolean,
         default: false,
     },
-    generatedText: {
+    editedText: {
         type: String,
         default: '',
     },
 })
 
-const emit = defineEmits(['submit', 'insert', 'cancel'])
+const emit = defineEmits(['submit', 'apply', 'reject'])
 
 const inputRef = ref(null)
 const prompt = ref('')
 
+const hasPreview = computed(() => props.loading || props.editedText.length > 0)
 const canSubmit = computed(() => prompt.value.trim().length > 0 && !props.loading)
-const hasPreview = computed(() => props.loading || props.generatedText.length > 0)
-const previewText = computed(() => props.generatedText || 'Generating...')
-const renderedPreview = computed(() => marked.parse(previewText.value, {
-    async: false,
-    breaks: true,
-    renderer: markdownRenderer,
-}))
 
 const submit = () => {
     const value = prompt.value.trim()
 
-    if (!value || props.loading || !canSubmit.value) {
+    if (!value || props.loading) {
         return
     }
 
     emit('submit', value)
 }
 
-const insert = () => {
-    if (!props.generatedText || props.loading) {
+const apply = () => {
+    if (!props.editedText || props.loading) {
         return
     }
 
-    emit('insert')
+    emit('apply')
 }
 
-const cancel = () => {
-    emit('cancel')
+const reject = () => {
+    if (props.loading) {
+        return
+    }
+
+    emit('reject')
 }
 
 const onKeydown = (event) => {
     if (event.key === 'Escape') {
         event.preventDefault()
-        cancel()
+        reject()
         return
     }
 
@@ -174,57 +151,10 @@ defineExpose({
 </script>
 
 <style scoped>
-.inline-ai-preview {
-    max-height: min(480px, 60vh);
-    padding: 4px;
-    margin-bottom: 8px;
-}
-
-.inline-ai-preview-markdown {
-    overflow-wrap: anywhere;
-    line-height: 1.65;
-}
-
-.inline-ai-preview-markdown :deep(p:last-child),
-.inline-ai-preview-markdown :deep(ul:last-child),
-.inline-ai-preview-markdown :deep(ol:last-child),
-.inline-ai-preview-markdown :deep(pre:last-child),
-.inline-ai-preview-markdown :deep(blockquote:last-child) {
-    margin-bottom: 0;
-}
-
-.inline-ai-preview-markdown :deep(p) {
-    margin-bottom: 0.75rem;
-}
-
-.inline-ai-preview-markdown :deep(ul),
-.inline-ai-preview-markdown :deep(ol) {
-    margin-bottom: 0.75rem;
-    padding-left: 1.25rem;
-}
-
-.inline-ai-preview-markdown :deep(pre) {
-    margin: 0.75rem 0;
-    padding: 0.75rem;
-    overflow-x: auto;
-    border-radius: 8px;
-    background: rgba(var(--v-theme-on-surface), 0.08);
-}
-
-.inline-ai-preview-markdown :deep(code) {
-    font-size: 0.9em;
-}
-
-.inline-ai-preview-markdown :deep(:not(pre) > code) {
-    padding: 0.1rem 0.3rem;
-    border-radius: 4px;
-    background: rgba(var(--v-theme-on-surface), 0.08);
-}
-
-.inline-ai-preview-markdown :deep(blockquote) {
-    margin: 0.75rem 0;
-    padding-left: 0.75rem;
-    border-left: 3px solid rgba(var(--v-theme-on-surface), 0.24);
-    color: rgba(var(--v-theme-on-surface), 0.78);
+.inline-edit-ai-status {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 </style>

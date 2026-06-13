@@ -43,6 +43,7 @@
         "@tiptap/starter-kit": "^3.0.0",
         "@tiptap/suggestion": "^3.0.0",
         "@tiptap/vue-3": "^3.0.0",
+        "diff": "^7.0.0",
         "javascript-time-ago": "^2.6.4",
         "lowlight": "^3.3.0",
         "marked": "^15.0.7",

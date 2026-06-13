@@ -44,6 +44,11 @@ const getCursorRect = (view, position) => {
     }
 }
 
+/**
+ * Trigger condition: the user presses plain space, the selection is empty,
+ * the current node is an empty paragraph, the cursor is at offset 0, and the editor is
+ * not inside a table or code block
+ */
 const isEmptyParagraphSpace = ({ editor, event, state }) => {
     if (
         !editor.isEditable

@@ -324,3 +324,19 @@
 .resize-cursor {
     cursor: col-resize;
 }
+
+.ProseMirror .lumos-inline-edit-ai-deletion {
+    color: rgba(var(--v-theme-on-surface), 0.5);
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+}
+
+.ProseMirror .lumos-inline-edit-ai-addition {
+    display: inline;
+    border-radius: 5px;
+    padding: 0.05rem 0.22rem;
+    background: rgba(var(--v-theme-primary), 0.14);
+    color: rgb(var(--v-theme-primary));
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+}

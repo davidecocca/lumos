@@ -15,6 +15,7 @@
             />
 
             <EditorBubbleMenu
+                v-if="!inlineAIEdit.active"
                 :editor="editor"
                 :should-show="shouldShowBubbleMenu"
                 :append-to="getBubbleMenuAppendTarget"
@@ -27,7 +28,7 @@
                 @remove-details="removeDetails"
                 @highlight="handleHighlight"
                 @text-color="handleTextColor"
-                @ai-edit="aiEdit"
+                @ai-edit="startInlineAIEdit"
                 @ai-fix-grammar="aiFixGrammar"
                 @ai-format-text="aiFormatText"
                 @ai-improve-writing="aiImproveWriting"
@@ -87,6 +88,7 @@ import LumosChat from '../components/chat/LumosChat.vue'
 import { useEditorAITransforms, supportedLanguages, supportedTones } from '../components/editor/composables/useEditorAITransforms'
 import TableSlashCommand, { OPEN_YOUTUBE_DIALOG_EVENT } from '../components/editor/slash-menu/slashCommand'
 import InlineGenerateAICommand from '../components/editor/inline-ai/inlineGenerateAICommand'
+import InlineEditAIDecorations from '../components/editor/inline-ai/inlineEditAIDecorations'
 
 import { createLlmService } from '../services/llmService';
 import getTopicPrompt from '../prompts/getTopicPrompt';
@@ -202,8 +204,10 @@ const chatWidth = ref(450)
 const isResizing = ref(false)
 
 const {
-    aiEdit,
     handleApply,
+    inlineAIEdit,
+    startInlineAIEdit,
+    rejectInlineAIEdit,
     aiFixGrammar,
     aiFormatText,
     aiImproveWriting,
@@ -342,6 +346,8 @@ const setEditorDocument = (contentJson) => {
     if (!editor.value) {
         return
     }
+
+    rejectInlineAIEdit()
     
     const nextContent = contentJson && contentJson !== '{}'
     ? contentJson
@@ -660,6 +666,7 @@ onMounted(async () => {
         TableRow,
         TableHeader,
         TableCell,
+        InlineEditAIDecorations,
         InlineGenerateAICommand,
         TableSlashCommand,
         FileHandler.configure({
