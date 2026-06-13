@@ -28,13 +28,6 @@
             @delete-note="emit('delete-note', $event)"
         />
 
-        <EditAIDialog
-            :model-value="editWithAIDialog"
-            :selectedText="selectedText"
-            @update:model-value="emit('update:editWithAIDialog', $event)"
-            @apply="emit('apply-ai-edit', $event)"
-        />
-
         <EmbedYoutubeDialog
             :model-value="embedYoutubeDialog"
             @update:model-value="emit('update:embedYoutubeDialog', $event)"
@@ -47,7 +40,6 @@
 import RenameNoteDialog from '../navbar/dialogs/RenameNoteDialog.vue'
 import MoveToFolderDialog from '../navbar/dialogs/MoveToFolderDialog.vue'
 import ConfirmDeleteNoteDialog from '../navbar/dialogs/ConfirmDeleteNoteDialog.vue'
-import EditAIDialog from './dialogs/EditAIDialog.vue'
 import EmbedYoutubeDialog from './dialogs/EmbedYoutubeDialog.vue'
 
 defineProps({
@@ -71,17 +63,9 @@ defineProps({
         type: Boolean,
         default: false,
     },
-    editWithAIDialog: {
-        type: Boolean,
-        default: false,
-    },
     embedYoutubeDialog: {
         type: Boolean,
         default: false,
-    },
-    selectedText: {
-        type: String,
-        default: '',
     },
     confirmationDialogTitle: {
         type: String,
@@ -101,12 +85,10 @@ const emit = defineEmits([
     'update:renameNoteDialog',
     'update:moveToFolderDialog',
     'update:deleteNoteDialog',
-    'update:editWithAIDialog',
     'update:embedYoutubeDialog',
     'rename-note',
     'move-note',
     'delete-note',
-    'apply-ai-edit',
     'embed-youtube',
 ])
 

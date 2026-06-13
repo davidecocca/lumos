@@ -48,18 +48,15 @@
                 v-model:rename-note-dialog="renameNoteDialog"
                 v-model:move-to-folder-dialog="moveToFolderDialog"
                 v-model:delete-note-dialog="deleteNoteDialog"
-                v-model:editWithAIDialog="editWithAIDialog"
                 v-model:embed-youtube-dialog="embedYoutubeDialog"
                 :note="note"
                 :folders="store.folders"
-                :selected-text="selectedText"
                 :confirmation-dialog-title="confirmationDialogTitle"
                 :confirmation-dialog-text="confirmationDialogText"
                 :confirmation-dialog-button-color="confirmationDialogButtonColor"
                 @rename-note="handleRenameNote"
                 @move-note="handleMoveNote"
                 @delete-note="handleDeleteNote"
-                @apply-ai-edit="handleApply"
                 @embed-youtube="handleyoutube"
             />
         </v-main>
@@ -171,14 +168,10 @@ const confirmationDialogTitle = computed(() => store.confirmationDialogTitle)
 const confirmationDialogText = computed(() => store.confirmationDialogText)
 const confirmationDialogButtonColor = computed(() => store.confirmationDialogButtonColor)
 
-const editWithAIDialog = ref(false)
 const embedYoutubeDialog = ref(false)
 const editorNoteActionMenu = ref(false)
 
 const note = ref(null)
-const selectedText = ref('')
-const selectionFrom = ref(0)
-const selectionTo = ref(0)
 
 const shouldShowBubbleMenu = ({ state, from, to }) => (
 isTextSelection(state.selection)
@@ -204,7 +197,6 @@ const chatWidth = ref(450)
 const isResizing = ref(false)
 
 const {
-    handleApply,
     inlineAIEdit,
     startInlineAIEdit,
     rejectInlineAIEdit,
@@ -219,10 +211,6 @@ const {
 } = useEditorAITransforms({
     editor,
     isLoading,
-    selectedText,
-    selectionFrom,
-    selectionTo,
-    editWithAIDialog,
 })
 
 const highlightColors = computed(() => {

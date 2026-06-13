@@ -53,10 +53,6 @@ const markdownToEditorHtml = (markdown) => marked.parse(markdown, {
 export function useEditorAITransforms({
     editor,
     isLoading,
-    selectedText,
-    selectionFrom,
-    selectionTo,
-    editWithAIDialog,
 }) {
     let fixGrammarLLMService = null
     let formatTextLLMService = null
@@ -329,16 +325,6 @@ export function useEditorAITransforms({
         }
     }
 
-    const aiEdit = () => {
-        const context = getSelectionContext('\n')
-        if (!context) return
-
-        selectionFrom.value = context.from
-        selectionTo.value = context.to
-        selectedText.value = context.text
-        editWithAIDialog.value = true
-    }
-
     const startInlineAIEdit = () => {
         const context = getSelectionContext('\n')
         if (!context || !context.isTextSelected) return
@@ -461,20 +447,6 @@ export function useEditorAITransforms({
         rejectInlineAIEdit()
     }
 
-    const handleApply = (aiText) => {
-        if (!editor.value) {
-            console.error('Editor not ready')
-            return
-        }
-
-        editor.value
-            .chain()
-            .focus()
-            .setTextSelection({ from: selectionFrom.value, to: selectionTo.value })
-            .insertContent(aiText)
-            .run()
-    }
-
     watch(editor, (currentEditor, previousEditor, onCleanup) => {
         if (!currentEditor) {
             return
@@ -503,8 +475,6 @@ export function useEditorAITransforms({
     }, { immediate: true })
 
     return {
-        aiEdit,
-        handleApply,
         inlineAIEdit,
         startInlineAIEdit,
         submitInlineAIEdit,
