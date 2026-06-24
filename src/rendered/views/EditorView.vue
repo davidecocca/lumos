@@ -17,6 +17,7 @@
             <EditorBubbleMenu
                 v-if="!inlineAIEdit.active"
                 :editor="editor"
+                :plugin-key="EDITOR_BUBBLE_MENU_PLUGIN_KEY"
                 :should-show="shouldShowBubbleMenu"
                 :append-to="getBubbleMenuAppendTarget"
                 :can-remove-details="canRemoveDetails"
@@ -117,6 +118,7 @@ const IMAGE_MUTATION_EVENT = 'lumos-note-image-mutation'
 const VIDEO_MUTATION_EVENT = 'lumos-note-video-mutation'
 const TOGGLE_NOTE_CHAT_EVENT = 'lumos-toggle-note-chat'
 const DETAILS_OPEN_CLASS_NAME = 'is-open'
+const EDITOR_BUBBLE_MENU_PLUGIN_KEY = 'editorBubbleMenu'
 const EMPTY_EDITOR_DOCUMENT = {
     type: 'doc',
     content: [
@@ -173,10 +175,25 @@ const editorNoteActionMenu = ref(false)
 
 const note = ref(null)
 
-const shouldShowBubbleMenu = ({ state, from, to }) => (
-isTextSelection(state.selection)
-&& !state.selection.empty
-&& from !== to
+const isAllSelection = (selection) => selection.toJSON?.().type === 'all'
+
+const shouldShowBubbleMenu = ({ state, from, to }) => {
+    if (isTextSelection(state.selection)) {
+        return !state.selection.empty && from !== to
+    }
+
+    if (isAllSelection(state.selection)) {
+        return Boolean(state.doc.textBetween(from, to).trim())
+    }
+
+    return false
+}
+
+const shouldDismissBubbleMenu = (event) => (
+    event.key === 'Escape'
+    && editor.value
+    && !editor.value.state.selection.empty
+    && editor.value.isFocused
 )
 
 const currentFolderName = computed(() => {
@@ -218,10 +235,10 @@ const highlightColors = computed(() => {
 
     return [
         { name: 'Default', value: 'default', displayedColor: isDark ? '#212121' : '#FFFFFF' },
-        { name: 'Red', value: 'var(--lumos-editor-highlight-red)', displayedColor: isDark ? '#E53935' : '#F8BBD0' },
         { name: 'Blue', value: 'var(--lumos-editor-highlight-blue)', displayedColor: isDark ? '#039BE5' : '#C5CAE9' },
+        { name: 'Red', value: 'var(--lumos-editor-highlight-red)', displayedColor: isDark ? '#E53935' : '#F8BBD0' },
         { name: 'Green', value: 'var(--lumos-editor-highlight-green)', displayedColor: isDark ? '#43A047' : '#B2DFDB' },
-        { name: 'Yellow', value: 'var(--lumos-editor-highlight-yellow)', displayedColor: isDark ? '#F4511E' : '#FFECB3' },
+        { name: 'Yellow', value: 'var(--lumos-editor-highlight-yellow)', displayedColor: isDark ? '#FFC107' : '#FFECB3' },
     ]
 })
 
@@ -233,7 +250,7 @@ const textColors = computed(() => {
         { name: 'Blue', value: 'var(--lumos-editor-text-blue)', displayedColor: isDark ? '#9FA8DA' : '#0D47A1' },
         { name: 'Red', value: 'var(--lumos-editor-text-red)', displayedColor: isDark ? '#F48FB1' : '#B71C1C' },
         { name: 'Green', value: 'var(--lumos-editor-text-green)', displayedColor: isDark ? '#80CBC4' : '#1B5E20' },
-        { name: 'Orange', value: 'var(--lumos-editor-text-orange)', displayedColor: isDark ? '#FFCC80' : '#E65100' },
+        { name: 'Yellow', value: 'var(--lumos-editor-text-yellow)', displayedColor: isDark ? '#FFCC80' : '#E65100' },
     ]
 })
 
@@ -493,6 +510,14 @@ const handleKeyDown = (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
         event.preventDefault()
         saveNoteManually()
+        return
+    }
+
+    if (shouldDismissBubbleMenu(event)) {
+        event.preventDefault()
+        editor.value.view.dispatch(
+            editor.value.state.tr.setMeta(EDITOR_BUBBLE_MENU_PLUGIN_KEY, 'hide')
+        )
     }
 }
 
@@ -682,7 +707,7 @@ onMounted(async () => {
     
     await nextTick()
     await getNote(props.noteId)
-    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', handleKeyDown, true)
     window.addEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
     window.addEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
     window.addEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openyoutubeDialog)
@@ -740,7 +765,7 @@ onBeforeUnmount(() => {
     if (editor.value) {
         editor.value.destroy()
     }
-    window.removeEventListener('keydown', handleKeyDown)
+    window.removeEventListener('keydown', handleKeyDown, true)
     window.removeEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
     window.removeEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
     window.removeEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openyoutubeDialog)

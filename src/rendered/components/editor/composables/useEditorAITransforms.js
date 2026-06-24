@@ -19,7 +19,7 @@ export const supportedTones = [
     { key: 'professional', icon: 'ph-briefcase', label: 'Professional' },
     { key: 'friendly', icon: 'ph-smiley', label: 'Friendly' },
     { key: 'empathetic', icon: 'ph-handshake', label: 'Empathetic' },
-    { key: 'persuasive', icon: 'ph-sparkle', label: 'Persuasive' },
+    { key: 'persuasive', icon: 'ph-megaphone', label: 'Persuasive' },
     { key: 'casual', icon: 'ph-smiley-wink', label: 'Casual' },
 ]
 

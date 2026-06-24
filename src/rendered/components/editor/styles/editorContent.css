@@ -14,7 +14,7 @@
     --lumos-editor-text-red: #b71c1c;
     --lumos-editor-text-blue: #0d47a1;
     --lumos-editor-text-green: #1b5e20;
-    --lumos-editor-text-orange: #e65100;
+    --lumos-editor-text-yellow: #e65100;
     padding: 16px 36px;
     height: calc(100vh - 230px);
     overflow-y: auto;
@@ -28,7 +28,7 @@
     --lumos-editor-text-red: #f48fb1;
     --lumos-editor-text-blue: #9fa8da;
     --lumos-editor-text-green: #80cbc4;
-    --lumos-editor-text-orange: #ffcc80;
+    --lumos-editor-text-yellow: #ffcc80;
 }
 
 .ProseMirror:focus {

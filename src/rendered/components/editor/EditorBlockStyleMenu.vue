@@ -1,45 +1,29 @@
 <template>
-    <v-menu min-width="200px" width="200px">
-        <template v-slot:activator="{ props }">
-            <v-btn
-                v-bind="props"
-                class="w-100 bubble-menu-btn"
-                variant="text"
-                prepend-icon="ph-caret-down"
-                rounded="lg"
-                density="compact"
-            >
-                Style
-            </v-btn>
-        </template>
-
-        <v-list density="compact" nav rounded="lg" class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark">
-            <v-list-subheader>Turn into</v-list-subheader>
-            <v-list-item
-                v-for="item in blockItems"
-                :key="item.label"
-                @click="item.action"
-                rounded="lg"
-            >
-                <template v-slot:prepend>
-                    <v-icon :icon="item.icon"></v-icon>
-                </template>
-                <v-list-item-title>{{ item.label }}</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="emit('insert-details')" rounded="lg">
-                <template v-slot:prepend>
-                    <v-icon icon="ph-caret-right"></v-icon>
-                </template>
-                <v-list-item-title>Details</v-list-item-title>
-            </v-list-item>
-            <v-list-item v-if="canRemoveDetails()" @click="emit('remove-details')" rounded="lg">
-                <template v-slot:prepend>
-                    <v-icon icon="ph-minus-circle"></v-icon>
-                </template>
-                <v-list-item-title>Remove details</v-list-item-title>
-            </v-list-item>
-        </v-list>
-    </v-menu>
+    <v-list density="compact" nav rounded="lg" class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark">
+        <v-list-item
+            v-for="item in blockItems"
+            :key="item.label"
+            @click="item.action"
+            rounded="lg"
+        >
+            <template v-slot:prepend>
+                <v-icon :icon="item.icon"></v-icon>
+            </template>
+            <v-list-item-title>{{ item.label }}</v-list-item-title>
+        </v-list-item>
+        <v-list-item @click="emit('insert-details')" rounded="lg">
+            <template v-slot:prepend>
+                <v-icon icon="ph-caret-right"></v-icon>
+            </template>
+            <v-list-item-title>Details</v-list-item-title>
+        </v-list-item>
+        <v-list-item v-if="canRemoveDetails()" @click="emit('remove-details')" rounded="lg">
+            <template v-slot:prepend>
+                <v-icon icon="ph-minus-circle"></v-icon>
+            </template>
+            <v-list-item-title>Remove details</v-list-item-title>
+        </v-list-item>
+    </v-list>
 </template>
 
 <script setup>
@@ -106,10 +90,3 @@ const blockItems = computed(() => [
     },
 ])
 </script>
-
-<style scoped>
-.bubble-menu-btn {
-    height: 36px;
-    min-height: 36px;
-}
-</style>
