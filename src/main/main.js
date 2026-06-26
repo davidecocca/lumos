@@ -35,14 +35,13 @@ const {
 
 // Create the BrowserWindow
 function createWindow() {
+    const iconPath = path.join(__dirname, '..', 'rendered', 'assets', 'app_logo.png');
     const win = new BrowserWindow({
         width: 800,
         height: 600,
-        // Remove the default titlebar
-        titleBarStyle: 'hidden',
-        trafficLightPosition: { x: 10, y: 16 },
-        // Expose window controlls in Windows/Linux
-        ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
+        icon: iconPath,
+        // Hide titlebar only on macOS
+        ...(process.platform === 'darwin' ? { titleBarStyle: 'hidden', trafficLightPosition: { x: 10, y: 16 } } : {}),
         webPreferences: {
             // Use a preload script for secure IPC access from renderer
             preload: path.join(__dirname, 'preload.js'),
@@ -334,10 +333,8 @@ function setupIPC() {
     });
 }
 
-// Set the app name for macOS
-if (process.platform === 'darwin') {
-    app.setName('Lumos');
-}
+// Set the app name
+app.setName('Lumos');
 
 // App lifecycle
 app.whenReady().then(() => {

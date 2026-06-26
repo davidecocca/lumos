@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+    platform: process.platform,
     // Folders
     createFolder: (name) => ipcRenderer.invoke('create-folder', name),
     getFolderContent: (id) => ipcRenderer.invoke('get-folder-content', id),

@@ -14,7 +14,7 @@
                 icon="ph-sidebar-simple"
                 class="no-drag"
                 density="comfortable"
-                style="margin-left: 72px;"
+                :style="{ marginLeft: api.platform === 'darwin' ? '72px' : '6px' }"
                 @click.stop="toggleNavbar"
                 ></v-app-bar-nav-icon>
             </template>
