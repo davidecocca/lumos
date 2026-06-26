@@ -2,6 +2,10 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
     platform: process.platform,
+    windowMinimize: () => ipcRenderer.send('window-minimize'),
+    windowMaximize: () => ipcRenderer.send('window-maximize'),
+    windowClose: () => ipcRenderer.send('window-close'),
+    openDevTools: () => ipcRenderer.send('open-devtools'),
     // Folders
     createFolder: (name) => ipcRenderer.invoke('create-folder', name),
     getFolderContent: (id) => ipcRenderer.invoke('get-folder-content', id),

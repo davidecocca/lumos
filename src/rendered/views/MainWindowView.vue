@@ -20,7 +20,57 @@
             </template>
         </v-tooltip>
     </template>
-</v-app-bar>
+
+    <v-spacer />
+
+    <div v-if="api.platform !== 'darwin'" class="no-drag mr-4">
+        <v-row class="ga-4">
+            <v-menu location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn
+                        v-bind="props"
+                        icon="ph-list"
+                        variant="text"
+                        density="confortable"
+                        size="small"
+                    ></v-btn>
+                </template>
+                <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
+                    <v-list-item
+                        title="Toogle Developer Tools"
+                        value="devtools"
+                        @click="api.openDevTools"
+                        rounded="lg"
+                    ></v-list-item>
+                </v-list>
+            </v-menu>
+
+            <v-divider vertical></v-divider>
+
+            <v-btn
+                variant="text"
+                icon="ph-minus"
+                density="confortable"
+                size="small"
+                @click="api.windowMinimize"
+            ></v-btn>
+            <v-btn
+                variant="text"
+                icon="ph-corners-out"
+                density="confortable"
+                size="small"
+                @click="api.windowMaximize"
+            ></v-btn>
+            <v-btn
+                variant="text"
+                icon="ph-x"
+                density="confortable"
+                size="small"
+                @click="api.windowClose"
+            ></v-btn>
+        </v-row>
+    </div>
+    </v-app-bar>
 
 <!-- Navigation drawer -->
 <NavigationDrawer 

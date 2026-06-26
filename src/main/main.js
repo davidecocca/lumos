@@ -40,8 +40,8 @@ function createWindow() {
         width: 800,
         height: 600,
         icon: iconPath,
-        // Hide titlebar only on macOS
-        ...(process.platform === 'darwin' ? { titleBarStyle: 'hidden', trafficLightPosition: { x: 10, y: 16 } } : {}),
+        titleBarStyle: 'hidden',
+        ...(process.platform === 'darwin' ? { trafficLightPosition: { x: 10, y: 16 } } : {}),
         webPreferences: {
             // Use a preload script for secure IPC access from renderer
             preload: path.join(__dirname, 'preload.js'),
@@ -82,6 +82,26 @@ function createWindow() {
 
 // Set up IPC handlers for folders and notes
 function setupIPC() {
+    // Window controls
+    ipcMain.on('window-minimize', () => {
+        BrowserWindow.getFocusedWindow()?.minimize();
+    });
+    ipcMain.on('window-maximize', () => {
+        const win = BrowserWindow.getFocusedWindow();
+        if (!win) return;
+        if (win.isMaximized()) {
+            win.unmaximize();
+        } else {
+            win.maximize();
+        }
+    });
+    ipcMain.on('window-close', () => {
+        BrowserWindow.getFocusedWindow()?.close();
+    });
+    ipcMain.on('open-devtools', () => {
+        BrowserWindow.getFocusedWindow()?.webContents.openDevTools();
+    });
+
     // --- Folder IPC ---
     ipcMain.handle('create-folder', async (event, name) => {
         return new Promise((resolve, reject) => {
