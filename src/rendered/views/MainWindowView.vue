@@ -1,88 +1,26 @@
 <template>
-    <!--  App bar with draggable area -->
-    <v-app-bar
-    elevation="0"
-    density="compact"
-    height="52"
-    class="drag border-b"
-    color="background"
-    >
-    <template v-slot:prepend>
-        <div class="app-bar-controls no-drag">
-            <v-tooltip text="Toggle sidebar" location="right">
-                <template v-slot:activator="{ props }">
-                    <v-app-bar-nav-icon
-                    v-bind="props"
-                    icon="ph-sidebar-simple"
-                    class="no-drag"
-                    density="comfortable"
-                    :style="{ marginLeft: api.platform === 'darwin' ? '72px' : '6px' }"
-                    @click.stop="toggleNavbar"
-                    ></v-app-bar-nav-icon>
-                </template>
-            </v-tooltip>
-
-            <AppMenuBar
-                v-if="api.platform !== 'darwin'"
-                class="ml-2 mr-2"
-                @open-search="openSearch"
-                @toggle-sidebar="toggleNavbar"
+    <!-- Navigation drawer -->
+    <NavigationDrawer
+    v-model:rail="isDrawerRail"
+    @open-search="openSearch"
+    />
+    
+    <!-- Main content area -->
+    <v-main class="detail-pane">
+        <v-container fluid>
+            <router-view
+            :key="$route.fullPath"
+            :theme="themePreference"
+            @update:theme="themePreference = $event"
             />
-        </div>
-    </template>
-
-    <v-spacer />
-
-    <div v-if="api.platform !== 'darwin'" class="no-drag mr-4">
-        <v-row class="ga-4">
-            <v-btn
-                variant="text"
-                icon="ph-minus"
-                density="comfortable"
-                size="small"
-                @click="api.windowMinimize"
-            ></v-btn>
-            <v-btn
-                variant="text"
-                icon="ph-cards"
-                density="comfortable"
-                size="small"
-                @click="api.windowMaximize"
-            ></v-btn>
-            <v-btn
-                variant="text"
-                icon="ph-x"
-                density="comfortable"
-                size="small"
-                @click="api.windowClose"
-            ></v-btn>
-        </v-row>
-    </div>
-    </v-app-bar>
-
-<!-- Navigation drawer -->
-<NavigationDrawer 
-v-model:rail="isDrawerRail"
-@open-search="openSearch"
-/>
-
-<!-- Main content area -->
-<v-main class="detail-pane">
-    <v-container fluid>
-        <router-view
-        :key="$route.fullPath"
-        :theme="themePreference"
-        @update:theme="themePreference = $event"
-        />
-    </v-container>
-</v-main>
-
-<SearchDialog v-model="isSearchOpen" />
+        </v-container>
+    </v-main>
+    
+    <SearchDialog v-model="isSearchOpen" />
 </template>
 
 <script setup>
 import NavigationDrawer from '../components/navbar/NavDrawer.vue';
-import AppMenuBar from '../components/navbar/AppMenuBar.vue';
 import SearchDialog from '../components/navbar/dialogs/SearchDialog.vue';
 
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';
@@ -140,6 +78,12 @@ const handleWindowKeyDown = (event) => {
     if (normalizedKey === 'k') {
         event.preventDefault()
         isSearchOpen.value = !isSearchOpen.value
+        return
+    }
+    
+    if (normalizedKey === '\\') {
+        event.preventDefault()
+        toggleNavbar()
         return
     }
     

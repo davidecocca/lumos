@@ -16,6 +16,7 @@
                     :color="avatarColor || iconColor"
                     :size="avatarSize"
                     :variant="avatarVariant"
+                    rounded="xl"
                     class="mr-3"
                 >
                     <v-icon :size="iconSize" :color="avatarColor ? iconColor : undefined">

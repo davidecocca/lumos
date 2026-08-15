@@ -5,7 +5,7 @@
     nav
     density="compact"
     >
-    <v-list-subheader>Favorites</v-list-subheader>
+    <v-list-subheader class="text-title-small">Favorites</v-list-subheader>
     
     <v-list-item
     v-for="(note, k) in favoriteNotes"
@@ -37,31 +37,32 @@
 </v-list-item>
 </v-list>
 
-<v-divider v-if="favoriteNotes.length > 0" />
-
 <!-- Folders and notes -->
 <v-list
 nav
 density="compact"
 indent="16px"
 >
-<v-list-item class="pr-1">
-    <v-list-subheader class="pa-0">Notes</v-list-subheader>
+<v-list-item class="pe-0">
+    <v-list-subheader class="pa-0 text-title-small">Notes</v-list-subheader>
     
     <template v-slot:append>
-        <v-tooltip text="New folder" location="top">
-            <template v-slot:activator="{ props }">
-                <v-btn
-                v-bind="props"
-                icon="ph-folder-simple-plus"
-                variant="text"
-                size="small"
-                density="compact"
-                rounded="xl"
-                @click="store.openCreateFolderDialog()"
-                />
-            </template>
-        </v-tooltip>
+        <div class="d-flex align-center">
+            <v-tooltip text="New folder" location="top">
+                <template v-slot:activator="{ props }">
+                    <v-btn
+                    v-bind="props"
+                    icon="ph-folder-simple-plus"
+                    variant="text"
+                    size="default"
+                    density="compact"
+                    color="surface-variant"
+                    rounded
+                    @click="store.openCreateFolderDialog()"
+                    />
+                </template>
+            </v-tooltip>
+        </div>
     </template>
 </v-list-item>
 

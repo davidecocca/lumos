@@ -11,11 +11,10 @@
             <PageRouter
             :rail="railModel"
             @open-search="emit('open-search')"
+            @toggle-sidebar="toggleRail"
             />
         </div>
-        
-        <v-divider class="flex-shrink-0"></v-divider>
-        
+
         <div class="flex-grow-1 overflow-y-auto">
             <v-slide-x-transition mode="out-in">
                 <div v-if="!railModel" key="folders">
@@ -52,6 +51,10 @@ const railModel = computed({
     get: () => props.rail,
     set: (value) => emit('update:rail', value)
 })
+
+const toggleRail = () => {
+    railModel.value = !railModel.value
+}
 
 </script>
 

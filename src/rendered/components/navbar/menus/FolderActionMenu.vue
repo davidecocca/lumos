@@ -1,7 +1,7 @@
 <template>
     <div
     v-show="visible"
-    class="d-flex align-center ga-2 mr-1"
+    class="d-flex align-center ga-1 mr-1"
     >
     <v-tooltip text="New note" location="top">
         <template v-slot:activator="{ props }">
@@ -12,6 +12,7 @@
             size="small"
             title="New note"
             density="compact"
+            rounded
             @click.stop="store.openCreateNoteDialog(folder.id)"
             />
         </template>
@@ -29,6 +30,7 @@
                 size="small"
                 variant="text"
                 density="compact"
+                rounded
                 />
             </template>
         </v-tooltip>

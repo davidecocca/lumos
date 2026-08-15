@@ -40,8 +40,6 @@ function createWindow() {
         width: 800,
         height: 600,
         icon: iconPath,
-        titleBarStyle: 'hidden',
-        ...(process.platform === 'darwin' ? { trafficLightPosition: { x: 10, y: 16 } } : {}),
         webPreferences: {
             // Use a preload script for secure IPC access from renderer
             preload: path.join(__dirname, 'preload.js'),
