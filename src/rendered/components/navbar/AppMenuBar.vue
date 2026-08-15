@@ -232,6 +232,10 @@ onBeforeUnmount(() => {
     white-space: nowrap;
 }
 
+.app-menu-bar {
+    height: 100%;
+}
+
 .menu-list {
     border: 1px solid rgba(0, 0, 0, 0.08);
 }

@@ -7,25 +7,27 @@
     color="background"
     >
     <template v-slot:prepend>
-        <v-tooltip text="Toggle sidebar" location="right">
-            <template v-slot:activator="{ props }">
-                <v-app-bar-nav-icon
-                v-bind="props"
-                icon="ph-sidebar-simple"
-                class="no-drag"
-                density="comfortable"
-                :style="{ marginLeft: api.platform === 'darwin' ? '72px' : '6px' }"
-                @click.stop="toggleNavbar"
-                ></v-app-bar-nav-icon>
-            </template>
-        </v-tooltip>
+        <div class="app-bar-controls no-drag">
+            <v-tooltip text="Toggle sidebar" location="right">
+                <template v-slot:activator="{ props }">
+                    <v-app-bar-nav-icon
+                    v-bind="props"
+                    icon="ph-sidebar-simple"
+                    class="no-drag"
+                    density="comfortable"
+                    :style="{ marginLeft: api.platform === 'darwin' ? '72px' : '6px' }"
+                    @click.stop="toggleNavbar"
+                    ></v-app-bar-nav-icon>
+                </template>
+            </v-tooltip>
 
-        <AppMenuBar
-            v-if="api.platform !== 'darwin'"
-            class="ml-2 mr-2"
-            @open-search="openSearch"
-            @toggle-sidebar="toggleNavbar"
-        />
+            <AppMenuBar
+                v-if="api.platform !== 'darwin'"
+                class="ml-2 mr-2"
+                @open-search="openSearch"
+                @toggle-sidebar="toggleNavbar"
+            />
+        </div>
     </template>
 
     <v-spacer />
@@ -237,6 +239,13 @@ watch(() => route.name, (newRouteName) => {
 .drag {
     -webkit-app-region: drag;
 }
+
+.app-bar-controls {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
 .no-drag {
     -webkit-app-region: no-drag;
 }
