@@ -33,6 +33,81 @@ const {
     deleteChatConversation,
 } = require('./database/crud.js');
 
+const sendMenuAction = (window, action) => {
+    window?.webContents.send('menu-action', action);
+};
+
+let menuState = {
+    canCreateNote: false,
+    hasOpenNote: false,
+};
+
+function createApplicationMenu() {
+    const isDev = process.env.NODE_ENV === 'development';
+    const template = [
+        {
+            label: 'File',
+            submenu: [
+                { label: 'New Note', accelerator: 'CommandOrControl+N', enabled: menuState.canCreateNote, click: (_, window) => sendMenuAction(window, 'new-note') },
+                { label: 'New Folder', accelerator: 'CommandOrControl+Shift+N', click: (_, window) => sendMenuAction(window, 'new-folder') },
+                { type: 'separator' },
+                { label: 'Save Current Note', accelerator: 'CommandOrControl+S', enabled: menuState.hasOpenNote, click: (_, window) => sendMenuAction(window, 'save-note') },
+                { type: 'separator' },
+                { role: 'close' },
+            ],
+        },
+        {
+            label: 'Edit',
+            submenu: [
+                { role: 'undo' },
+                { role: 'redo' },
+                { type: 'separator' },
+                { role: 'cut' },
+                { role: 'copy' },
+                { role: 'paste' },
+                { role: 'selectAll' },
+                { type: 'separator' },
+                { label: 'Find in Notes', accelerator: 'CommandOrControl+K', click: (_, window) => sendMenuAction(window, 'open-search') },
+            ],
+        },
+        {
+            label: 'View',
+            submenu: [
+                { label: 'Toggle Sidebar', accelerator: 'CommandOrControl+\\', click: (_, window) => sendMenuAction(window, 'toggle-sidebar') },
+                { label: 'Toggle Note Chat', accelerator: 'CommandOrControl+L', enabled: menuState.hasOpenNote, click: (_, window) => sendMenuAction(window, 'toggle-note-chat') },
+                { label: 'Open Chat', accelerator: 'CommandOrControl+Shift+L', click: (_, window) => sendMenuAction(window, 'open-chat') },
+                { type: 'separator' },
+                { role: 'togglefullscreen' },
+                ...(isDev ? [
+                    { type: 'separator' },
+                    { label: 'Toggle Developer Tools', accelerator: 'CommandOrControl+Shift+I', click: (_, window) => window?.webContents.toggleDevTools() },
+                ] : []),
+            ],
+        },
+        {
+            label: 'Help',
+            submenu: [
+                { label: 'About Lumos', click: (_, window) => sendMenuAction(window, 'about') },
+            ],
+        },
+    ];
+
+    if (process.platform === 'darwin') {
+        template.unshift({
+            label: app.name,
+            submenu: [
+                { role: 'hide' },
+                { role: 'hideOthers' },
+                { role: 'unhide' },
+                { type: 'separator' },
+                { role: 'quit' },
+            ],
+        });
+    }
+
+    return Menu.buildFromTemplate(template);
+}
+
 // Create the BrowserWindow
 function createWindow() {
     const iconPath = path.join(__dirname, '..', 'rendered', 'assets', 'app_logo.png');
@@ -103,6 +178,13 @@ function setupIPC() {
         const win = BrowserWindow.getFocusedWindow();
         if (!win) return;
         win.setFullScreen(!win.isFullScreen());
+    });
+    ipcMain.on('update-menu-state', (_, state) => {
+        menuState = {
+            canCreateNote: Boolean(state?.canCreateNote),
+            hasOpenNote: Boolean(state?.hasOpenNote),
+        };
+        Menu.setApplicationMenu(createApplicationMenu());
     });
     ipcMain.handle('get-app-info', () => ({
         name: app.getName(),
@@ -368,6 +450,8 @@ app.setName('Lumos');
 
 // App lifecycle
 app.whenReady().then(() => {
+    Menu.setApplicationMenu(createApplicationMenu());
+
     // Only on macOS
     if (process.platform === 'darwin') {
         // Set dock icon

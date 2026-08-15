@@ -17,11 +17,13 @@
     </v-main>
     
     <SearchDialog v-model="isSearchOpen" />
+    <AboutDialog v-model="isAboutOpen" />
 </template>
 
 <script setup>
 import NavigationDrawer from '../components/navbar/NavDrawer.vue';
 import SearchDialog from '../components/navbar/dialogs/SearchDialog.vue';
+import AboutDialog from '../components/navbar/dialogs/AboutDialog.vue';
 
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';
 import { useFoldersStore } from '../stores/foldersStore';
@@ -36,6 +38,7 @@ const { api } = window;
 
 const isDrawerRail = ref(false);
 const isSearchOpen = ref(false);
+const isAboutOpen = ref(false);
 
 // State to manage fullscreen mode
 const isFullscreen = ref(false);
@@ -55,6 +58,7 @@ const llmService = new LlmService();
 const route = useRoute();
 const router = useRouter();
 const TOGGLE_NOTE_CHAT_EVENT = 'lumos-toggle-note-chat'
+const SAVE_NOTE_EVENT = 'lumos-save-note'
 
 // Handler to update fullscreen state based on IPC messages
 const updateFullscreen = (event, isFs) => {
@@ -69,34 +73,47 @@ const openSearch = () => {
     isSearchOpen.value = true;
 }
 
-const handleWindowKeyDown = (event) => {
-    const hasCommandModifier = event.metaKey || event.ctrlKey
-    if (!hasCommandModifier) return
-    
-    const normalizedKey = event.key.toLowerCase()
-    
-    if (normalizedKey === 'k') {
-        event.preventDefault()
-        isSearchOpen.value = !isSearchOpen.value
+const handleMenuAction = (_, action) => {
+    if (action === 'new-note') {
+        if (foldersStore.folders.length) {
+            foldersStore.openCreateNoteDialog(foldersStore.activeFolderId, true)
+        }
         return
     }
-    
-    if (normalizedKey === '\\') {
-        event.preventDefault()
+
+    if (action === 'new-folder') {
+        foldersStore.openCreateFolderDialog()
+        return
+    }
+
+    if (action === 'save-note') {
+        window.dispatchEvent(new Event(SAVE_NOTE_EVENT))
+        return
+    }
+
+    if (action === 'open-search') {
+        openSearch()
+        return
+    }
+
+    if (action === 'toggle-sidebar') {
         toggleNavbar()
         return
     }
-    
-    if (normalizedKey === 'l') {
-        event.preventDefault()
-        
-        if (event.shiftKey) {
-            isSearchOpen.value = false
-            router.push({ name: 'chat' })
-            return
-        }
-        
+
+    if (action === 'toggle-note-chat') {
         window.dispatchEvent(new Event(TOGGLE_NOTE_CHAT_EVENT))
+        return
+    }
+
+    if (action === 'open-chat') {
+        isSearchOpen.value = false
+        router.push({ name: 'chat' })
+        return
+    }
+
+    if (action === 'about') {
+        isAboutOpen.value = true
     }
 }
 
@@ -141,12 +158,12 @@ onMounted(() => {
     
     // Register the IPC listener for fullscreen changes
     api.on('fullscreen-changed', updateFullscreen);
+    api.on('menu-action', handleMenuAction);
     
     // Load AI preferences once at app startup
     aiStore.loadPreferences();
     fetchAllModels();
     
-    window.addEventListener('keydown', handleWindowKeyDown);
 });
 
 onBeforeUnmount(() => {
@@ -155,7 +172,7 @@ onBeforeUnmount(() => {
     
     // Remove the IPC listener for fullscreen changes to prevent memory leaks
     api.removeListener('fullscreen-changed', updateFullscreen);
-    window.removeEventListener('keydown', handleWindowKeyDown);
+    api.removeListener('menu-action', handleMenuAction);
 });
 
 // Watch for manual changes to the theme preference and persist them
@@ -177,6 +194,17 @@ watch(() => route.name, (newRouteName) => {
         foldersStore.editorNoteDeletedId = null;
     }
 });
+
+watch(
+    [() => foldersStore.folders.length, () => route.name],
+    ([folderCount, routeName]) => {
+        api.updateMenuState({
+            canCreateNote: folderCount > 0,
+            hasOpenNote: routeName === 'notes',
+        });
+    },
+    { immediate: true }
+);
 </script>
 
 <style>

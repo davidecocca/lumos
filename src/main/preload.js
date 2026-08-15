@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('api', {
     windowClose: () => ipcRenderer.send('window-close'),
     toggleFullscreen: () => ipcRenderer.send('window-toggle-fullscreen'),
     openDevTools: () => ipcRenderer.send('open-devtools'),
+    updateMenuState: (state) => ipcRenderer.send('update-menu-state', state),
     getAppInfo: () => ipcRenderer.invoke('get-app-info'),
     // Folders
     createFolder: (name) => ipcRenderer.invoke('create-folder', name),
