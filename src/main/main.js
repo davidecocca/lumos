@@ -80,6 +80,8 @@ function createApplicationMenu() {
                 { role: 'togglefullscreen' },
                 ...(isDev ? [
                     { type: 'separator' },
+                    { role: 'reload' },
+                    { role: 'forceReload' },
                     { label: 'Toggle Developer Tools', accelerator: 'CommandOrControl+Shift+I', click: (_, window) => window?.webContents.toggleDevTools() },
                 ] : []),
             ],
