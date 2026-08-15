@@ -19,33 +19,19 @@
                 ></v-app-bar-nav-icon>
             </template>
         </v-tooltip>
+
+        <AppMenuBar
+            v-if="api.platform !== 'darwin'"
+            class="ml-2 mr-2"
+            @open-search="openSearch"
+            @toggle-sidebar="toggleNavbar"
+        />
     </template>
 
     <v-spacer />
 
     <div v-if="api.platform !== 'darwin'" class="no-drag mr-4">
         <v-row class="ga-4">
-            <v-menu location="bottom">
-                <template v-slot:activator="{ props }">
-                    <v-btn
-                        v-bind="props"
-                        icon="ph-list"
-                        variant="text"
-                        density="confortable"
-                        size="small"
-                        class="mr-4"
-                    ></v-btn>
-                </template>
-                <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
-                    <v-list-item
-                        title="Toogle Developer Tools"
-                        value="devtools"
-                        @click="api.openDevTools"
-                        rounded="lg"
-                    ></v-list-item>
-                </v-list>
-            </v-menu>
-
             <v-btn
                 variant="text"
                 icon="ph-minus"
@@ -93,6 +79,7 @@ v-model:rail="isDrawerRail"
 
 <script setup>
 import NavigationDrawer from '../components/navbar/NavDrawer.vue';
+import AppMenuBar from '../components/navbar/AppMenuBar.vue';
 import SearchDialog from '../components/navbar/dialogs/SearchDialog.vue';
 
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';

@@ -27,6 +27,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { formatShortcut } from '../../utils/shortcuts'
 
 const props = defineProps({
     editor: {
@@ -37,37 +38,37 @@ const props = defineProps({
 
 const controls = computed(() => [
     {
-        label: 'Bold (⌘B)',
+        label: `Bold (${formatShortcut('⌘B')})`,
         icon: 'ph-text-b',
         action: () => props.editor.chain().focus().toggleBold().run(),
     },
     {
-        label: 'Italic (⌘I)',
+        label: `Italic (${formatShortcut('⌘I')})`,
         icon: 'ph-text-italic',
         action: () => props.editor.chain().focus().toggleItalic().run(),
     },
     {
-        label: 'Underline (⌘U)',
+        label: `Underline (${formatShortcut('⌘U')})`,
         icon: 'ph-text-underline',
         action: () => props.editor.chain().focus().toggleUnderline().run(),
     },
     {
-        label: 'Strike (⌘⇧S)',
+        label: `Strike (${formatShortcut('⌘⇧S')})`,
         icon: 'ph-text-strikethrough',
         action: () => props.editor.chain().focus().toggleStrike().run(),
     },
     {
-        label: 'Superscript (⌘.)',
+        label: `Superscript (${formatShortcut('⌘.')})`,
         icon: 'ph-text-superscript',
         action: () => props.editor.chain().focus().toggleSuperscript().run(),
     },
     {
-        label: 'Subscript (⌘,)',
+        label: `Subscript (${formatShortcut('⌘,')})`,
         icon: 'ph-text-subscript',
         action: () => props.editor.chain().focus().toggleSubscript().run(),
     },
     {
-        label: 'Inline code (⌘E)',
+        label: `Inline code (${formatShortcut('⌘E')})`,
         icon: 'ph-code',
         action: () => props.editor.chain().focus().toggleCode().run(),
     },

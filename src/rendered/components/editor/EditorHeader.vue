@@ -47,6 +47,7 @@
 <script setup>
 import { computed } from 'vue'
 import NoteActionMenu from '../navbar/menus/NoteActionMenu.vue'
+import { formatShortcut } from '../../utils/shortcuts'
 
 const props = defineProps({
     note: {
@@ -80,25 +81,25 @@ const emit = defineEmits([
 const toolbarButtons = computed(() => [
     {
         value: 'chat',
-        tooltip: 'Toggle note chat (⌘L)',
+        tooltip: `Toggle note chat (${formatShortcut('⌘L')})`,
         icon: 'ph-chat-circle',
         action: () => emit('chat'),
     },
     {
         value: 'undo',
-        tooltip: 'Undo (⌘Z)',
+        tooltip: `Undo (${formatShortcut('⌘Z')})`,
         icon: 'ph-arrow-counter-clockwise',
         action: () => props.editor?.chain().focus().undo().run(),
     },
     {
         value: 'redo',
-        tooltip: 'Redo (⌘⇧Z)',
+        tooltip: `Redo (${formatShortcut('⌘⇧Z')})`,
         icon: 'ph-arrow-clockwise',
         action: () => props.editor?.chain().focus().redo().run(),
     },
     {
         value: 'save',
-        tooltip: 'Save (⌘S)',
+        tooltip: `Save (${formatShortcut('⌘S')})`,
         icon: 'ph-floppy-disk',
         action: () => emit('save'),
     },

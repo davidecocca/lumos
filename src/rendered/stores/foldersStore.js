@@ -10,6 +10,7 @@ export const useFoldersStore = defineStore('folders', {
         renameFolderDialog: false,
         deleteFolderDialog: false,
         createNoteDialog: false,
+        createNoteShowFolderPicker: false,
         renameNoteDialog: false,
         moveToFolderDialog: false,
         deleteNoteDialog: false,
@@ -207,8 +208,9 @@ export const useFoldersStore = defineStore('folders', {
                 }
             }
         },
-        openCreateNoteDialog(folderId) {
+        openCreateNoteDialog(folderId, showFolderPicker = false) {
             this.activeFolderId = folderId
+            this.createNoteShowFolderPicker = showFolderPicker
             this.createNoteDialog = true
         },
         async createNote(folderId, noteTitle) {

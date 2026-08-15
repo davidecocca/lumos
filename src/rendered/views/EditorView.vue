@@ -117,6 +117,7 @@ import { all, createLowlight } from 'lowlight'
 const IMAGE_MUTATION_EVENT = 'lumos-note-image-mutation'
 const VIDEO_MUTATION_EVENT = 'lumos-note-video-mutation'
 const TOGGLE_NOTE_CHAT_EVENT = 'lumos-toggle-note-chat'
+const SAVE_NOTE_EVENT = 'lumos-save-note'
 const DETAILS_OPEN_CLASS_NAME = 'is-open'
 const EDITOR_BUBBLE_MENU_PLUGIN_KEY = 'editorBubbleMenu'
 const EMPTY_EDITOR_DOCUMENT = {
@@ -712,6 +713,8 @@ onMounted(async () => {
     window.addEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
     window.addEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openyoutubeDialog)
     window.addEventListener(TOGGLE_NOTE_CHAT_EVENT, toggleSidebarChat)
+    window.addEventListener(SAVE_NOTE_EVENT, saveNoteManually)
+    window.__lumosActiveEditor = editor.value
     chatWidth.value = parseInt(localStorage.getItem('chatWidth')) || 450
 })
 
@@ -770,6 +773,8 @@ onBeforeUnmount(() => {
     window.removeEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
     window.removeEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openyoutubeDialog)
     window.removeEventListener(TOGGLE_NOTE_CHAT_EVENT, toggleSidebarChat)
+    window.removeEventListener(SAVE_NOTE_EVENT, saveNoteManually)
+    window.__lumosActiveEditor = null
     stopResize()
 })
 </script>

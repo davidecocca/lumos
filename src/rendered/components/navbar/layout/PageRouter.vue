@@ -36,7 +36,7 @@
             :keys="item.hotkey"
             display-mode="icon"
             variant="text"
-            platform="mac"
+            :platform="hotkeyPlatform"
             />
             </span>
         </template>
@@ -48,6 +48,7 @@
 
 <script setup>
 import { useRouter, useRoute } from 'vue-router'
+import { formatShortcut, vHotkeyPlatform } from '../../../utils/shortcuts'
 
 defineProps({
     rail: {
@@ -59,14 +60,19 @@ defineProps({
 const emit = defineEmits(['open-search'])
 
 const items = [
-{ icon: 'ph-magnifying-glass', title: 'Search', value: 'search', hint: 'Search (⌘K)', hotkey: 'cmd+k' },
-{ icon: 'ph-house', title: 'Home', value: 'home', hint: 'Home' },
-{ icon: 'ph-chat-circle', title: 'Chat', value: 'chat', hint: 'Chat (⌘⇧L)', hotkey: 'cmd+shift+l' },
-{ icon: 'ph-gear', title: 'Settings', value: 'settings', hint: 'Settings' },
-]
+{ icon: 'ph-magnifying-glass', title: 'Search', value: 'search', hotkey: 'cmd+k', hintShortcut: '⌘K' },
+{ icon: 'ph-house', title: 'Home', value: 'home' },
+{ icon: 'ph-chat-circle', title: 'Chat', value: 'chat', hotkey: 'cmd+shift+l', hintShortcut: '⌘⇧L' },
+{ icon: 'ph-gear', title: 'Settings', value: 'settings' },
+].map(item => ({
+    ...item,
+    hint: item.hintShortcut ? `${item.title} (${formatShortcut(item.hintShortcut)})` : item.title,
+}))
 
 const router = useRouter()
 const currentRoute = useRoute()
+
+const hotkeyPlatform = vHotkeyPlatform()
 
 const openRoute = (routeName) => {
     if (routeName === 'search') {

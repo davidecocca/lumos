@@ -168,6 +168,7 @@ import { computed } from 'vue'
 import EditorAIMenu from './EditorAIMenu.vue'
 import EditorBlockStyleMenu from './EditorBlockStyleMenu.vue'
 import EditorColorMenu from './EditorColorMenu.vue'
+import { formatShortcut } from '../../utils/shortcuts'
 
 const props = defineProps({
     editor: {
@@ -231,35 +232,35 @@ const formatRows = computed(() => [
             {
                 key: 'bold',
                 type: 'button',
-                label: 'Bold (⌘B)',
+                label: `Bold (${formatShortcut('⌘B')})`,
                 icon: 'ph-text-b',
                 action: () => props.editor.chain().focus().toggleBold().run(),
             },
             {
                 key: 'italic',
                 type: 'button',
-                label: 'Italic (⌘I)',
+                label: `Italic (${formatShortcut('⌘I')})`,
                 icon: 'ph-text-italic',
                 action: () => props.editor.chain().focus().toggleItalic().run(),
             },
             {
                 key: 'underline',
                 type: 'button',
-                label: 'Underline (⌘U)',
+                label: `Underline (${formatShortcut('⌘U')})`,
                 icon: 'ph-text-underline',
                 action: () => props.editor.chain().focus().toggleUnderline().run(),
             },
             {
                 key: 'strike',
                 type: 'button',
-                label: 'Strike (⌘⇧S)',
+                label: `Strike (${formatShortcut('⌘⇧S')})`,
                 icon: 'ph-text-strikethrough',
                 action: () => props.editor.chain().focus().toggleStrike().run(),
             },
             {
                 key: 'code',
                 type: 'button',
-                label: 'Inline code (⌘E)',
+                label: `Inline code (${formatShortcut('⌘E')})`,
                 icon: 'ph-code',
                 action: () => props.editor.chain().focus().toggleCode().run(),
             },
@@ -289,14 +290,14 @@ const formatRows = computed(() => [
             {
                 key: 'superscript',
                 type: 'button',
-                label: 'Superscript (⌘.)',
+                label: `Superscript (${formatShortcut('⌘.')})`,
                 icon: 'ph-text-superscript',
                 action: () => props.editor.chain().focus().toggleSuperscript().run(),
             },
             {
                 key: 'subscript',
                 type: 'button',
-                label: 'Subscript (⌘,)',
+                label: `Subscript (${formatShortcut('⌘,')})`,
                 icon: 'ph-text-subscript',
                 action: () => props.editor.chain().focus().toggleSubscript().run(),
             },

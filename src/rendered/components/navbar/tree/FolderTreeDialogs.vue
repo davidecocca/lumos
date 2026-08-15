@@ -2,7 +2,7 @@
     <CreateFolderDialog v-model="addFolderDialog" @create-folder="store.createFolder" />
     <RenameFolderDialog v-model="renameFolderDialog" :folderId="activeFolderId" :oldFolderName="activeFolderName" @rename-folder="store.renameFolder" />
     <ConfirmDeleteFolderDialog v-model="deleteFolderDialog" :confirmationDialogTitle="confirmationDialogTitle" :confirmationDialogText="confirmationDialogText" :confirmationDialogButtonColor="confirmationDialogButtonColor" :folderId="activeFolderId" @delete-folder="store.deleteFolder" />
-    <CreateNoteDialog v-model="createNoteDialog" :folderId="activeFolderId" @create-note="store.createNote" />
+    <CreateNoteDialog v-model="createNoteDialog" :folderId="activeFolderId" :folders="folders" :showFolderPicker="createNoteShowFolderPicker" @create-note="store.createNote" />
     <RenameNoteDialog v-model="renameNoteDialog" :noteId="activeNoteId" :currentNoteTitle="activeNoteTitle" @rename-note="store.renameNote" />
     <MoveToFolderDialog v-model="moveToFolderDialog" :folders="folders" :noteId="activeNoteId" :currentFolderId="activeNoteCurrentFolderId" @move-note="store.moveNote" />
     <ConfirmDeleteNoteDialog v-model="deleteNoteDialog" :confirmationDialogTitle="confirmationDialogTitle" :confirmationDialogText="confirmationDialogText" :confirmationDialogButtonColor="confirmationDialogButtonColor" :noteId="activeNoteId" @delete-note="store.deleteNote" />
@@ -41,6 +41,7 @@ const createNoteDialog = computed({
     get: () => store.createNoteDialog,
     set: (val) => store.createNoteDialog = val
 })
+const createNoteShowFolderPicker = computed(() => store.createNoteShowFolderPicker)
 const renameNoteDialog = computed({
     get: () => store.renameNoteDialog,
     set: (val) => store.renameNoteDialog = val

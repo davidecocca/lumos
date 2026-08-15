@@ -5,7 +5,9 @@ contextBridge.exposeInMainWorld('api', {
     windowMinimize: () => ipcRenderer.send('window-minimize'),
     windowMaximize: () => ipcRenderer.send('window-maximize'),
     windowClose: () => ipcRenderer.send('window-close'),
+    toggleFullscreen: () => ipcRenderer.send('window-toggle-fullscreen'),
     openDevTools: () => ipcRenderer.send('open-devtools'),
+    getAppInfo: () => ipcRenderer.invoke('get-app-info'),
     // Folders
     createFolder: (name) => ipcRenderer.invoke('create-folder', name),
     getFolderContent: (id) => ipcRenderer.invoke('get-folder-content', id),

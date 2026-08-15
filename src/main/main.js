@@ -101,6 +101,18 @@ function setupIPC() {
     ipcMain.on('open-devtools', () => {
         BrowserWindow.getFocusedWindow()?.webContents.openDevTools();
     });
+    ipcMain.on('window-toggle-fullscreen', () => {
+        const win = BrowserWindow.getFocusedWindow();
+        if (!win) return;
+        win.setFullScreen(!win.isFullScreen());
+    });
+    ipcMain.handle('get-app-info', () => ({
+        name: app.getName(),
+        version: app.getVersion(),
+        electronVersion: process.versions.electron,
+        chromeVersion: process.versions.chrome,
+        platform: process.platform,
+    }));
 
     // --- Folder IPC ---
     ipcMain.handle('create-folder', async (event, name) => {
