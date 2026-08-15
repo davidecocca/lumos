@@ -1,13 +1,13 @@
 <template>
     <v-card
         elevation="0"
-        rounded="xl"
+        rounded="lg"
         width="calc(100vw - 48px)"
         max-width="600"
         color="surface-dark"
         border
     >
-        <v-card-text class="pt-1 pb-1 pr-2">
+        <v-card-text class="pt-0 pb-0 pr-2">
             <v-text-field
                 ref="inputRef"
                 v-model="prompt"
@@ -177,7 +177,7 @@ defineExpose({
 .inline-ai-preview {
     max-height: min(480px, 60vh);
     padding: 4px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .inline-ai-preview-markdown {
