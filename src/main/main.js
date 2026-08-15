@@ -53,7 +53,7 @@ function createApplicationMenu() {
                 { type: 'separator' },
                 { label: 'Save Current Note', accelerator: 'CommandOrControl+S', enabled: menuState.hasOpenNote, click: (_, window) => sendMenuAction(window, 'save-note') },
                 { type: 'separator' },
-                { role: 'close' },
+                { label: 'Close App', accelerator: 'CommandOrControl+Q', click: () => app.quit() },
             ],
         },
         {
