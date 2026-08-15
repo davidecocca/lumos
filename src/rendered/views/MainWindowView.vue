@@ -3,6 +3,7 @@
     <v-app-bar
     elevation="0"
     density="compact"
+    height="52"
     class="drag border-b"
     color="background"
     >
@@ -37,21 +38,21 @@
             <v-btn
                 variant="text"
                 icon="ph-minus"
-                density="confortable"
+                density="comfortable"
                 size="small"
                 @click="api.windowMinimize"
             ></v-btn>
             <v-btn
                 variant="text"
                 icon="ph-cards"
-                density="confortable"
+                density="comfortable"
                 size="small"
                 @click="api.windowMaximize"
             ></v-btn>
             <v-btn
                 variant="text"
                 icon="ph-x"
-                density="confortable"
+                density="comfortable"
                 size="small"
                 @click="api.windowClose"
             ></v-btn>
