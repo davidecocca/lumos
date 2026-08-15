@@ -33,6 +33,7 @@
                         variant="text"
                         density="confortable"
                         size="small"
+                        class="mr-4"
                     ></v-btn>
                 </template>
                 <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
@@ -45,8 +46,6 @@
                 </v-list>
             </v-menu>
 
-            <v-divider vertical></v-divider>
-
             <v-btn
                 variant="text"
                 icon="ph-minus"
@@ -56,7 +55,7 @@
             ></v-btn>
             <v-btn
                 variant="text"
-                icon="ph-corners-out"
+                icon="ph-cards"
                 density="confortable"
                 size="small"
                 @click="api.windowMaximize"
