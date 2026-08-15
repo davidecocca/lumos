@@ -66,6 +66,10 @@ function createApplicationMenu() {
                 { role: 'copy' },
                 { role: 'paste' },
                 { role: 'selectAll' },
+                ...(process.platform === 'darwin' ? [
+                    { type: 'separator' },
+                    { role: 'emoji' },
+                ] : []),
                 { type: 'separator' },
                 { label: 'Find in Notes', accelerator: 'CommandOrControl+K', click: (_, window) => sendMenuAction(window, 'open-search') },
             ],
@@ -77,12 +81,27 @@ function createApplicationMenu() {
                 { label: 'Toggle Note Chat', accelerator: 'CommandOrControl+L', enabled: menuState.hasOpenNote, click: (_, window) => sendMenuAction(window, 'toggle-note-chat') },
                 { label: 'Open Chat', accelerator: 'CommandOrControl+Shift+L', click: (_, window) => sendMenuAction(window, 'open-chat') },
                 { type: 'separator' },
+                { role: 'resetZoom' },
+                { role: 'zoomIn' },
+                { role: 'zoomOut' },
+                { type: 'separator' },
                 { role: 'togglefullscreen' },
                 ...(isDev ? [
                     { type: 'separator' },
                     { role: 'reload' },
                     { role: 'forceReload' },
                     { label: 'Toggle Developer Tools', accelerator: 'CommandOrControl+Shift+I', click: (_, window) => window?.webContents.toggleDevTools() },
+                ] : []),
+            ],
+        },
+        {
+            label: 'Window',
+            submenu: [
+                { role: 'minimize' },
+                { role: 'zoom' },
+                ...(process.platform === 'darwin' ? [
+                    { type: 'separator' },
+                    { role: 'front' },
                 ] : []),
             ],
         },
