@@ -23,7 +23,7 @@
                             hide-details
                             rounded="lg"
                             class="flex-grow-1"
-                            color="primary"
+                            :label="provider.label"
                         />
                     </div>
                 </div>
