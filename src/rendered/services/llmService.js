@@ -3,6 +3,7 @@ import { ChatGroq } from "@langchain/groq";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';
+import { CodexLlmService } from './providers/codexLlmService';
 
 const ollamaBaseUrl = "http://localhost:11434";
 const ollamaListModelsUrl = `${ollamaBaseUrl}/api/tags`;
@@ -154,16 +155,23 @@ class LlmService {
 * @returns {LlmService} - A configured LlmService instance
 */
 export function createLlmService(systemPrompt, feature = 'chat', options = {}) {
-    const service = new LlmService();
     const aiStore = aiPreferencesStore();
-    
-    // Set custom system prompt
-    service.setSystemPrompt(systemPrompt || "You are a helpful assistant.");
-    
-    // Get settings from store based on feature
     const featureSettings = aiStore[feature];
     const provider = featureSettings?.provider;
     const model = normalizeModelForProvider(provider, featureSettings?.model);
+
+    if (provider === 'codex' && model) {
+        return new CodexLlmService(
+            systemPrompt || 'You are a helpful assistant.',
+            model,
+            aiStore.getModelReasoningEffort(feature, 'codex', model),
+        );
+    }
+
+    const service = new LlmService();
+
+    // Set custom system prompt
+    service.setSystemPrompt(systemPrompt || "You are a helpful assistant.");
     
     // Configure LLM based on provider and model
     if (provider === 'ollama' && model) {

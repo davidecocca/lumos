@@ -236,7 +236,7 @@ onMounted(async () => {
 
 <style scoped>
 .chat-view {
-    height: calc(100vh - 80px);
+    height: calc(100vh - 32px);
     min-height: 0;
     overflow: hidden;
     position: relative;

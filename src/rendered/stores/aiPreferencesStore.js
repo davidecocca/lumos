@@ -22,6 +22,8 @@ const normalizeFeatureSelection = (selection, fallback) => {
     return normalizedSelection
 }
 
+const reasoningEffortKey = (feature, provider, model) => `${feature}:${provider}:${model}`
+
 export const aiPreferencesStore = defineStore('aiPreferences', {
     state: () => ({
         // Provider selection for different features
@@ -38,6 +40,8 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
             groq: '',
             openai: ''
         },
+        codexEnabled: false,
+        modelReasoningEfforts: {},
         // Available providers and models
         availableProviders: [
             'ollama',
@@ -46,29 +50,16 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
         ],
         availableModels: {
             ollama: [],
-            groq: [
-                { label: 'GPT OSS 120B', value: 'openai/gpt-oss-120b' },
-                { label: 'GPT OSS 20B', value: 'openai/gpt-oss-20b' },
-                { label: 'Llama 3.1 8B', value: 'llama-3.1-8b-instant' },
-                { label: 'Llama 3.3 70B', value: 'llama-3.3-70b-versatile' },
-                { label: 'Llama 4 Scout', value: 'meta-llama/llama-4-scout-17b-16e-instruct' },
-                { label: 'Groq Compound', value: 'groq/compound' },
-                { label: 'Groq Compound Mini', value: 'groq/compound-mini' },
-                { label: 'Qwen3 32B', value: 'qwen-qwq-32b' }
-            ],
+            groq: [],
             openai: [
+                { label: 'GPT-5.6 Sol', value: 'gpt-5.6-sol' },
+                { label: 'GPT-5.6 Terra', value: 'gpt-5.6-terra' },
+                { label: 'GPT-5.6 Luna', value: 'gpt-5.6-luna' },
+                { label: 'GPT-5.5', value: 'gpt-5.5' },
                 { label: 'GPT-5.4', value: 'gpt-5.4' },
-                { label: 'GPT-5.3 Chat', value: 'gpt-5.3-chat-latest' },
-                { label: 'GPT-5.3 Codex', value: 'gpt-5.3-codex' },
-                { label: 'GPT-5.2', value: 'gpt-5.2' },
-                { label: 'GPT-5.1', value: 'gpt-5.1' },
-                { label: 'GPT-5', value: 'gpt-5' },
-                { label: 'GPT-5 Mini', value: 'gpt-5-mini' },
-                { label: 'GPT-5 Nano', value: 'gpt-5-nano' },
-                { label: 'GPT-4.1', value: 'gpt-4.1' },
-                { label: 'GPT-4.1 Mini', value: 'gpt-4.1-mini' },
-                { label: 'GPT-4.1 Nano', value: 'gpt-4.1-nano' },
-            ]
+                { label: 'GPT-5.4 Mini', value: 'gpt-5.4-mini' },
+            ],
+            codex: []
         },
     }),
     
@@ -85,6 +76,24 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
                 
                 // Load API keys
                 this.apiKeys = preferences.apiKeys || this.apiKeys
+                this.codexEnabled = Boolean(preferences.codexEnabled)
+                this.modelReasoningEfforts = Object.fromEntries(
+                    Object.entries(preferences.modelReasoningEfforts || {}).flatMap(([key, effort]) => {
+                        if (key.startsWith('editor:') || key.startsWith('chat:')) return [[key, effort]]
+                        return ['editor', 'chat'].map((feature) => [`${feature}:${key}`, effort])
+                    })
+                )
+                if (!preferences.modelReasoningEfforts && preferences.codexReasoningEffort) {
+                    for (const feature of ['editor', 'chat']) {
+                        for (const model of ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna']) {
+                            this.modelReasoningEfforts[reasoningEffortKey(feature, 'codex', model)] = preferences.codexReasoningEffort
+                        }
+                    }
+                }
+
+                if (this.codexEnabled && !this.availableProviders.includes('codex')) {
+                    this.availableProviders.push('codex')
+                }
 
                 this.savePreferences()
             }
@@ -95,7 +104,9 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
             const preferences = {
                 editor: this.editor,
                 chat: this.chat,
-                apiKeys: this.apiKeys
+                apiKeys: this.apiKeys,
+                codexEnabled: this.codexEnabled,
+                modelReasoningEfforts: this.modelReasoningEfforts,
             }
             
             localStorage.setItem('lumosAIPreferences', JSON.stringify(preferences))
@@ -125,6 +136,35 @@ export const aiPreferencesStore = defineStore('aiPreferences', {
                 this.apiKeys[provider] = key
                 this.savePreferences()
             }
+        },
+
+        setCodexEnabled(enabled, models = []) {
+            this.codexEnabled = enabled
+            this.availableProviders = this.availableProviders.filter((provider) => provider !== 'codex')
+
+            if (enabled) {
+                this.availableProviders.push('codex')
+                this.availableModels.codex = models
+            } else {
+                this.availableModels.codex = []
+                for (const feature of ['editor', 'chat']) {
+                    if (this[feature].provider === 'codex') {
+                        this[feature] = { provider: null, model: null }
+                    }
+                }
+            }
+            this.savePreferences()
+        },
+
+        getModelReasoningEffort(feature, provider, model) {
+            return this.modelReasoningEfforts[reasoningEffortKey(feature, provider, model)]
+                || this.getProviderModels(provider).find((item) => item.value === model)?.defaultReasoningEffort
+                || null
+        },
+
+        setModelReasoningEffort(feature, provider, model, reasoningEffort) {
+            this.modelReasoningEfforts[reasoningEffortKey(feature, provider, model)] = reasoningEffort
+            this.savePreferences()
         },
         
         // Generate label for Ollama models

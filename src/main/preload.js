@@ -9,6 +9,14 @@ contextBridge.exposeInMainWorld('api', {
     openDevTools: () => ipcRenderer.send('open-devtools'),
     updateMenuState: (state) => ipcRenderer.send('update-menu-state', state),
     getAppInfo: () => ipcRenderer.invoke('get-app-info'),
+    getCodexStatus: () => ipcRenderer.invoke('get-codex-status'),
+    runCodex: (payload) => ipcRenderer.invoke('run-codex', payload),
+    startCodexStream: (payload) => ipcRenderer.invoke('start-codex-stream', payload),
+    onCodexStream: (callback) => {
+        const listener = (_, event) => callback(event);
+        ipcRenderer.on('codex-stream', listener);
+        return () => ipcRenderer.removeListener('codex-stream', listener);
+    },
     // Folders
     createFolder: (name) => ipcRenderer.invoke('create-folder', name),
     getFolderContent: (id) => ipcRenderer.invoke('get-folder-content', id),

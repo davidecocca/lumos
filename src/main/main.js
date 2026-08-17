@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain, nativeImage, Menu } = require('electron');
 const path = require('path');
 const vectorStore = require('./database/vectorStore');
 const imageService = require('./services/imageService');
+const { checkCodex, runCodex } = require('./services/codexService');
+const { randomUUID } = require('crypto');
 
 // Import CRUD functions from the local DB layer
 const {
@@ -214,6 +216,20 @@ function setupIPC() {
         chromeVersion: process.versions.chrome,
         platform: process.platform,
     }));
+    ipcMain.handle('get-codex-status', () => checkCodex());
+    ipcMain.handle('run-codex', async (_, payload) => runCodex(payload || {}));
+    ipcMain.handle('start-codex-stream', (event, payload) => {
+        const requestId = randomUUID();
+        setImmediate(() => {
+            runCodex({
+                ...(payload || {}),
+                onDelta: (text) => event.sender.send('codex-stream', { requestId, type: 'delta', text }),
+            })
+                .then((text) => event.sender.send('codex-stream', { requestId, type: 'complete', text }))
+                .catch((error) => event.sender.send('codex-stream', { requestId, type: 'error', error: error.message }));
+        });
+        return requestId;
+    });
 
     // --- Folder IPC ---
     ipcMain.handle('create-folder', async (event, name) => {

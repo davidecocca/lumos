@@ -28,6 +28,7 @@ import AboutDialog from '../components/navbar/dialogs/AboutDialog.vue';
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';
 import { useFoldersStore } from '../stores/foldersStore';
 import LlmService from '../services/llmService';
+import { getGroqModels } from '../services/providers/groqService';
 
 import { watch, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useTheme } from 'vuetify'
@@ -149,6 +150,15 @@ const fetchAllModels = async () => {
     } catch (error) {
         console.error('Error fetching models:', error);
     }
+
+    if (aiStore.apiKeys.groq) {
+        try {
+            aiStore.updateAvailableModels('groq', await getGroqModels(aiStore.apiKeys.groq));
+        } catch (error) {
+            aiStore.updateAvailableModels('groq', []);
+            console.error('Error fetching Groq models:', error);
+        }
+    }
 };
 
 onMounted(() => {
@@ -163,6 +173,11 @@ onMounted(() => {
     // Load AI preferences once at app startup
     aiStore.loadPreferences();
     fetchAllModels();
+    if (aiStore.codexEnabled) {
+        api.getCodexStatus()
+            .then((status) => aiStore.setCodexEnabled(true, status.models))
+            .catch(() => aiStore.setCodexEnabled(false));
+    }
     
 });
 

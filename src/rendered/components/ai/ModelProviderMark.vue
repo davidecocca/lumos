@@ -1,15 +1,16 @@
 <template>
-    <span class="model-provider-mark d-inline-flex align-center justify-center">
+    <span class="d-inline-flex align-center justify-center" :style="markStyle">
         <img
         v-if="providerLogo"
         :src="providerLogo"
         :alt="`${provider} logo`"
         :class="['model-provider-logo', getProviderLogoClass(provider)]"
+        :style="logoStyle"
         >
         <v-icon
         v-else
         :icon="providerIcon"
-        size="small"
+        :size="size"
         class="text-medium-emphasis"
         />
     </span>
@@ -24,21 +25,26 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    size: {
+        type: [Number, String],
+        default: 20,
+    },
 })
 
 const providerLogo = computed(() => getProviderLogo(props.provider))
 const providerIcon = computed(() => getProviderIcon(props.provider))
+const markStyle = computed(() => ({
+    width: `${props.size}px`,
+    minWidth: `${props.size}px`,
+}))
+const logoStyle = computed(() => ({
+    width: `${props.size}px`,
+    height: `${props.size}px`,
+}))
 </script>
 
 <style scoped>
-.model-provider-mark {
-    width: 20px;
-    min-width: 20px;
-}
-
 .model-provider-logo {
-    width: 16px;
-    height: 16px;
     display: block;
     object-fit: contain;
     opacity: 0.8;

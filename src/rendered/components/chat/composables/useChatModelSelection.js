@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { aiPreferencesStore } from '../../../stores/aiPreferencesStore'
-import { buildModelItems } from '../../../utils/modelProviders'
+import { buildModelItems, getProviderTitle } from '../../../utils/modelProviders'
 
 export function useChatModelSelection() {
     const aiStore = aiPreferencesStore()
@@ -32,7 +32,19 @@ export function useChatModelSelection() {
             item.value.model === aiStore.chat.model
         ))
 
-        return match?.title || 'Model'
+        if (!match) return 'Model'
+
+        const reasoningEffort = aiStore.getModelReasoningEffort(
+            'chat',
+            match.value.provider,
+            match.value.model,
+        )
+        const provider = getProviderTitle(match.value.provider)
+        const reasoning = reasoningEffort === 'xhigh'
+            ? 'Extra high'
+            : reasoningEffort ? reasoningEffort.charAt(0).toUpperCase() + reasoningEffort.slice(1) : null
+
+        return [provider, match.title, reasoning].filter(Boolean).join(' · ')
     })
 
     const loadModelPreferences = () => {

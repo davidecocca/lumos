@@ -45,7 +45,7 @@ const editorShellRef = ref(null)
 <style scoped>
 .editor-layout {
     display: flex;
-    height: calc(100vh - 170px);
+    height: calc(100vh - 120px);
     position: relative;
 }
 
