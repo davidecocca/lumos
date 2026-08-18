@@ -6,71 +6,51 @@
     select-strategy="single-independent"
     :selected="[currentRoute.name]"
     >
-    <v-fade-transition>
-    <v-list-item v-show="!rail" class="pr-0">
-        <div class="d-flex justify-end">
-            <v-div class="d-flex align-center text-title-large font-weight-bold">
-                Lumos
-            </v-div>
-
-            <v-spacer></v-spacer>
-
-            <v-tooltip
-            v-for="item in quickActions"
-            :key="item.action"
-            location="bottom"
-            :text="item.hint"
-            >
-            <template v-slot:activator="{ props: tooltipProps }">
-                <v-btn
-                v-bind="tooltipProps"
-                :aria-label="item.title"
-                :icon="item.icon"
-                variant="text"
-                density="comfortable"
-                rounded
-                color="surface-variant"
-                @click.stop="runQuickAction(item.action)"
-                />
-            </template>
-        </v-tooltip>
-        </div>
-    </v-list-item>
-    </v-fade-transition>
-
+    
     <v-tooltip
     v-for="item in items"
-    :key="item.value"
+    :key="item.value || item.action"
     :text="item.hint"
     location="right"
-    :disabled="!rail || !item.hint"
+    :disabled="!rail || !!item.action"
     >
     <template v-slot:activator="{ props: tooltipProps }">
-        <v-expand-transition>
         <v-list-item
         v-bind="tooltipProps"
-            class="page-router-item"
-            :value="item.value"
-            :active="currentRoute.name === item.value"
-            @click.stop="openRoute(item.value)"
-            v-show="rail || !item.showOnlyInRail"
-            >
-        <template v-slot:prepend>
+        class="page-router-item"
+        :value="item.value || item.action"
+        :active="currentRoute.name === item.value"
+        :style="item.action ? { height: '44px' } : undefined"
+        :link="!item.action || rail"
+        :ripple="!item.action || rail"
+        @click.stop="item.action && rail ? emit('toggle-sidebar') : !item.action && openRoute(item.value)"
+        >
+        <template v-slot:prepend v-if="!item.action || rail">
             <v-icon 
             :icon="currentRoute.name === item.value ? `${item.icon}-fill` : item.icon"
             ></v-icon>
         </template>
         <template v-slot:title>
-            <v-fade-transition>
-                <span
-                v-show="!rail"
-                :class="{ 'font-weight-bold': currentRoute.name === item.value }"
-                >{{ item.title }}</span>
-            </v-fade-transition>
+            <span
+            v-show="!rail"
+            :class="{
+                'font-weight-bold': item.action || currentRoute.name === item.value,
+                'text-title-medium': item.action,
+            }"
+            >{{ item.title }}</span>
         </template>
-        <template v-slot:append>
-            <v-fade-transition>
-                <span v-show="!rail" class="page-router-hotkey">
+        <template v-slot:append v-if="item.action && !rail">
+            <v-btn
+            :icon="item.icon"
+            variant="text"
+            density="comfortable"
+            rounded
+            color="surface-variant"
+            @click.stop="emit('toggle-sidebar')"
+            />
+        </template>
+        <template v-slot:append v-else>
+            <span v-show="!rail" class="page-router-hotkey">
                 <v-hotkey
                 v-if="item.hotkey"
                 :keys="item.hotkey"
@@ -78,11 +58,9 @@
                 variant="text"
                 :platform="hotkeyPlatform"
                 />
-                </span>
-            </v-fade-transition>
+            </span>
         </template>
     </v-list-item>
-    </v-expand-transition>
 </template>
 </v-tooltip>
 </v-list>
@@ -102,20 +80,15 @@ defineProps({
 const emit = defineEmits(['open-search', 'toggle-sidebar'])
 
 const createHint = (item) => item.hintShortcut
-    ? `${item.title} (${formatShortcut(item.hintShortcut)})`
-    : item.title
-
-const quickActions = [
-{ icon: 'ph-magnifying-glass', title: 'Search', action: 'search', hintShortcut: 'cmd+k' },
-{ icon: 'ph-sidebar-simple', title: 'Toggle sidebar', action: 'toggle-sidebar', hintShortcut: 'cmd+\\' },
-].map(item => ({ ...item, hint: createHint(item) }))
+? `${item.title} (${formatShortcut(item.hintShortcut)})`
+: item.title
 
 const items = [
-{ icon: 'ph-sidebar-simple', title: 'Toggle sidebar', value: 'sidebar', hotkey: 'cmd+\\', hintShortcut: '⌘\\', showOnlyInRail: true },
-{ icon: 'ph-magnifying-glass', title: 'Search', value: 'search', hotkey: 'cmd+k', hintShortcut: '⌘K', showOnlyInRail: true },
-{ icon: 'ph-house', title: 'Home', value: 'home', showOnlyInRail: false },
-{ icon: 'ph-chat-circle', title: 'Chat', value: 'chat', hotkey: 'cmd+shift+l', hintShortcut: '⌘⇧L', showOnlyInRail: false },
-{ icon: 'ph-gear', title: 'Settings', value: 'settings', showOnlyInRail: false },
+{ icon: 'ph-sidebar-simple', title: 'Lumos', action: 'toggle-sidebar', hintShortcut: 'cmd+\\' },
+{ icon: 'ph-magnifying-glass', title: 'Search', value: 'search', hotkey: 'cmd+k', hintShortcut: '⌘K' },
+{ icon: 'ph-house', title: 'Home', value: 'home' },
+{ icon: 'ph-chat-circle', title: 'Chat', value: 'chat', hotkey: 'cmd+shift+l', hintShortcut: '⌘⇧L' },
+{ icon: 'ph-gear', title: 'Settings', value: 'settings' },
 ].map(item => ({
     ...item,
     hint: createHint(item),
@@ -129,24 +102,12 @@ const hotkeyPlatform = vHotkeyPlatform()
 const openRoute = (routeName) => {
     if (routeName === 'search') {
         emit('open-search')
-    } else if (routeName === 'sidebar') {
-        emit('toggle-sidebar')
     } else {
         // Use router-link navigation for other routes
         router.push({ name: routeName })
     }
 }
 
-const runQuickAction = (action) => {
-    if (action === 'search') {
-        emit('open-search')
-        return
-    }
-
-    if (action === 'toggle-sidebar') {
-        emit('toggle-sidebar')
-    }
-}
 </script>
 
 <style scoped>
