@@ -9,110 +9,144 @@ Helper functions for search indexing
 
 // Normalize text before storing/indexing it
 function normalizeSearchText(value) {
-    return String(value || '').replace(/\s+/g, ' ').trim();
+    return String(value || '')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
 // Turn the user search query into safe FTS terms
 function getSearchTokens(query) {
-    const matches = String(query || '').normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}_]+/gu) || [];
+    const matches =
+        String(query || '')
+            .normalize('NFKC')
+            .toLowerCase()
+            .match(/[\p{L}\p{N}_]+/gu) || [];
     return [...new Set(matches)].slice(0, 8);
 }
 
 // Delete a note from the FTS index
 function deleteNoteSearchIndex(noteId) {
     return new Promise((resolve, reject) => {
-        db.run(`DELETE FROM note_search_fts WHERE rowid = ?`, [noteId], (err) => {
-            if (err) reject(err);
-            else resolve();
-        });
+        db.run(
+            `DELETE FROM note_search_fts WHERE rowid = ?`,
+            [noteId],
+            (err) => {
+                if (err) reject(err);
+                else resolve();
+            },
+        );
     });
 }
 
 // Update or insert a note into the FTS index
 function updateNoteSearchIndex(note) {
     return new Promise((resolve, reject) => {
-        db.run(`DELETE FROM note_search_fts WHERE rowid = ?`, [note.id], (deleteErr) => {
-            if (deleteErr) {
-                reject(deleteErr);
-                return;
-            }
+        db.run(
+            `DELETE FROM note_search_fts WHERE rowid = ?`,
+            [note.id],
+            (deleteErr) => {
+                if (deleteErr) {
+                    reject(deleteErr);
+                    return;
+                }
 
-            db.run(`
+                db.run(
+                    `
                 INSERT INTO note_search_fts(rowid, title, topic, content_text, note_id)
                 VALUES (?, ?, ?, ?, ?)
-            `, [
-                note.id,
-                note.title || '',
-                note.topic || '',
-                note.content_text || '',
-                note.id,
-            ], (insertErr) => {
-                if (insertErr) reject(insertErr);
-                else resolve();
-            });
-        });
+            `,
+                    [
+                        note.id,
+                        note.title || '',
+                        note.topic || '',
+                        note.content_text || '',
+                        note.id,
+                    ],
+                    (insertErr) => {
+                        if (insertErr) reject(insertErr);
+                        else resolve();
+                    },
+                );
+            },
+        );
     });
 }
 
 // Refresh the FTS index for a note
 function refreshNoteSearchIndex(noteId) {
     return new Promise((resolve, reject) => {
-        db.get(`
+        db.get(
+            `
             SELECT id, title, topic, content_text
             FROM notes
             WHERE id = ?
-        `, [noteId], async (err, note) => {
-            if (err) {
-                reject(err);
-                return;
-            }
+        `,
+            [noteId],
+            async (err, note) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
 
-            if (!note) {
-                resolve();
-                return;
-            }
+                if (!note) {
+                    resolve();
+                    return;
+                }
 
-            try {
-                await updateNoteSearchIndex(note);
-                resolve();
-            } catch (searchErr) {
-                reject(searchErr);
-            }
-        });
+                try {
+                    await updateNoteSearchIndex(note);
+                    resolve();
+                } catch (searchErr) {
+                    reject(searchErr);
+                }
+            },
+        );
     });
 }
 
 function deleteNoteChatConversations(noteId) {
     return new Promise((resolve, reject) => {
-        db.all(`
+        db.all(
+            `
             SELECT id
             FROM chat_conversations
             WHERE scope = 'note' AND note_id = ?
-        `, [noteId], (selectErr, rows) => {
-            if (selectErr) {
-                reject(selectErr);
-                return;
-            }
-
-            const conversationIds = rows.map((row) => row.id);
-            if (conversationIds.length === 0) {
-                resolve();
-                return;
-            }
-
-            const placeholders = conversationIds.map(() => '?').join(',');
-            db.run(`DELETE FROM chat_messages WHERE conversation_id IN (${placeholders})`, conversationIds, (messageErr) => {
-                if (messageErr) {
-                    reject(messageErr);
+        `,
+            [noteId],
+            (selectErr, rows) => {
+                if (selectErr) {
+                    reject(selectErr);
                     return;
                 }
 
-                db.run(`DELETE FROM chat_conversations WHERE id IN (${placeholders})`, conversationIds, (conversationErr) => {
-                    if (conversationErr) reject(conversationErr);
-                    else resolve();
-                });
-            });
-        });
+                const conversationIds = rows.map((row) => row.id);
+                if (conversationIds.length === 0) {
+                    resolve();
+                    return;
+                }
+
+                const placeholders = conversationIds.map(() => '?').join(',');
+                db.run(
+                    `DELETE FROM chat_messages WHERE conversation_id IN (${placeholders})`,
+                    conversationIds,
+                    (messageErr) => {
+                        if (messageErr) {
+                            reject(messageErr);
+                            return;
+                        }
+
+                        db.run(
+                            `DELETE FROM chat_conversations WHERE id IN (${placeholders})`,
+                            conversationIds,
+                            (conversationErr) => {
+                                if (conversationErr) reject(conversationErr);
+                                else resolve();
+                            },
+                        );
+                    },
+                );
+            },
+        );
     });
 }
 
@@ -128,36 +162,48 @@ function deleteNoteVectorSyncRow(noteId) {
 
 // Mark a note as up to date in the vector index
 function setNoteVectorSynced(noteId, syncedAt, callback) {
-    db.run(`
+    db.run(
+        `
         INSERT INTO vector_sync (note_id, synced_at)
         VALUES (?, ?)
         ON CONFLICT(note_id) DO UPDATE SET synced_at = excluded.synced_at
-    `, [noteId, syncedAt || null], function (err) {
-        callback(err, this ? this.changes : 0);
-    });
+    `,
+        [noteId, syncedAt || null],
+        function (err) {
+            callback(err, this ? this.changes : 0);
+        },
+    );
 }
 
 // Notes missing or stale in the vector index
 function getNotesNeedingVectorSync(callback) {
-    db.all(`
+    db.all(
+        `
         SELECT n.id
         FROM notes n
         LEFT JOIN vector_sync vs ON vs.note_id = n.id
         WHERE vs.note_id IS NULL OR COALESCE(vs.synced_at, '') < n.updated_at
-    `, [], (err, rows) => {
-        callback(err, rows);
-    });
+    `,
+        [],
+        (err, rows) => {
+            callback(err, rows);
+        },
+    );
 }
 
 // Raw note fields needed by the background indexer
 function getNoteRawForIndexing(noteId, callback) {
-    db.get(`
+    db.get(
+        `
         SELECT id, title, topic, content_text, updated_at
         FROM notes
         WHERE id = ?
-    `, [noteId], (err, row) => {
-        callback(err, row);
-    });
+    `,
+        [noteId],
+        (err, row) => {
+            callback(err, row);
+        },
+    );
 }
 
 // Reset all vector sync markers (used after a full index rebuild)
@@ -169,13 +215,17 @@ function clearVectorSync(callback) {
 
 // Counts for the RAG index status UI
 function getVectorSyncStats(callback) {
-    db.get(`
+    db.get(
+        `
         SELECT
             (SELECT COUNT(*) FROM vector_sync) AS indexedCount,
             (SELECT COUNT(*) FROM notes) AS totalNotes
-    `, [], (err, row) => {
-        callback(err, row || { indexedCount: 0, totalNotes: 0 });
-    });
+    `,
+        [],
+        (err, row) => {
+            callback(err, row || { indexedCount: 0, totalNotes: 0 });
+        },
+    );
 }
 
 /* ---------------------------
@@ -245,24 +295,28 @@ function createNote(folder_id, title, contentJson, contentText, callback) {
     INSERT INTO notes (folder_id, title, content_json, content_text)
     VALUES (?, ?, ?, ?)
   `;
-    db.run(sql, [folder_id, title, JSON.stringify(contentJson), searchableContentText], async function (err) {
-        if (err) {
-            callback(err, this ? this.lastID : null);
-            return;
-        }
+    db.run(
+        sql,
+        [folder_id, title, JSON.stringify(contentJson), searchableContentText],
+        async function (err) {
+            if (err) {
+                callback(err, this ? this.lastID : null);
+                return;
+            }
 
-        try {
-            await updateNoteSearchIndex({
-                id: this.lastID,
-                title,
-                topic: '',
-                content_text: searchableContentText,
-            });
-            callback(null, this.lastID);
-        } catch (searchErr) {
-            callback(searchErr, this.lastID);
-        }
-    });
+            try {
+                await updateNoteSearchIndex({
+                    id: this.lastID,
+                    title,
+                    topic: '',
+                    content_text: searchableContentText,
+                });
+                callback(null, this.lastID);
+            } catch (searchErr) {
+                callback(searchErr, this.lastID);
+            }
+        },
+    );
     // Note: the note is not added to the vector store here because the content is not yet available
 }
 
@@ -278,17 +332,20 @@ function getNote(id, callback) {
             callback(err, row);
             return;
         }
-        
+
         try {
             if (row && row.content_json) {
                 row.content_json = JSON.parse(row.content_json);
-                row.content_json = await imageService.resolveNoteContentForDisplay(row.content_json);
+                row.content_json =
+                    await imageService.resolveNoteContentForDisplay(
+                        row.content_json,
+                    );
             }
         } catch (resolveErr) {
             callback(resolveErr, row);
             return;
         }
-        
+
         callback(null, row);
     });
 }
@@ -299,7 +356,7 @@ function getNotesByIds(ids, callback) {
         callback(null, []);
         return;
     }
-    
+
     const sql = `
     SELECT notes.id, notes.title, notes.topic, notes.favorite, notes.folder_id,
            notes.updated_at, notes.last_viewed_at, folders.name AS folder_name
@@ -346,8 +403,10 @@ function renameNote(id, newTitle, callback) {
 
 // Update note content
 function updateNote(id, topic, contentJson, contentText, callback) {
-    const normalizedContent = imageService.normalizeNoteContentForStorage(contentJson);
-    const referencedImages = imageService.collectManagedImagePaths(normalizedContent);
+    const normalizedContent =
+        imageService.normalizeNoteContentForStorage(contentJson);
+    const referencedImages =
+        imageService.collectManagedImagePaths(normalizedContent);
     const searchableContentText = normalizeSearchText(contentText);
     const sql = `
     UPDATE notes 
@@ -355,22 +414,26 @@ function updateNote(id, topic, contentJson, contentText, callback) {
     WHERE id = ?
   `;
 
-    db.run(sql, [topic, JSON.stringify(normalizedContent), searchableContentText, id], async function (err) {
-        if (err) {
-            callback(err);
-            return;
-        }
+    db.run(
+        sql,
+        [topic, JSON.stringify(normalizedContent), searchableContentText, id],
+        async function (err) {
+            if (err) {
+                callback(err);
+                return;
+            }
 
-        try {
-            await refreshNoteSearchIndex(id);
-            await imageService.pruneNoteImages(id, referencedImages);
-            // Indexing is asynchronous: saves never wait on embeddings.
-            vectorIndexer.requestIndex(id);
-            callback(null);
-        } catch (searchErr) {
-            callback(searchErr);
-        }
-    });
+            try {
+                await refreshNoteSearchIndex(id);
+                await imageService.pruneNoteImages(id, referencedImages);
+                // Indexing is asynchronous: saves never wait on embeddings.
+                vectorIndexer.requestIndex(id);
+                callback(null);
+            } catch (searchErr) {
+                callback(searchErr);
+            }
+        },
+    );
 }
 
 // Delete a note
@@ -403,7 +466,7 @@ function deleteNotesInFolder(folderId, callback) {
             callback(err);
             return;
         }
-        
+
         // Delete notes from the database
         const deleteNotesSql = `DELETE FROM notes WHERE folder_id = ?`;
         db.run(deleteNotesSql, [folderId], async function (err) {
@@ -411,7 +474,7 @@ function deleteNotesInFolder(folderId, callback) {
                 callback(err);
                 return;
             }
-            
+
             try {
                 for (const note of notes) {
                     await deleteNoteChatConversations(note.id);
@@ -493,12 +556,12 @@ function getLastViewedNotes(callback) {
 function searchNotes(query, limit = 10, callback) {
     const searchTerms = getSearchTokens(query);
     const safeLimit = Math.max(1, Number(limit) || 10);
-    
+
     if (searchTerms.length === 0) {
         callback(null, []);
         return;
     }
-    
+
     const ftsQuery = searchTerms.map((term) => `${term}*`).join(' ');
     const sql = `
     SELECT
@@ -569,24 +632,34 @@ function mapChatMessage(row) {
     };
 }
 
-function createChatConversation({ scope = 'all', noteId = null, title = '' }, callback) {
+function createChatConversation(
+    { scope = 'all', noteId = null, title = '' },
+    callback,
+) {
     const normalizedScope = normalizeChatScope(scope);
     const normalizedNoteId = normalizedScope === 'note' ? noteId : null;
 
-    db.run(`
+    db.run(
+        `
         INSERT INTO chat_conversations (scope, note_id, title)
         VALUES (?, ?, ?)
-    `, [normalizedScope, normalizedNoteId, title || 'New chat'], function (err) {
-        if (err) {
-            callback(err);
-            return;
-        }
+    `,
+        [normalizedScope, normalizedNoteId, title || 'New chat'],
+        function (err) {
+            if (err) {
+                callback(err);
+                return;
+            }
 
-        getChatConversation(this.lastID, callback);
-    });
+            getChatConversation(this.lastID, callback);
+        },
+    );
 }
 
-function listChatConversations({ scope = 'all', noteId = null, limit = 20 } = {}, callback) {
+function listChatConversations(
+    { scope = 'all', noteId = null, limit = 20 } = {},
+    callback,
+) {
     const normalizedScope = normalizeChatScope(scope);
     const safeLimit = Math.max(1, Number(limit) || 20);
     const params = [normalizedScope];
@@ -599,101 +672,137 @@ function listChatConversations({ scope = 'all', noteId = null, limit = 20 } = {}
 
     params.push(safeLimit);
 
-    db.all(`
+    db.all(
+        `
         SELECT id, scope, note_id, title, created_at, updated_at
         FROM chat_conversations
         WHERE ${where}
         ORDER BY updated_at DESC, id DESC
         LIMIT ?
-    `, params, (err, rows) => {
-        callback(err, rows ? rows.map(mapConversation) : []);
-    });
+    `,
+        params,
+        (err, rows) => {
+            callback(err, rows ? rows.map(mapConversation) : []);
+        },
+    );
 }
 
 function getChatConversation(id, callback) {
-    db.get(`
+    db.get(
+        `
         SELECT id, scope, note_id, title, created_at, updated_at
         FROM chat_conversations
         WHERE id = ?
-    `, [id], (conversationErr, conversation) => {
-        if (conversationErr) {
-            callback(conversationErr);
-            return;
-        }
+    `,
+        [id],
+        (conversationErr, conversation) => {
+            if (conversationErr) {
+                callback(conversationErr);
+                return;
+            }
 
-        if (!conversation) {
-            callback(null, null);
-            return;
-        }
+            if (!conversation) {
+                callback(null, null);
+                return;
+            }
 
-        db.all(`
+            db.all(
+                `
             SELECT id, conversation_id, role, content, sources_json, created_at
             FROM chat_messages
             WHERE conversation_id = ?
             ORDER BY created_at ASC, id ASC
-        `, [id], (messagesErr, messages) => {
-            if (messagesErr) {
-                callback(messagesErr);
+        `,
+                [id],
+                (messagesErr, messages) => {
+                    if (messagesErr) {
+                        callback(messagesErr);
+                        return;
+                    }
+
+                    callback(null, {
+                        ...mapConversation(conversation),
+                        messages: messages.map(mapChatMessage),
+                    });
+                },
+            );
+        },
+    );
+}
+
+function appendChatMessage(
+    { conversationId, role, content, sources = [] },
+    callback,
+) {
+    const normalizedRole = role === 'assistant' ? 'assistant' : 'user';
+    const sourcesJson =
+        normalizedRole === 'assistant' ? JSON.stringify(sources || []) : null;
+
+    db.run(
+        `
+        INSERT INTO chat_messages (conversation_id, role, content, sources_json)
+        VALUES (?, ?, ?, ?)
+    `,
+        [conversationId, normalizedRole, content || '', sourcesJson],
+        function (err) {
+            if (err) {
+                callback(err);
                 return;
             }
 
-            callback(null, {
-                ...mapConversation(conversation),
-                messages: messages.map(mapChatMessage),
-            });
-        });
-    });
-}
-
-function appendChatMessage({ conversationId, role, content, sources = [] }, callback) {
-    const normalizedRole = role === 'assistant' ? 'assistant' : 'user';
-    const sourcesJson = normalizedRole === 'assistant' ? JSON.stringify(sources || []) : null;
-
-    db.run(`
-        INSERT INTO chat_messages (conversation_id, role, content, sources_json)
-        VALUES (?, ?, ?, ?)
-    `, [conversationId, normalizedRole, content || '', sourcesJson], function (err) {
-        if (err) {
-            callback(err);
-            return;
-        }
-
-        db.run(`
+            db.run(
+                `
             UPDATE chat_conversations
             SET updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        `, [conversationId], (updateErr) => {
-            if (updateErr) {
-                callback(updateErr);
-                return;
-            }
+        `,
+                [conversationId],
+                (updateErr) => {
+                    if (updateErr) {
+                        callback(updateErr);
+                        return;
+                    }
 
-            callback(null, this.lastID);
-        });
-    });
+                    callback(null, this.lastID);
+                },
+            );
+        },
+    );
 }
 
 function updateChatConversation({ id, title }, callback) {
-    db.run(`
+    db.run(
+        `
         UPDATE chat_conversations
         SET title = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-    `, [title || 'New chat', id], function (err) {
-        callback(err, this ? this.changes : 0);
-    });
+    `,
+        [title || 'New chat', id],
+        function (err) {
+            callback(err, this ? this.changes : 0);
+        },
+    );
 }
 
 function deleteChatConversation(id, callback) {
-    db.run(`DELETE FROM chat_messages WHERE conversation_id = ?`, [id], (messageErr) => {
-        if (messageErr) {
-            callback(messageErr);
-            return;
-        }
+    db.run(
+        `DELETE FROM chat_messages WHERE conversation_id = ?`,
+        [id],
+        (messageErr) => {
+            if (messageErr) {
+                callback(messageErr);
+                return;
+            }
 
-        db.run(`DELETE FROM chat_conversations WHERE id = ?`, [id], function (conversationErr) {
-            callback(conversationErr, this ? this.changes : 0);
-        });
-    });
+            db.run(
+                `DELETE FROM chat_conversations WHERE id = ?`,
+                [id],
+                function (conversationErr) {
+                    callback(conversationErr, this ? this.changes : 0);
+                },
+            );
+        },
+    );
 }
 
 module.exports = {

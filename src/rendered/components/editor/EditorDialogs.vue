@@ -37,10 +37,10 @@
 </template>
 
 <script setup>
-import RenameNoteDialog from '../navbar/dialogs/RenameNoteDialog.vue'
-import MoveToFolderDialog from '../navbar/dialogs/MoveToFolderDialog.vue'
-import ConfirmDeleteNoteDialog from '../navbar/dialogs/ConfirmDeleteNoteDialog.vue'
-import EmbedYoutubeDialog from './dialogs/EmbedYoutubeDialog.vue'
+import RenameNoteDialog from '../navbar/dialogs/RenameNoteDialog.vue';
+import MoveToFolderDialog from '../navbar/dialogs/MoveToFolderDialog.vue';
+import ConfirmDeleteNoteDialog from '../navbar/dialogs/ConfirmDeleteNoteDialog.vue';
+import EmbedYoutubeDialog from './dialogs/EmbedYoutubeDialog.vue';
 
 defineProps({
     note: {
@@ -79,7 +79,7 @@ defineProps({
         type: String,
         default: 'primary',
     },
-})
+});
 
 const emit = defineEmits([
     'update:renameNoteDialog',
@@ -90,13 +90,13 @@ const emit = defineEmits([
     'move-note',
     'delete-note',
     'embed-youtube',
-])
+]);
 
 const handleRenameNote = (noteId, title) => {
-    emit('rename-note', noteId, title)
-}
+    emit('rename-note', noteId, title);
+};
 
 const handleMoveNote = (noteId, newFolderId) => {
-    emit('move-note', noteId, newFolderId)
-}
+    emit('move-note', noteId, newFolderId);
+};
 </script>

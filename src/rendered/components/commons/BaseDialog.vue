@@ -19,13 +19,19 @@
                     rounded="xl"
                     class="mr-3"
                 >
-                    <v-icon :size="iconSize" :color="avatarColor ? iconColor : undefined">
+                    <v-icon
+                        :size="iconSize"
+                        :color="avatarColor ? iconColor : undefined"
+                    >
                         {{ icon }}
                     </v-icon>
                 </v-avatar>
                 <div>
                     <div class="text-headline-small">{{ title }}</div>
-                    <div v-if="subtitle" class="text-label-large text-medium-emphasis">
+                    <div
+                        v-if="subtitle"
+                        class="text-label-large text-medium-emphasis"
+                    >
                         {{ subtitle }}
                     </div>
                 </div>
@@ -47,74 +53,76 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed } from 'vue';
 
 const props = defineProps({
     modelValue: {
         type: Boolean,
-        default: false
+        default: false,
     },
     maxWidth: {
         type: [String, Number],
-        default: 520
+        default: 520,
     },
     height: {
         type: [String, Number],
-        default: undefined
+        default: undefined,
     },
     persistent: {
         type: Boolean,
-        default: false
+        default: false,
     },
     title: {
         type: String,
-        default: ''
+        default: '',
     },
     subtitle: {
         type: String,
-        default: ''
+        default: '',
     },
     icon: {
         type: String,
-        default: ''
+        default: '',
     },
     iconColor: {
         type: String,
-        default: 'primary'
+        default: 'primary',
     },
     avatarColor: {
         type: String,
-        default: ''
+        default: '',
     },
     iconSize: {
         type: [String, Number],
-        default: 24
+        default: 24,
     },
     avatarSize: {
         type: [String, Number],
-        default: 40
+        default: 40,
     },
     avatarVariant: {
         type: String,
-        default: 'tonal'
+        default: 'tonal',
     },
     cardElevation: {
         type: [String, Number],
-        default: 8
+        default: 8,
     },
     cardClass: {
         type: [String, Array, Object],
-        default: undefined
+        default: undefined,
     },
     contentClass: {
         type: String,
-        default: 'px-6 pb-4'
+        default: 'px-6 pb-4',
     },
     actionsClass: {
         type: String,
-        default: 'px-6 py-3'
-    }
-})
+        default: 'px-6 py-3',
+    },
+});
 
-const hasHeader = computed(() => Boolean(props.title || props.subtitle || props.icon))
+const hasHeader = computed(() =>
+    Boolean(props.title || props.subtitle || props.icon),
+);
 </script>

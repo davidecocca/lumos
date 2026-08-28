@@ -24,11 +24,18 @@
             >
                 <template #append-inner>
                     <div class="d-flex ga-1">
-                        <v-tooltip :text="hasPreview ? 'Regenerate' : 'Submit'" location="bottom">
+                        <v-tooltip
+                            :text="hasPreview ? 'Regenerate' : 'Submit'"
+                            location="bottom"
+                        >
                             <template #activator="{ props: tooltipProps }">
                                 <v-btn
                                     v-bind="tooltipProps"
-                                    :icon="hasPreview ? 'ph-arrows-counter-clockwise' : 'ph-arrow-up'"
+                                    :icon="
+                                        hasPreview
+                                            ? 'ph-arrows-counter-clockwise'
+                                            : 'ph-arrow-up'
+                                    "
                                     size="small"
                                     :color="hasPreview ? '' : 'primary'"
                                     :variant="hasPreview ? 'text' : 'tonal'"
@@ -54,10 +61,13 @@
                                         @click="cancel"
                                         rounded="xl"
                                     />
-                                    </template>
+                                </template>
                             </v-tooltip>
 
-                            <v-tooltip text="Insert at cursor" location="bottom">
+                            <v-tooltip
+                                text="Insert at cursor"
+                                location="bottom"
+                            >
                                 <template #activator="{ props: tooltipProps }">
                                     <v-btn
                                         v-bind="tooltipProps"
@@ -77,7 +87,7 @@
             </v-text-field>
 
             <template v-if="hasPreview">
-                <v-divider class="mt-1"/>
+                <v-divider class="mt-1" />
                 <div class="inline-ai-preview overflow-y-auto">
                     <div
                         class="inline-ai-preview-markdown"
@@ -90,18 +100,19 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref } from 'vue'
-import { marked, Renderer } from 'marked'
+import { computed, nextTick, ref } from 'vue';
+import { marked, Renderer } from 'marked';
 
-const markdownRenderer = new Renderer()
-const escapeHtml = (value) => String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
+const markdownRenderer = new Renderer();
+const escapeHtml = (value) =>
+    String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 
-markdownRenderer.html = ({ text }) => escapeHtml(text)
+markdownRenderer.html = ({ text }) => escapeHtml(text);
 
 const props = defineProps({
     loading: {
@@ -112,65 +123,71 @@ const props = defineProps({
         type: String,
         default: '',
     },
-})
+});
 
-const emit = defineEmits(['submit', 'insert', 'cancel'])
+const emit = defineEmits(['submit', 'insert', 'cancel']);
 
-const inputRef = ref(null)
-const prompt = ref('')
+const inputRef = ref(null);
+const prompt = ref('');
 
-const canSubmit = computed(() => prompt.value.trim().length > 0 && !props.loading)
-const hasPreview = computed(() => props.loading || props.generatedText.length > 0)
-const previewText = computed(() => props.generatedText || 'Generating...')
-const renderedPreview = computed(() => marked.parse(previewText.value, {
-    async: false,
-    breaks: true,
-    renderer: markdownRenderer,
-}))
+const canSubmit = computed(
+    () => prompt.value.trim().length > 0 && !props.loading,
+);
+const hasPreview = computed(
+    () => props.loading || props.generatedText.length > 0,
+);
+const previewText = computed(() => props.generatedText || 'Generating...');
+const renderedPreview = computed(() =>
+    marked.parse(previewText.value, {
+        async: false,
+        breaks: true,
+        renderer: markdownRenderer,
+    }),
+);
 
 const submit = () => {
-    const value = prompt.value.trim()
+    const value = prompt.value.trim();
 
     if (!value || props.loading || !canSubmit.value) {
-        return
+        return;
     }
 
-    emit('submit', value)
-}
+    emit('submit', value);
+};
 
 const insert = () => {
     if (!props.generatedText || props.loading) {
-        return
+        return;
     }
 
-    emit('insert')
-}
+    emit('insert');
+};
 
 const cancel = () => {
-    emit('cancel')
-}
+    emit('cancel');
+};
 
 const onKeydown = (event) => {
     if (event.key === 'Escape') {
-        event.preventDefault()
-        cancel()
-        return
+        event.preventDefault();
+        cancel();
+        return;
     }
 
     if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault()
-        submit()
+        event.preventDefault();
+        submit();
     }
-}
+};
 
 const focus = async () => {
-    await nextTick()
-    inputRef.value?.focus?.()
-}
+    await nextTick();
+    inputRef.value?.focus?.();
+};
 
 defineExpose({
     focus,
-})
+});
 </script>
 
 <style scoped>

@@ -1,5 +1,10 @@
 <template>
-    <v-list density="compact" nav rounded="lg" class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark">
+    <v-list
+        density="compact"
+        nav
+        rounded="lg"
+        class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark"
+    >
         <v-list-item
             v-for="item in blockItems"
             :key="item.label"
@@ -17,7 +22,11 @@
             </template>
             <v-list-item-title>Details</v-list-item-title>
         </v-list-item>
-        <v-list-item v-if="canRemoveDetails()" @click="emit('remove-details')" rounded="lg">
+        <v-list-item
+            v-if="canRemoveDetails()"
+            @click="emit('remove-details')"
+            rounded="lg"
+        >
             <template v-slot:prepend>
                 <v-icon icon="ph-minus-circle"></v-icon>
             </template>
@@ -27,7 +36,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed } from 'vue';
 
 const props = defineProps({
     editor: {
@@ -38,9 +47,9 @@ const props = defineProps({
         type: Function,
         required: true,
     },
-})
+});
 
-const emit = defineEmits(['insert-details', 'remove-details'])
+const emit = defineEmits(['insert-details', 'remove-details']);
 
 const blockItems = computed(() => [
     {
@@ -88,5 +97,5 @@ const blockItems = computed(() => [
         icon: 'ph-code',
         action: () => props.editor.commands.toggleCodeBlock(),
     },
-])
+]);
 </script>

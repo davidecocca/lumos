@@ -11,53 +11,58 @@
         <template #actions>
             <v-spacer />
             <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
-            <v-btn color="error" variant="tonal" @click="deleteFolder">Delete</v-btn>
+            <v-btn color="error" variant="tonal" @click="deleteFolder"
+                >Delete</v-btn
+            >
         </template>
     </BaseDialog>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import BaseDialog from '../../commons/BaseDialog.vue'
+import { ref, watch } from 'vue';
+import BaseDialog from '../../commons/BaseDialog.vue';
 
 const props = defineProps({
     modelValue: {
         type: Boolean,
-        default: false
+        default: false,
     },
     confirmationDialogTitle: {
         type: String,
-        default: ''
+        default: '',
     },
     confirmationDialogText: {
         type: String,
-        default: ''
+        default: '',
     },
     confirmationDialogButtonColor: {
         type: String,
-        default: 'primary'
+        default: 'primary',
     },
     folderId: {
         type: Number,
-        mandatory: true
-    }
-})
+        mandatory: true,
+    },
+});
 
-const emit = defineEmits(['update:modelValue', 'delete-folder'])
+const emit = defineEmits(['update:modelValue', 'delete-folder']);
 
-const folderIdToDelete = ref(null)
+const folderIdToDelete = ref(null);
 
-watch(() => props.modelValue, (newVal) => {
-    if (newVal) {
-        folderIdToDelete.value = props.folderId
-    }
-})
+watch(
+    () => props.modelValue,
+    (newVal) => {
+        if (newVal) {
+            folderIdToDelete.value = props.folderId;
+        }
+    },
+);
 
 const closeDialog = () => {
-    emit('update:modelValue', false)
-}
+    emit('update:modelValue', false);
+};
 
 const deleteFolder = () => {
-    emit('delete-folder', folderIdToDelete.value)
-}
+    emit('delete-folder', folderIdToDelete.value);
+};
 </script>

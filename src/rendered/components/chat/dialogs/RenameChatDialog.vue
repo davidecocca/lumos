@@ -19,14 +19,20 @@
         <template #actions>
             <v-spacer />
             <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
-            <v-btn color="primary" variant="tonal" :disabled="!chatTitle.trim()" @click="renameChat">Save</v-btn>
+            <v-btn
+                color="primary"
+                variant="tonal"
+                :disabled="!chatTitle.trim()"
+                @click="renameChat"
+                >Save</v-btn
+            >
         </template>
     </BaseDialog>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import BaseDialog from '../../commons/BaseDialog.vue'
+import { ref, watch } from 'vue';
+import BaseDialog from '../../commons/BaseDialog.vue';
 
 const props = defineProps({
     modelValue: {
@@ -41,33 +47,36 @@ const props = defineProps({
         type: String,
         default: '',
     },
-})
+});
 
-const emit = defineEmits(['update:modelValue', 'rename-chat'])
+const emit = defineEmits(['update:modelValue', 'rename-chat']);
 
-const chatTitle = ref(props.currentChatTitle)
+const chatTitle = ref(props.currentChatTitle);
 
-watch(() => props.modelValue, (isOpen) => {
-    if (isOpen) {
-        chatTitle.value = props.currentChatTitle || 'New chat'
-    }
-})
+watch(
+    () => props.modelValue,
+    (isOpen) => {
+        if (isOpen) {
+            chatTitle.value = props.currentChatTitle || 'New chat';
+        }
+    },
+);
 
 const closeDialog = () => {
-    emit('update:modelValue', false)
-}
+    emit('update:modelValue', false);
+};
 
 const handleClear = () => {
-    chatTitle.value = ''
-}
+    chatTitle.value = '';
+};
 
 const renameChat = () => {
-    if (!props.chatId || !chatTitle.value.trim()) return
+    if (!props.chatId || !chatTitle.value.trim()) return;
 
-    emit('rename-chat', props.chatId, chatTitle.value.trim())
-}
+    emit('rename-chat', props.chatId, chatTitle.value.trim());
+};
 
 const handleEnter = () => {
-    renameChat()
-}
+    renameChat();
+};
 </script>

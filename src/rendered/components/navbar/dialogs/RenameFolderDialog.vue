@@ -19,55 +19,64 @@
         <template #actions>
             <v-spacer />
             <v-btn variant="text" @click="closeDialog()">Close</v-btn>
-            <v-btn color="primary" variant="tonal" @click="renameFolder" :disabled="!folderName.trim()">Save</v-btn>
+            <v-btn
+                color="primary"
+                variant="tonal"
+                @click="renameFolder"
+                :disabled="!folderName.trim()"
+                >Save</v-btn
+            >
         </template>
     </BaseDialog>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import BaseDialog from '../../commons/BaseDialog.vue'
+import { ref, watch } from 'vue';
+import BaseDialog from '../../commons/BaseDialog.vue';
 
 const props = defineProps({
     modelValue: {
         type: Boolean,
-        default: false
+        default: false,
     },
     folderId: {
         type: Number,
-        mandatory: true
+        mandatory: true,
     },
     oldFolderName: {
         type: String,
-        mandatory: true
-    }
-})
+        mandatory: true,
+    },
+});
 
-const folderName = ref(props.oldFolderName)
+const folderName = ref(props.oldFolderName);
 
-const emit = defineEmits(['update:modelValue', 'rename-folder'])
+const emit = defineEmits(['update:modelValue', 'rename-folder']);
 
 const closeDialog = () => {
-    emit('update:modelValue', false)
-}
+    emit('update:modelValue', false);
+};
 
 const handleClear = () => {
-    folderName.value = ''
-}
+    folderName.value = '';
+};
 
 const renameFolder = () => {
     if (folderName.value.trim()) {
-        emit('rename-folder', props.folderId, folderName.value.trim())
+        emit('rename-folder', props.folderId, folderName.value.trim());
     }
-}
+};
 
 const handleEnter = () => {
     if (folderName.value.trim()) {
-        renameFolder()
+        renameFolder();
     }
-}
+};
 
-watch(() => props.oldFolderName, (newVal) => {
-    folderName.value = newVal
-})
+watch(
+    () => props.oldFolderName,
+    (newVal) => {
+        folderName.value = newVal;
+    },
+);
 </script>

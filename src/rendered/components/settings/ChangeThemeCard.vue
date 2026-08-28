@@ -1,57 +1,66 @@
 <template>
     <v-card
-    class="rounded-md border"
-    title="Theme"
-    subtitle="Customize how Lumos looks on your device."
-    rounded="lg"
-    elevation="0"
+        class="rounded-md border"
+        title="Theme"
+        subtitle="Customize how Lumos looks on your device."
+        rounded="lg"
+        elevation="0"
     >
-    <v-card-text>
-        <v-btn-toggle v-model="localTheme" mandatory color="primary" divided rounded="lg">
-            <v-btn value="light">
-                <span class="hidden-sm-and-down">Light</span>
-                <v-icon end>ph-sun</v-icon>
-            </v-btn>
-            
-            <v-btn value="dark">
-                <span class="hidden-sm-and-down">Dark</span>
-                <v-icon end>ph-moon-stars</v-icon>
-            </v-btn>
-            
-            <v-btn value="auto">
-                <span class="hidden-sm-and-down">Auto</span>
-                <v-icon end>ph-circle-half-tilt</v-icon>
-            </v-btn>
-        </v-btn-toggle>
-    </v-card-text>
-</v-card>
+        <v-card-text>
+            <v-btn-toggle
+                v-model="localTheme"
+                mandatory
+                color="primary"
+                divided
+                rounded="lg"
+            >
+                <v-btn value="light">
+                    <span class="hidden-sm-and-down">Light</span>
+                    <v-icon end>ph-sun</v-icon>
+                </v-btn>
+
+                <v-btn value="dark">
+                    <span class="hidden-sm-and-down">Dark</span>
+                    <v-icon end>ph-moon-stars</v-icon>
+                </v-btn>
+
+                <v-btn value="auto">
+                    <span class="hidden-sm-and-down">Auto</span>
+                    <v-icon end>ph-circle-half-tilt</v-icon>
+                </v-btn>
+            </v-btn-toggle>
+        </v-card-text>
+    </v-card>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch } from 'vue';
 
 // Accept current theme from the parent
 const props = defineProps({
     theme: {
         type: String,
         default: 'light',
-        validator: (value) => ['light', 'dark', 'auto'].includes(value) 
-    }
-})
+        validator: (value) => ['light', 'dark', 'auto'].includes(value),
+    },
+});
 
 // Let parent know when the user changes theme
-const emit = defineEmits(['update:theme'])
+const emit = defineEmits(['update:theme']);
 
 // Local copy to drive the v-model on the buttons
-const localTheme = ref(props.theme)
+const localTheme = ref(props.theme);
 
 // Emit new theme whenever a button is clicked
 watch(localTheme, (newVal) => {
-    emit('update:theme', newVal)
-})
+    emit('update:theme', newVal);
+});
 
 // If parent updates prop, keep local value in sync
-watch(() => props.theme, (newVal) => {
-    localTheme.value = newVal
-})
+watch(
+    () => props.theme,
+    (newVal) => {
+        localTheme.value = newVal;
+    },
+);
 </script>

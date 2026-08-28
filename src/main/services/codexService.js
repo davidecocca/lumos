@@ -3,15 +3,20 @@ const fs = require('fs/promises');
 const os = require('os');
 const path = require('path');
 
-const maximumPromptLength = 100000;         // 100k chars, ~25k tokens
-const requestTimeoutMilliseconds = 120000;  // 120s
+const maximumPromptLength = 100000; // 100k chars, ~25k tokens
+const requestTimeoutMilliseconds = 120000; // 120s
 
 const formatCodexError = (error, stderr = '') => {
     if (error?.code === 'ENOENT') {
-        return new Error('Codex CLI is not installed or is not available on PATH. Install Codex and sign in with `codex login`.');
+        return new Error(
+            'Codex CLI is not installed or is not available on PATH. Install Codex and sign in with `codex login`.',
+        );
     }
 
-    const message = stderr.trim() || error?.message || 'Codex app-server failed unexpectedly.';
+    const message =
+        stderr.trim() ||
+        error?.message ||
+        'Codex app-server failed unexpectedly.';
     return new Error(`Codex app-server error: ${message}`);
 };
 
@@ -35,10 +40,19 @@ class CodexAppServer {
         this.child.stderr.on('data', (chunk) => {
             this.stderr += chunk;
         });
-        this.child.on('error', (error) => this.closeWithError(formatCodexError(error, this.stderr)));
+        this.child.on('error', (error) =>
+            this.closeWithError(formatCodexError(error, this.stderr)),
+        );
         this.child.on('close', (code, signal) => {
             if (!this.closed) {
-                this.closeWithError(formatCodexError(new Error(`Codex app-server exited (${signal || code}).`), this.stderr));
+                this.closeWithError(
+                    formatCodexError(
+                        new Error(
+                            `Codex app-server exited (${signal || code}).`,
+                        ),
+                        this.stderr,
+                    ),
+                );
             }
         });
     }
@@ -55,7 +69,11 @@ class CodexAppServer {
             try {
                 message = JSON.parse(line);
             } catch {
-                this.closeWithError(new Error('Codex app-server returned invalid JSON-RPC output.'));
+                this.closeWithError(
+                    new Error(
+                        'Codex app-server returned invalid JSON-RPC output.',
+                    ),
+                );
                 return;
             }
 
@@ -64,24 +82,37 @@ class CodexAppServer {
                 if (!pending) continue;
                 this.pending.delete(message.id);
                 if (message.error) {
-                    pending.reject(new Error(message.error.message || 'Codex app-server request failed.'));
+                    pending.reject(
+                        new Error(
+                            message.error.message ||
+                                'Codex app-server request failed.',
+                        ),
+                    );
                 } else {
                     pending.resolve(message.result);
                 }
             } else if (message.method) {
-                for (const handler of this.notificationHandlers) handler(message);
+                for (const handler of this.notificationHandlers)
+                    handler(message);
             }
         }
     }
 
     request(method, params = {}) {
-        if (this.closed) return Promise.reject(this.failure || new Error('Codex app-server is not running.'));
+        if (this.closed)
+            return Promise.reject(
+                this.failure || new Error('Codex app-server is not running.'),
+            );
 
         const id = this.nextRequestId++;
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 this.pending.delete(id);
-                reject(new Error(`Codex app-server timed out while calling ${method}. Check your Codex login and usage limits.`));
+                reject(
+                    new Error(
+                        `Codex app-server timed out while calling ${method}. Check your Codex login and usage limits.`,
+                    ),
+                );
             }, requestTimeoutMilliseconds);
             this.pending.set(id, {
                 resolve: (result) => {
@@ -93,20 +124,26 @@ class CodexAppServer {
                     reject(error);
                 },
             });
-            this.child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`, (error) => {
-                if (!error) return;
-                const pending = this.pending.get(id);
-                if (pending) {
-                    this.pending.delete(id);
-                    pending.reject(formatCodexError(error, this.stderr));
-                }
-            });
+            this.child.stdin.write(
+                `${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`,
+                (error) => {
+                    if (!error) return;
+                    const pending = this.pending.get(id);
+                    if (pending) {
+                        this.pending.delete(id);
+                        pending.reject(formatCodexError(error, this.stderr));
+                    }
+                },
+            );
         });
     }
 
     notify(method, params = {}) {
-        if (this.closed) throw this.failure || new Error('Codex app-server is not running.');
-        this.child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method, params })}\n`);
+        if (this.closed)
+            throw this.failure || new Error('Codex app-server is not running.');
+        this.child.stdin.write(
+            `${JSON.stringify({ jsonrpc: '2.0', method, params })}\n`,
+        );
     }
 
     onNotification(handler) {
@@ -145,14 +182,17 @@ const initialize = async (server) => {
     server.notify('initialized');
 };
 
-const normalizeModels = (result) => (result?.data || []).map((model) => ({
-    label: model.displayName || model.model || model.id,
-    value: model.model || model.id,
-    supportedReasoningEfforts: (model.supportedReasoningEfforts || []).map((effort) => (
-        typeof effort === 'string' ? effort : effort.reasoningEffort
-    )).filter(Boolean),
-    defaultReasoningEffort: model.defaultReasoningEffort,
-}));
+const normalizeModels = (result) =>
+    (result?.data || []).map((model) => ({
+        label: model.displayName || model.model || model.id,
+        value: model.model || model.id,
+        supportedReasoningEfforts: (model.supportedReasoningEfforts || [])
+            .map((effort) =>
+                typeof effort === 'string' ? effort : effort.reasoningEffort,
+            )
+            .filter(Boolean),
+        defaultReasoningEffort: model.defaultReasoningEffort,
+    }));
 
 const checkCodex = async () => {
     const server = new CodexAppServer();
@@ -178,7 +218,9 @@ const runCodex = async ({ prompt, model, reasoningEffort, onDelta } = {}) => {
         throw new Error('The Codex prompt is too long.');
     }
 
-    const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'lumos-codex-'));
+    const workingDirectory = await fs.mkdtemp(
+        path.join(os.tmpdir(), 'lumos-codex-'),
+    );
     const server = new CodexAppServer();
     let removeNotificationHandler;
 
@@ -192,7 +234,8 @@ const runCodex = async ({ prompt, model, reasoningEffort, onDelta } = {}) => {
             model: model || null,
         });
         const threadId = thread.thread?.id || thread.id;
-        if (!threadId) throw new Error('Codex app-server did not return a thread ID.');
+        if (!threadId)
+            throw new Error('Codex app-server did not return a thread ID.');
 
         let response = '';
         let turnId;
@@ -202,18 +245,39 @@ const runCodex = async ({ prompt, model, reasoningEffort, onDelta } = {}) => {
                 if (params.threadId !== threadId) return;
                 if (message.method === 'item/agentMessage/delta') {
                     response += params.delta || '';
-                    if (typeof onDelta === 'function' && params.delta) onDelta(params.delta);
+                    if (typeof onDelta === 'function' && params.delta)
+                        onDelta(params.delta);
                 }
-                if (message.method === 'item/completed' && !response && params.item?.type === 'agentMessage') {
+                if (
+                    message.method === 'item/completed' &&
+                    !response &&
+                    params.item?.type === 'agentMessage'
+                ) {
                     response = params.item.text || '';
-                    if (typeof onDelta === 'function' && response) onDelta(response);
+                    if (typeof onDelta === 'function' && response)
+                        onDelta(response);
                 }
-                if (message.method === 'error' && (!turnId || params.turnId === turnId)) {
-                    reject(new Error(params.error?.message || 'Codex could not complete the response.'));
+                if (
+                    message.method === 'error' &&
+                    (!turnId || params.turnId === turnId)
+                ) {
+                    reject(
+                        new Error(
+                            params.error?.message ||
+                                'Codex could not complete the response.',
+                        ),
+                    );
                 }
-                if (message.method === 'turn/completed' && (!turnId || params.turn?.id === turnId)) {
+                if (
+                    message.method === 'turn/completed' &&
+                    (!turnId || params.turn?.id === turnId)
+                ) {
                     if (params.turn?.status !== 'completed') {
-                        reject(new Error(`Codex turn ${params.turn?.status || 'failed'}.`));
+                        reject(
+                            new Error(
+                                `Codex turn ${params.turn?.status || 'failed'}.`,
+                            ),
+                        );
                     } else {
                         resolve();
                     }

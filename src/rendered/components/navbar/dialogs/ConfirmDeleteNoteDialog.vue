@@ -11,53 +11,58 @@
         <template #actions>
             <v-spacer />
             <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
-            <v-btn color="error" variant="tonal" @click="deleteNote">Delete</v-btn>
+            <v-btn color="error" variant="tonal" @click="deleteNote"
+                >Delete</v-btn
+            >
         </template>
     </BaseDialog>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import BaseDialog from '../../commons/BaseDialog.vue'
+import { ref, watch } from 'vue';
+import BaseDialog from '../../commons/BaseDialog.vue';
 
 const props = defineProps({
     modelValue: {
         type: Boolean,
-        default: false
+        default: false,
     },
     confirmationDialogTitle: {
         type: String,
-        default: ''
+        default: '',
     },
     confirmationDialogText: {
         type: String,
-        default: ''
+        default: '',
     },
     confirmationDialogButtonColor: {
         type: String,
-        default: 'primary'
+        default: 'primary',
     },
     noteId: {
         type: Number,
-        mandatory: true
-    }
-})
+        mandatory: true,
+    },
+});
 
-const emit = defineEmits(['update:modelValue', 'delete-note'])
+const emit = defineEmits(['update:modelValue', 'delete-note']);
 
-const noteIdToDelete = ref(null)
+const noteIdToDelete = ref(null);
 
-watch(() => props.modelValue, (newVal) => {
-    if (newVal) {
-        noteIdToDelete.value = props.noteId
-    }
-})
+watch(
+    () => props.modelValue,
+    (newVal) => {
+        if (newVal) {
+            noteIdToDelete.value = props.noteId;
+        }
+    },
+);
 
 const closeDialog = () => {
-    emit('update:modelValue', false)
-}
+    emit('update:modelValue', false);
+};
 
 const deleteNote = () => {
-    emit('delete-note', noteIdToDelete.value)
-}
+    emit('delete-note', noteIdToDelete.value);
+};
 </script>

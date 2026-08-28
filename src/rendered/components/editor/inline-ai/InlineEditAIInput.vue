@@ -24,11 +24,18 @@
             >
                 <template #append-inner>
                     <div class="d-flex ga-1">
-                        <v-tooltip :text="hasPreview ? 'Regenerate' : 'Submit'" location="bottom">
+                        <v-tooltip
+                            :text="hasPreview ? 'Regenerate' : 'Submit'"
+                            location="bottom"
+                        >
                             <template #activator="{ props: tooltipProps }">
                                 <v-btn
                                     v-bind="tooltipProps"
-                                    :icon="hasPreview ? 'ph-arrows-clockwise' : 'ph-arrow-up'"
+                                    :icon="
+                                        hasPreview
+                                            ? 'ph-arrows-clockwise'
+                                            : 'ph-arrow-up'
+                                    "
                                     size="small"
                                     :color="hasPreview ? '' : 'primary'"
                                     :variant="hasPreview ? 'text' : 'tonal'"
@@ -80,7 +87,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue';
 
 const props = defineProps({
     loading: {
@@ -91,63 +98,65 @@ const props = defineProps({
         type: String,
         default: '',
     },
-})
+});
 
-const emit = defineEmits(['submit', 'apply', 'reject'])
+const emit = defineEmits(['submit', 'apply', 'reject']);
 
-const inputRef = ref(null)
-const prompt = ref('')
+const inputRef = ref(null);
+const prompt = ref('');
 
-const hasPreview = computed(() => props.loading || props.editedText.length > 0)
-const canSubmit = computed(() => prompt.value.trim().length > 0 && !props.loading)
+const hasPreview = computed(() => props.loading || props.editedText.length > 0);
+const canSubmit = computed(
+    () => prompt.value.trim().length > 0 && !props.loading,
+);
 
 const submit = () => {
-    const value = prompt.value.trim()
+    const value = prompt.value.trim();
 
     if (!value || props.loading) {
-        return
+        return;
     }
 
-    emit('submit', value)
-}
+    emit('submit', value);
+};
 
 const apply = () => {
     if (!props.editedText || props.loading) {
-        return
+        return;
     }
 
-    emit('apply')
-}
+    emit('apply');
+};
 
 const reject = () => {
     if (props.loading) {
-        return
+        return;
     }
 
-    emit('reject')
-}
+    emit('reject');
+};
 
 const onKeydown = (event) => {
     if (event.key === 'Escape') {
-        event.preventDefault()
-        reject()
-        return
+        event.preventDefault();
+        reject();
+        return;
     }
 
     if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault()
-        submit()
+        event.preventDefault();
+        submit();
     }
-}
+};
 
 const focus = async () => {
-    await nextTick()
-    inputRef.value?.focus?.()
-}
+    await nextTick();
+    inputRef.value?.focus?.();
+};
 
 defineExpose({
     focus,
-})
+});
 </script>
 
 <style scoped>

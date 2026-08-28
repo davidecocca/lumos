@@ -7,6 +7,8 @@
     "scripts": {
         "dev": "NODE_ENV=development concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
         "build": "vite build",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
         "fetch:model": "node scripts/fetch-embedding-model.mjs",
         "postinstall": "electron-builder install-app-deps",
         "dist": "npm run build && electron-builder",
@@ -17,6 +19,7 @@
         "concurrently": "^7.6.0",
         "electron": "^35.7.5",
         "electron-builder": "26.15.3",
+        "prettier": "^3.9.6",
         "sass-embedded": "^1.85.1",
         "vite": "^6.3.6",
         "wait-on": "^7.0.0"

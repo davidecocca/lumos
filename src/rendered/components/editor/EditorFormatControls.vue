@@ -26,15 +26,15 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { formatShortcut } from '../../utils/shortcuts'
+import { computed } from 'vue';
+import { formatShortcut } from '../../utils/shortcuts';
 
 const props = defineProps({
     editor: {
         type: Object,
         required: true,
     },
-})
+});
 
 const controls = computed(() => [
     {
@@ -72,7 +72,7 @@ const controls = computed(() => [
         icon: 'ph-code',
         action: () => props.editor.chain().focus().toggleCode().run(),
     },
-])
+]);
 </script>
 
 <style scoped>

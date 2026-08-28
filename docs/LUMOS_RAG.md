@@ -10,9 +10,9 @@ the user's machine — no note content ever leaves the device.
 
 Lumos has two independent search systems:
 
-| System | Engine | Purpose |
-|---|---|---|
-| Keyword search (FTS) | SQLite full-text search | Exact word matching |
+| System                | Engine                   | Purpose                             |
+| --------------------- | ------------------------ | ----------------------------------- |
+| Keyword search (FTS)  | SQLite full-text search  | Exact word matching                 |
 | Semantic search (RAG) | EmbeddingGemma + LanceDB | Meaning-based retrieval for AI chat |
 
 The RAG pipeline is composed of four pieces:
@@ -47,13 +47,14 @@ flowchart LR
   revision and checksums in `scripts/embedding-model.lock.json` and fetched
   into gitignored `resources/models/embeddinggemma-300m-onnx/` with:
 
-  ```bash
-  npm run fetch:model
-  ```
+    ```bash
+    npm run fetch:model
+    ```
 
-  At runtime Lumos looks for the model first in `process.resourcesPath/models`
-  (packaged installs via `extraResources`), then in `resources/models`
-  (development).
+    At runtime Lumos looks for the model first in `process.resourcesPath/models`
+    (packaged installs via `extraResources`), then in `resources/models`
+    (development).
+
 - **Offline guarantee**: `env.allowRemoteModels = false` — embeddings can never
   touch the network.
 - **License notice**: bundled under `resources/licenses/NOTICE-embeddinggemma.txt`
@@ -63,10 +64,10 @@ flowchart LR
 
 EmbeddingGemma expects task prefixes to separate queries from documents:
 
-- Query:  `task: search result | query: <text>`
+- Query: `task: search result | query: <text>`
 - Document: `title: <note title> | text: <chunk>`
 
-The document prefix is stored *with* each chunk and stripped again when
+The document prefix is stored _with_ each chunk and stripped again when
 results are read back, so callers only ever see original note text.
 
 > ⚠️ Changing either prefix, the model, its quantization, or chunking changes
@@ -163,15 +164,15 @@ Semantic search is exposed to the renderer via IPC
 1. The query is embedded with the query prefix.
 2. LanceDB performs cosine similarity search, over-fetching by ×3.
 3. Results are cleaned up:
-   - document prefix stripped from chunk text,
-   - empty chunks dropped,
-   - anything with cosine distance > **0.70** discarded (relevance floor),
-   - trimmed to the requested limit (default 5).
+    - document prefix stripped from chunk text,
+    - empty chunks dropped,
+    - anything with cosine distance > **0.70** discarded (relevance floor),
+    - trimmed to the requested limit (default 5).
 
 In the note chat panel (`LumosChatPanel.vue`) it is used like this:
 
 1. Take the user's message as the query, `limit = 3`.
-2. In *note* scope, filter results to `source = <activeNoteId>`; in global
+2. In _note_ scope, filter results to `source = <activeNoteId>`; in global
    scope, search all notes.
 3. Concatenate the returned chunks into a context block.
 4. Build the LLM prompt (`chatRagPrompt(context)`) and stream the answer.
@@ -187,10 +188,10 @@ reports semantic search as unavailable — keyword search keeps working.
 
 Settings exposes two IPC endpoints for maintenance:
 
-| IPC | Effect |
-|---|---|
+| IPC              | Effect                                                          |
+| ---------------- | --------------------------------------------------------------- |
 | `rag-get-status` | `{ ready, error, indexing, pending, indexedCount, totalNotes }` |
-| `rag-rebuild` | Clears all `vector_sync` rows and re-queues every note |
+| `rag-rebuild`    | Clears all `vector_sync` rows and re-queues every note          |
 
 Use rebuild after changing embedding-related settings, if the index is suspected
 corrupt, or after bulk-importing notes while the app was closed.
@@ -199,16 +200,16 @@ corrupt, or after bulk-importing notes while the app was closed.
 
 ## 7. File map
 
-| File | Role |
-|---|---|
-| `scripts/fetch-embedding-model.mjs` | Downloads the pinned ONNX model |
-| `scripts/embedding-model.lock.json` | Pins revision + SHA-256 checksums |
-| `src/main/services/localEmbeddings.js` | Model loading, batching, prefix-free raw embedding |
-| `src/main/database/vectorStore.js` | LanceDB schema, manifest, add/delete/search, prefixes |
-| `src/main/services/vectorIndexer.js` | Background queue, retries, reconcile/rebuild, status |
-| `src/main/database/crud.js` | Save hooks calling `requestIndex`; `vector_sync` queries |
-| `src/main/database/db.js` | Creates the `vector_sync` table |
-| `src/main/main.js` | Startup init (non-fatal), IPC handlers, `rag-status` broadcast |
-| `src/main/preload.js` | Safe renderer API surface (`searchSimilarNotes`, `getRagStatus`, …) |
-| `src/rendered/components/chat/LumosChatPanel.vue` | RAG chat consumer |
-| `src/rendered/components/settings/LumosAIRagCard.vue` | Status + rebuild UI |
+| File                                                  | Role                                                                |
+| ----------------------------------------------------- | ------------------------------------------------------------------- |
+| `scripts/fetch-embedding-model.mjs`                   | Downloads the pinned ONNX model                                     |
+| `scripts/embedding-model.lock.json`                   | Pins revision + SHA-256 checksums                                   |
+| `src/main/services/localEmbeddings.js`                | Model loading, batching, prefix-free raw embedding                  |
+| `src/main/database/vectorStore.js`                    | LanceDB schema, manifest, add/delete/search, prefixes               |
+| `src/main/services/vectorIndexer.js`                  | Background queue, retries, reconcile/rebuild, status                |
+| `src/main/database/crud.js`                           | Save hooks calling `requestIndex`; `vector_sync` queries            |
+| `src/main/database/db.js`                             | Creates the `vector_sync` table                                     |
+| `src/main/main.js`                                    | Startup init (non-fatal), IPC handlers, `rag-status` broadcast      |
+| `src/main/preload.js`                                 | Safe renderer API surface (`searchSimilarNotes`, `getRagStatus`, …) |
+| `src/rendered/components/chat/LumosChatPanel.vue`     | RAG chat consumer                                                   |
+| `src/rendered/components/settings/LumosAIRagCard.vue` | Status + rebuild UI                                                 |

@@ -1,14 +1,7 @@
 <template>
-    <v-container
-    fluid
-    class="chat-panel pa-0"
-    >
+    <v-container fluid class="chat-panel pa-0">
         <div class="d-flex align-center ga-3 mb-4">
-            <v-card
-                class="w-100"
-                variant="text"
-                transparent
-            >
+            <v-card class="w-100" variant="text" transparent>
                 <template v-slot:append>
                     <div class="d-flex align-center justify-end ga-2 ms-auto">
                         <ChatHistoryMenu
@@ -52,37 +45,39 @@
                 @send="sendMessage"
             />
         </ChatMessageList>
-</v-container>
+    </v-container>
 
-<RenameChatDialog
-v-model="renameChatDialog"
-:chat-id="activeChatId"
-:current-chat-title="activeChatTitle"
-@rename-chat="handleRenameChat"
-/>
-<ConfirmDeleteChatDialog
-v-model="deleteChatDialog"
-:chat-id="activeChatId"
-@delete-chat="handleDeleteChat"
-/>
-
+    <RenameChatDialog
+        v-model="renameChatDialog"
+        :chat-id="activeChatId"
+        :current-chat-title="activeChatTitle"
+        @rename-chat="handleRenameChat"
+    />
+    <ConfirmDeleteChatDialog
+        v-model="deleteChatDialog"
+        :chat-id="activeChatId"
+        @delete-chat="handleDeleteChat"
+    />
 </template>
 
 <script setup>
-import ChatComposer from './ChatComposer.vue'
-import ChatHistoryMenu from './ChatHistoryMenu.vue'
-import ChatMessageList from './ChatMessageList.vue'
-import RenameChatDialog from './dialogs/RenameChatDialog.vue'
-import ConfirmDeleteChatDialog from './dialogs/ConfirmDeleteChatDialog.vue'
-import { useChatConversations } from './composables/useChatConversations'
-import { useChatModelSelection } from './composables/useChatModelSelection'
+import ChatComposer from './ChatComposer.vue';
+import ChatHistoryMenu from './ChatHistoryMenu.vue';
+import ChatMessageList from './ChatMessageList.vue';
+import RenameChatDialog from './dialogs/RenameChatDialog.vue';
+import ConfirmDeleteChatDialog from './dialogs/ConfirmDeleteChatDialog.vue';
+import { useChatConversations } from './composables/useChatConversations';
+import { useChatModelSelection } from './composables/useChatModelSelection';
 
-import { createChatHistoryMessages, createLlmService } from '../../services/llmService'
+import {
+    createChatHistoryMessages,
+    createLlmService,
+} from '../../services/llmService';
 import { useFoldersStore } from '../../stores/foldersStore';
 import chatRagPrompt from '../../prompts/chatRagPrompt';
 
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 const props = defineProps({
     scope: {
@@ -110,27 +105,33 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
-})
+});
 
-const emit = defineEmits(['new-thread', 'select-conversation', 'conversation-updated'])
+const emit = defineEmits([
+    'new-thread',
+    'select-conversation',
+    'conversation-updated',
+]);
 
 // Store for folders and notes
-const store = useFoldersStore()
-const router = useRouter()
+const store = useFoldersStore();
+const router = useRouter();
 
-const chatMessageList = ref(null)
-const scope = computed(() => props.scope)
-const conversationId = computed(() => props.conversationId)
-const startEmpty = computed(() => props.startEmpty)
-const activeNoteId = computed(() => props.scope === 'note' ? props.noteId : null)
+const chatMessageList = ref(null);
+const scope = computed(() => props.scope);
+const conversationId = computed(() => props.conversationId);
+const startEmpty = computed(() => props.startEmpty);
+const activeNoteId = computed(() =>
+    props.scope === 'note' ? props.noteId : null,
+);
 
 const showSources = computed(() => {
-    return props.scope === 'all'
-})
+    return props.scope === 'all';
+});
 
 const scrollToBottom = async () => {
-    await chatMessageList.value?.scrollToBottom()
-}
+    await chatMessageList.value?.scrollToBottom();
+};
 
 const {
     loadModelPreferences,
@@ -138,7 +139,7 @@ const {
     selectedModel,
     selectedModelTitle,
     selectModel,
-} = useChatModelSelection()
+} = useChatModelSelection();
 
 const {
     chatStore,
@@ -168,174 +169,210 @@ const {
     startEmpty,
     emit,
     scrollToBottom,
-})
+});
 
 // Load AI preferences on mount
 onMounted(() => {
     loadModelPreferences();
-    initializeConversation()
+    initializeConversation();
 });
 
-watch(() => props.isVisible, async (isVisible) => {
-    if (isVisible) {
-        resetSession()
-        await scrollToBottom()
-    }
-})
+watch(
+    () => props.isVisible,
+    async (isVisible) => {
+        if (isVisible) {
+            resetSession();
+            await scrollToBottom();
+        }
+    },
+);
 
 const openSourceNote = async (noteId) => {
-    await store.openNote(noteId, router)
-}
+    await store.openNote(noteId, router);
+};
 
-const chunkDivederText = '\n\n-------\n\n'
+const chunkDivederText = '\n\n-------\n\n';
 
 const sendMessage = async () => {
     try {
-        if (userInput.value.trim() === '') return
-        if (props.scope === 'note' && !activeNoteId.value) return
-        
-        const userMessage = userInput.value
-        const conversationId = await ensurePersistedConversation(userMessage)
-        const chatHistory = createChatHistoryMessages(messages.value)
-        
-        chatStore.addMessage(props.scope, {
-            text: userMessage,
-            user: 'user',
-            bgColor: '',
-            variant: 'tonal',
-            sources: [],
-        }, activeNoteId.value)
-        
+        if (userInput.value.trim() === '') return;
+        if (props.scope === 'note' && !activeNoteId.value) return;
+
+        const userMessage = userInput.value;
+        const conversationId = await ensurePersistedConversation(userMessage);
+        const chatHistory = createChatHistoryMessages(messages.value);
+
+        chatStore.addMessage(
+            props.scope,
+            {
+                text: userMessage,
+                user: 'user',
+                bgColor: '',
+                variant: 'tonal',
+                sources: [],
+            },
+            activeNoteId.value,
+        );
+
         await chatStore.appendChatMessage({
             conversationId,
             role: 'user',
             content: userMessage,
             sources: [],
-        })
-        
+        });
+
         // Scroll to the bottom of the chat container
-        await scrollToBottom()
-        
-        userInput.value = ''
-        
+        await scrollToBottom();
+
+        userInput.value = '';
+
         // Search for similar notes
-        var filter = {}
-        
-        console.log('Current scope:', props.scope)
-        console.log('Active note ID:', store.activeNoteId)
-        
+        var filter = {};
+
+        console.log('Current scope:', props.scope);
+        console.log('Active note ID:', store.activeNoteId);
+
         if (props.scope === 'note' && activeNoteId.value) {
-            filter = { source: activeNoteId.value.toString() }
+            filter = { source: activeNoteId.value.toString() };
         }
-        
+
         const payload = {
             query: userMessage,
             limit: 3,
             filter: filter,
-        }
-        console.log('Search payload:', payload)
-        
-        const results = await window.api.searchSimilarNotes(payload)
-        console.log('Search results:', results)
-        
+        };
+        console.log('Search payload:', payload);
+
+        const results = await window.api.searchSimilarNotes(payload);
+        console.log('Search results:', results);
+
         // Build the context from the search results
-        var context = ''
+        var context = '';
         results.forEach((element, index) => {
-            context += element.pageContent + (index < results.length - 1 ? chunkDivederText : '')
+            context +=
+                element.pageContent +
+                (index < results.length - 1 ? chunkDivederText : '');
         });
-        console.log('Context:', context)
-        
+        console.log('Context:', context);
+
         // Get notes id from results metadata (citing functionality)
-        const notesIds = []
+        const notesIds = [];
         results.forEach((element) => {
-            notesIds.push(Number(element.metadata.source))
+            notesIds.push(Number(element.metadata.source));
         });
-        
-        const notesForCiting = await window.api.getNotesByIds(notesIds)
-        console.log('Notes for citing:', notesForCiting)
-        
+
+        const notesForCiting = await window.api.getNotesByIds(notesIds);
+        console.log('Notes for citing:', notesForCiting);
+
         // Init the LLM service for the RAG chatbot
-        const ragChatLLMService = createLlmService(chatRagPrompt(context), 'chat');
-        
+        const ragChatLLMService = createLlmService(
+            chatRagPrompt(context),
+            'chat',
+        );
+
         // Add initial empty bot message
-        const botMessageIndex = messages.value.length
-        chatStore.addMessage(props.scope, { 
-            text: 'Generating...',
-            user: 'bot',
-            bgColor: 'transparent',
-            variant: 'flat',
-            sources: []
-        }, activeNoteId.value)
-        
+        const botMessageIndex = messages.value.length;
+        chatStore.addMessage(
+            props.scope,
+            {
+                text: 'Generating...',
+                user: 'bot',
+                bgColor: 'transparent',
+                variant: 'flat',
+                sources: [],
+            },
+            activeNoteId.value,
+        );
+
         // Stream the response
-        const stream = await ragChatLLMService.stream(userMessage, chatHistory)
-        let accumulatedText = ''
-        
+        const stream = await ragChatLLMService.stream(userMessage, chatHistory);
+        let accumulatedText = '';
+
         for await (const chunk of stream) {
-            accumulatedText += chunk
-            chatStore.updateMessage(props.scope, botMessageIndex, {
-                ...messages.value[botMessageIndex],
-                text: accumulatedText
-            }, activeNoteId.value)
-            
+            accumulatedText += chunk;
+            chatStore.updateMessage(
+                props.scope,
+                botMessageIndex,
+                {
+                    ...messages.value[botMessageIndex],
+                    text: accumulatedText,
+                },
+                activeNoteId.value,
+            );
+
             // Scroll to the bottom of the chat container
-            await scrollToBottom()
+            await scrollToBottom();
         }
-        
+
         // Add citing information to the bot message
         const sources = notesForCiting.map((note) => ({
             title: note.title,
             id: note.id,
             folderName: note.folder_name,
-        }))
-        
-        chatStore.updateMessage(props.scope, botMessageIndex, {
-            ...messages.value[botMessageIndex],
-            sources,
-        }, activeNoteId.value)
-        
+        }));
+
+        chatStore.updateMessage(
+            props.scope,
+            botMessageIndex,
+            {
+                ...messages.value[botMessageIndex],
+                sources,
+            },
+            activeNoteId.value,
+        );
+
         await chatStore.appendChatMessage({
             conversationId,
             role: 'assistant',
             content: accumulatedText,
             sources,
-        })
-        
-        await loadRecentConversations()
+        });
+
+        await loadRecentConversations();
         emit('conversation-updated', {
             ...session.value,
             id: conversationId,
-        })
-        
+        });
+
         // Scroll to the bottom of the chat container
-        await scrollToBottom()
-        
+        await scrollToBottom();
     } catch (error) {
-        console.error('Error:', error)
-        chatStore.addMessage(props.scope, {
-            text: 'Error: ' + error.message,
-            user: 'bot',
-            bgColor: 'red',
-            variant: 'tonal',
-            sources: [],
-        }, activeNoteId.value)
+        console.error('Error:', error);
+        chatStore.addMessage(
+            props.scope,
+            {
+                text: 'Error: ' + error.message,
+                user: 'bot',
+                bgColor: 'red',
+                variant: 'tonal',
+                sources: [],
+            },
+            activeNoteId.value,
+        );
     }
-}
+};
 
-watch(() => [props.scope, activeNoteId.value], async () => {
-    await initializeConversation()
-}, { flush: 'post' })
+watch(
+    () => [props.scope, activeNoteId.value],
+    async () => {
+        await initializeConversation();
+    },
+    { flush: 'post' },
+);
 
-watch(() => props.conversationId, async (conversationId) => {
-    if (!conversationId) {
-        resetSession()
-        return
-    }
-    
-    if (Number(conversationId) !== Number(session.value.conversationId)) {
-        await loadConversationById(conversationId)
-    }
-})
+watch(
+    () => props.conversationId,
+    async (conversationId) => {
+        if (!conversationId) {
+            resetSession();
+            return;
+        }
+
+        if (Number(conversationId) !== Number(session.value.conversationId)) {
+            await loadConversationById(conversationId);
+        }
+    },
+);
 </script>
 
 <style scoped>
@@ -348,5 +385,4 @@ watch(() => props.conversationId, async (conversationId) => {
     overflow: hidden;
     box-sizing: border-box;
 }
-
 </style>

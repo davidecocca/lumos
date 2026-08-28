@@ -19,45 +19,51 @@
         <template #actions>
             <v-spacer />
             <v-btn variant="text" @click="closeDialog()">Cancel</v-btn>
-            <v-btn color="primary" variant="tonal" @click="saveFolder" :disabled="!folderName.trim()">Create</v-btn>
+            <v-btn
+                color="primary"
+                variant="tonal"
+                @click="saveFolder"
+                :disabled="!folderName.trim()"
+                >Create</v-btn
+            >
         </template>
     </BaseDialog>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import BaseDialog from '../../commons/BaseDialog.vue'
+import { ref } from 'vue';
+import BaseDialog from '../../commons/BaseDialog.vue';
 
 const props = defineProps({
     modelValue: {
         type: Boolean,
-        default: false
-    }
-})
+        default: false,
+    },
+});
 
-const emit = defineEmits(['update:modelValue', 'create-folder'])
+const emit = defineEmits(['update:modelValue', 'create-folder']);
 
-const folderName = ref('Untitled folder')
+const folderName = ref('Untitled folder');
 
 const closeDialog = () => {
-    emit('update:modelValue', false)
-    folderName.value = 'Untitled folder'
-}
+    emit('update:modelValue', false);
+    folderName.value = 'Untitled folder';
+};
 
 const handleClear = () => {
-    folderName.value = ''
-}
+    folderName.value = '';
+};
 
 const saveFolder = () => {
     if (folderName.value.trim()) {
-        emit('create-folder', folderName.value.trim())
-        folderName.value = 'Untitled folder'
+        emit('create-folder', folderName.value.trim());
+        folderName.value = 'Untitled folder';
     }
-}
+};
 
 const handleEnter = () => {
     if (folderName.value.trim()) {
-        saveFolder()
+        saveFolder();
     }
-}
+};
 </script>

@@ -1,77 +1,90 @@
 <template>
     <v-card
-    :color="props.message.bgColor"
-    :variant="props.message.variant"
-    rounded="lg"
-    >
-    <v-card-text
-    v-if="isBotMessage"
-    class="chat-markdown"
-    v-html="renderedMessage"
-    />
-    <v-card-text v-else>
-        {{ props.message.text }}
-    </v-card-text>
-    <div v-if="props.showSources && props.message.sources !== null && props.message.sources.length > 0">
-        <v-card-actions
-        style="flex-direction: column; align-items: flex-start; gap: 8px;"
-        >
-        <v-chip
-        v-for="(note, index) in message.sources"
-        :key="index"
-        variant="tonal"
+        :color="props.message.bgColor"
+        :variant="props.message.variant"
         rounded="lg"
-        size="small"
-        prepend-icon="ph-file"
-        @click="openNote(note.id)"
-        class="text-none text-label-large"
+    >
+        <v-card-text
+            v-if="isBotMessage"
+            class="chat-markdown"
+            v-html="renderedMessage"
+        />
+        <v-card-text v-else>
+            {{ props.message.text }}
+        </v-card-text>
+        <div
+            v-if="
+                props.showSources &&
+                props.message.sources !== null &&
+                props.message.sources.length > 0
+            "
         >
-        {{ note.folderName }} / {{ note.title }}
-    </v-chip>
-</v-card-actions>
-</div>
-</v-card>
+            <v-card-actions
+                style="
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 8px;
+                "
+            >
+                <v-chip
+                    v-for="(note, index) in message.sources"
+                    :key="index"
+                    variant="tonal"
+                    rounded="lg"
+                    size="small"
+                    prepend-icon="ph-file"
+                    @click="openNote(note.id)"
+                    class="text-none text-label-large"
+                >
+                    {{ note.folderName }} / {{ note.title }}
+                </v-chip>
+            </v-card-actions>
+        </div>
+    </v-card>
 </template>
 
 <script setup>
-    import { computed } from 'vue'
-    import { marked, Renderer } from 'marked'
+import { computed } from 'vue';
+import { marked, Renderer } from 'marked';
 
-    const props = defineProps({
-        message: {
-            type: Object,
-            required: true
-        },
-        showSources: {
-            type: Boolean,
-            default: true
-        }
-    })
+const props = defineProps({
+    message: {
+        type: Object,
+        required: true,
+    },
+    showSources: {
+        type: Boolean,
+        default: true,
+    },
+});
 
-    const emit = defineEmits(['open-source'])
+const emit = defineEmits(['open-source']);
 
-    const markdownRenderer = new Renderer()
-    const escapeHtml = (value) => String(value)
+const markdownRenderer = new Renderer();
+const escapeHtml = (value) =>
+    String(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
+        .replace(/'/g, '&#39;');
 
-    markdownRenderer.html = ({ text }) => escapeHtml(text)
+markdownRenderer.html = ({ text }) => escapeHtml(text);
 
-    const isBotMessage = computed(() => props.message.user === 'bot')
+const isBotMessage = computed(() => props.message.user === 'bot');
 
-    const renderedMessage = computed(() => marked.parse(props.message.text || '', {
+const renderedMessage = computed(() =>
+    marked.parse(props.message.text || '', {
         async: false,
         breaks: true,
         renderer: markdownRenderer,
-    }))
-    
-    // Open the note when the user clicks on the citing
-    const openNote = (nodeId) => {
-        emit('open-source', nodeId)
-    }
+    }),
+);
+
+// Open the note when the user clicks on the citing
+const openNote = (nodeId) => {
+    emit('open-source', nodeId);
+};
 </script>
 
 <style scoped>

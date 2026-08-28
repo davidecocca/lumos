@@ -6,13 +6,12 @@
 
 **Lumos** is a next-generation note-taking app, **built from the ground up with AI in mind**. Forget cloud lock-in and complex UI. Lumos gives you total control over your notes, enhanced with the latest in local and private AI. All your notes, all your ideas, safely on your machine.
 
-
 ## ⚠️ Project Status
 
 > **Alpha Stage Warning**: Lumos is currently in early alpha. It's not fully tested and may contain bugs. Use with caution and please report any issues you find.
 
-
 ## 🖼️ Screenshots
+
 <p align="center">
   <h3 align="center">Home</h3>
   <p align="center">
@@ -35,7 +34,6 @@
     <img src="images/dark_theme.png" alt="Note View (Dark Theme)" width="600" />
   </p>
 </p>
-
 
 ## 🚀 Features
 
@@ -69,7 +67,6 @@
 - **Chat with Your Notes**  
   Search, explore, or chat directly with your notes via Lumos AI—powered by local vector search.
 
-
 ## 🌟 Why Lumos?
 
 Notion and other modern note apps are great, but they often tie your data to their cloud or are overloaded with features. **Lumos was born from a need for:**
@@ -78,7 +75,6 @@ Notion and other modern note apps are great, but they often tie your data to the
 - **Simplicity & speed:** Clean, minimal UI. Everything just works.
 - **Local AI:** All AI features are local-first (and offline!), or you can use hosted models with your own keys.
 - **Material-inspired Design:** A beautiful, distraction-free writing experience.
-
 
 ## 🛠️ Tech Stack
 
@@ -91,14 +87,15 @@ Notion and other modern note apps are great, but they often tie your data to the
 - **Ollama** for local chat LLMs (optional, plug-and-play local inference)
 - **Optional:** Connect your own OpenAI (or similar) API key for hosted models
 
-
 ## 🖥️ Prerequisites
 
 1. Fetch the bundled embedding model (one command, ~210 MB, only needed once per machine):
-   ```bash
-   npm run fetch:model
-   ```
-   > Lumos uses it to generate note embeddings fully offline. The exact model version is pinned in `scripts/embedding-model.lock.json`.
+
+    ```bash
+    npm run fetch:model
+    ```
+
+    > Lumos uses it to generate note embeddings fully offline. The exact model version is pinned in `scripts/embedding-model.lock.json`.
 
 2. For local chat LLMs, install [Ollama](https://ollama.com/download) and pull the models you want to use. You will be able to choose in Lumos which to use!
 
@@ -113,7 +110,6 @@ Notion and other modern note apps are great, but they often tie your data to the
 
 > Notes auto-save while you write, and are indexed for semantic search in the background.
 
-
 ## 🙋‍♂️ Who’s Behind Lumos?
 
 **Davide Cocca** — [LinkedIn](https://it.linkedin.com/in/davide-cocca-5b6b661a1)
@@ -122,10 +118,10 @@ I'm a software engineer passionate about open source, AI, and building technolog
 
 Lumos started as a side project—built to offer a simple, local, and AI-powered note-taking experience as an alternative to Notion, without relying on the cloud.
 
-
 ## 📋 Todo
 
 ### Core Features
+
 - [✅] Add support for rich media in notes:
     - [✅] Add images with drag-and-drop
     - [✅] Add tables with formatting
@@ -135,6 +131,7 @@ Lumos started as a side project—built to offer a simple, local, and AI-powered
 - [ ] Add function to export notes
 
 ### Technical Improvements
+
 - [ ] Refactor codebase:
     - [ ] Modularize components
     - [ ] Improve code organization
@@ -145,21 +142,19 @@ Lumos started as a side project—built to offer a simple, local, and AI-powered
     - [ ] End-to-end (E2E) testing
 
 ### AI Features
+
 - [✅] Enhance chat functionality:
     - [✅] Add conversation history
     - [✅] Implement context retention
-
 
 ## 📣 Contributing
 
 Pull requests and ideas are welcome!  
 Check out the [CONTRIBUTING.md](CONTRIBUTING.md) (coming soon) for guidelines.
 
-
 ## 🪄 License
 
 MIT License. See [LICENSE](LICENSE) for details.
-
 
 ## ⭐️ Try Lumos Today!
 

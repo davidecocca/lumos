@@ -1,37 +1,37 @@
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter } from 'vue-router';
 
-import HomeView from '../views/HomeView.vue'
-import ChatView from '../views/ChatView.vue'
-import SettingsView from '../views/SettingsView.vue'
-import EditorView from '../views/EditorView.vue'
+import HomeView from '../views/HomeView.vue';
+import ChatView from '../views/ChatView.vue';
+import SettingsView from '../views/SettingsView.vue';
+import EditorView from '../views/EditorView.vue';
 
 const routes = [
     {
         path: '/',
         name: 'home',
-        component: HomeView
+        component: HomeView,
     },
     {
         path: '/chat',
         name: 'chat',
-        component: ChatView
+        component: ChatView,
     },
     {
         path: '/settings',
         name: 'settings',
-        component: SettingsView
+        component: SettingsView,
     },
     {
         path: '/notes/:noteId?',
         name: 'notes',
         component: EditorView,
-        props: true
-    }
-]
+        props: true,
+    },
+];
 
 const router = createRouter({
     history: createMemoryHistory(),
     routes,
-})
+});
 
-export default router
+export default router;

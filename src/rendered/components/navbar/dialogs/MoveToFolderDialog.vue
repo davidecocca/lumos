@@ -22,24 +22,30 @@
         <template #actions>
             <v-spacer />
             <v-btn variant="text" @click="closeDialog()">Cancel</v-btn>
-            <v-btn color="primary" variant="tonal" @click="moveNote" :disabled="!newFolderId">Move</v-btn>
+            <v-btn
+                color="primary"
+                variant="tonal"
+                @click="moveNote"
+                :disabled="!newFolderId"
+                >Move</v-btn
+            >
         </template>
     </BaseDialog>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import BaseDialog from '../../commons/BaseDialog.vue'
+import { ref, computed } from 'vue';
+import BaseDialog from '../../commons/BaseDialog.vue';
 
 const props = defineProps({
     modelValue: {
         type: Boolean,
-        default: false
+        default: false,
     },
     folders: {
         type: Array,
         mandatory: true,
-        default: () => []
+        default: () => [],
     },
     noteId: {
         type: Number,
@@ -48,36 +54,38 @@ const props = defineProps({
     currentFolderId: {
         type: Number,
         mandatory: true,
-    }
-})
+    },
+});
 
-const emit = defineEmits(['update:modelValue', 'move-note'])
+const emit = defineEmits(['update:modelValue', 'move-note']);
 
-const newFolderId = ref(null)
+const newFolderId = ref(null);
 
 const filteredFolders = computed(() => {
     // Exclude the folder where the note is currently placed
-    return props.folders.filter(folder => folder.id !== props.currentFolderId)
-})
+    return props.folders.filter(
+        (folder) => folder.id !== props.currentFolderId,
+    );
+});
 
 const closeDialog = () => {
-    emit('update:modelValue', false)
-}
+    emit('update:modelValue', false);
+};
 const moveNote = () => {
     if (newFolderId.value) {
-        emit('move-note', props.noteId, newFolderId.value)
-        newFolderId.value = null
-        closeDialog()
+        emit('move-note', props.noteId, newFolderId.value);
+        newFolderId.value = null;
+        closeDialog();
     }
-}
+};
 
 const handleEnter = () => {
     if (newFolderId.value) {
-        moveNote()
+        moveNote();
     }
-}
+};
 
 const handleClear = () => {
-    newFolderId.value = null
-}
+    newFolderId.value = null;
+};
 </script>

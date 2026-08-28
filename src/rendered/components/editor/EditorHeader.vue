@@ -3,7 +3,11 @@
         <div class="d-flex flex-column">
             <v-breadcrumbs :items="breadcrumbsItems">
                 <template v-slot:prepend>
-                    <v-icon icon="ph-folder" size="small" class="text-medium-emphasis"></v-icon>
+                    <v-icon
+                        icon="ph-folder"
+                        size="small"
+                        class="text-medium-emphasis"
+                    ></v-icon>
                 </template>
             </v-breadcrumbs>
         </div>
@@ -27,7 +31,10 @@
                 </template>
             </v-tooltip>
 
-            <v-tooltip :text="`Toggle note chat (${formatShortcut('⌘L')})`" location="bottom">
+            <v-tooltip
+                :text="`Toggle note chat (${formatShortcut('⌘L')})`"
+                location="bottom"
+            >
                 <template v-slot:activator="{ props }">
                     <v-btn
                         v-bind="props"
@@ -60,9 +67,9 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref } from 'vue'
-import NoteActionMenu from '../navbar/menus/NoteActionMenu.vue'
-import { formatShortcut } from '../../utils/shortcuts'
+import { computed, nextTick, ref } from 'vue';
+import NoteActionMenu from '../navbar/menus/NoteActionMenu.vue';
+import { formatShortcut } from '../../utils/shortcuts';
 
 const props = defineProps({
     note: {
@@ -85,7 +92,7 @@ const props = defineProps({
         type: Object,
         default: () => ({ dirty: false, saving: false, savedAt: null }),
     },
-})
+});
 
 const emit = defineEmits([
     'update:noteActionMenu',
@@ -95,55 +102,57 @@ const emit = defineEmits([
     'rename-note',
     'move-note',
     'delete-note',
-])
+]);
 
 const handleRenameNote = (noteId, title) => {
-    emit('rename-note', noteId, title)
-}
+    emit('rename-note', noteId, title);
+};
 
 const handleMoveNote = (noteId, currentFolderId) => {
-    emit('move-note', noteId, currentFolderId)
-}
+    emit('move-note', noteId, currentFolderId);
+};
 
 const handleUndo = () => {
-    props.editor?.chain().focus().undo().run()
-}
+    props.editor?.chain().focus().undo().run();
+};
 
 const handleRedo = () => {
-    props.editor?.chain().focus().redo().run()
-}
+    props.editor?.chain().focus().redo().run();
+};
 
-const isSaving = computed(() => Boolean(props.autoSave?.saving))
-const isSaveButtonHovered = ref(false)
-const manualSaveRequested = ref(false)
+const isSaving = computed(() => Boolean(props.autoSave?.saving));
+const isSaveButtonHovered = ref(false);
+const manualSaveRequested = ref(false);
 
-const isSaveButtonLoading = computed(() => (
-    isSaving.value || manualSaveRequested.value
-))
+const isSaveButtonLoading = computed(
+    () => isSaving.value || manualSaveRequested.value,
+);
 
 const handleSave = async () => {
     // Start the spinner immediately, before the parent save handler updates its state.
-    manualSaveRequested.value = true
-    emit('save')
-    await nextTick()
-    manualSaveRequested.value = false
-}
+    manualSaveRequested.value = true;
+    emit('save');
+    await nextTick();
+    manualSaveRequested.value = false;
+};
 
-const saveStatusIcon = computed(() => (
-    isSaveButtonHovered.value ? 'ph-floppy-disk' : 'ph-check'
-))
+const saveStatusIcon = computed(() =>
+    isSaveButtonHovered.value ? 'ph-floppy-disk' : 'ph-check',
+);
 
 const saveStatusTooltip = computed(() => {
-    if (!props.autoSave?.savedAt) return 'Save'
-    const date = new Date(props.autoSave.savedAt)
-    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    if (!props.autoSave?.savedAt) return 'Save';
+    const date = new Date(props.autoSave.savedAt);
+    const time = date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
     if (date.toDateString() === new Date().toDateString()) {
-        return `Last saved: ${time}`
+        return `Last saved: ${time}`;
     }
-    const day = date.toLocaleDateString([], { day: 'numeric', month: 'short' })
-    return `Last saved: ${day}, ${time}`
-})
+    const day = date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+    return `Last saved: ${day}, ${time}`;
+});
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

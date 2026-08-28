@@ -18,8 +18,17 @@ import { fileURLToPath } from 'node:url';
 const REPOSITORY = 'onnx-community/embeddinggemma-300m-ONNX';
 const REVISION = '5090578d9565bb06545b4552f76e6bc2c93e4a66';
 
-const MODEL_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'resources', 'models', 'embeddinggemma-300m-onnx');
-const LOCK_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'embedding-model.lock.json');
+const MODEL_DIR = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '..',
+    'resources',
+    'models',
+    'embeddinggemma-300m-onnx',
+);
+const LOCK_FILE = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    'embedding-model.lock.json',
+);
 
 // Expected sizes come from the pinned revision; they guard against truncated downloads.
 const MODEL_FILES = [
@@ -37,11 +46,14 @@ const updateLock = process.argv.includes('--update-lock');
 function sha256(filePath) {
     return new Promise((resolve, reject) => {
         const hash = createHash('sha256');
-        fs.open(filePath, 'r').then((handle) => handle.createReadStream()).then((stream) => {
-            stream.on('data', (chunk) => hash.update(chunk));
-            stream.on('end', () => resolve(hash.digest('hex')));
-            stream.on('error', reject);
-        }).catch(reject);
+        fs.open(filePath, 'r')
+            .then((handle) => handle.createReadStream())
+            .then((stream) => {
+                stream.on('data', (chunk) => hash.update(chunk));
+                stream.on('end', () => resolve(hash.digest('hex')));
+                stream.on('error', reject);
+            })
+            .catch(reject);
     });
 }
 
@@ -79,11 +91,17 @@ async function downloadModelFile(relativePath, expectedSize, destination) {
                 }
             };
 
-            await pipeline(Readable.fromWeb(response.body), countAndHash, createWriteStream(tempFile));
+            await pipeline(
+                Readable.fromWeb(response.body),
+                countAndHash,
+                createWriteStream(tempFile),
+            );
             process.stdout.write(`\r    ${formatBytes(received)}\n`);
 
             if (expectedSize && received !== expectedSize) {
-                throw new Error(`size mismatch for ${relativePath}: got ${received}, expected ${expectedSize}`);
+                throw new Error(
+                    `size mismatch for ${relativePath}: got ${received}, expected ${expectedSize}`,
+                );
             }
 
             await fs.rename(tempFile, destination);
@@ -91,8 +109,12 @@ async function downloadModelFile(relativePath, expectedSize, destination) {
         } catch (error) {
             await fs.rm(tempFile, { force: true });
             if (attempts >= 3) throw error;
-            console.warn(`    attempt ${attempts} failed (${error.message}), retrying...`);
-            await new Promise((resolve) => setTimeout(resolve, attempts * 2000));
+            console.warn(
+                `    attempt ${attempts} failed (${error.message}), retrying...`,
+            );
+            await new Promise((resolve) =>
+                setTimeout(resolve, attempts * 2000),
+            );
         }
     }
 }
@@ -106,12 +128,18 @@ async function main() {
         try {
             lock = JSON.parse(await fs.readFile(LOCK_FILE, 'utf8'));
             if (lock.revision !== REVISION) {
-                console.error(`Lockfile revision ${lock.revision} does not match script revision ${REVISION}.`);
-                console.error('Run with --update-lock after bumping REVISION intentionally.');
+                console.error(
+                    `Lockfile revision ${lock.revision} does not match script revision ${REVISION}.`,
+                );
+                console.error(
+                    'Run with --update-lock after bumping REVISION intentionally.',
+                );
                 process.exit(1);
             }
         } catch {
-            console.error('Lockfile missing or unreadable. Run: node scripts/fetch-embedding-model.mjs --update-lock');
+            console.error(
+                'Lockfile missing or unreadable. Run: node scripts/fetch-embedding-model.mjs --update-lock',
+            );
             process.exit(1);
         }
     }
@@ -124,11 +152,16 @@ async function main() {
         if (!updateLock && expected) {
             try {
                 const stat = await fs.stat(destination);
-                if (stat.size === entry.size && await sha256(destination) === expected.sha256) {
+                if (
+                    stat.size === entry.size &&
+                    (await sha256(destination)) === expected.sha256
+                ) {
                     console.log(`  ok      ${entry.file}`);
                     continue;
                 }
-                console.log(`  invalid ${entry.file} (hash/size mismatch), re-downloading`);
+                console.log(
+                    `  invalid ${entry.file} (hash/size mismatch), re-downloading`,
+                );
             } catch {
                 console.log(`  missing ${entry.file}, downloading`);
             }
@@ -136,10 +169,16 @@ async function main() {
             console.log(`  fetch   ${entry.file}`);
         }
 
-        const digest = await downloadModelFile(entry.file, entry.size, destination);
+        const digest = await downloadModelFile(
+            entry.file,
+            entry.size,
+            destination,
+        );
         lock.files[entry.file] = { sha256: digest, size: entry.size };
         changed = true;
-        console.log(`  done    ${entry.file} (sha256 ${digest.slice(0, 12)}...)`);
+        console.log(
+            `  done    ${entry.file} (sha256 ${digest.slice(0, 12)}...)`,
+        );
     }
 
     if (updateLock || changed) {

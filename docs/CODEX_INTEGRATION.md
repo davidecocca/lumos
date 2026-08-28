@@ -7,7 +7,7 @@ Lumos integrates with the locally installed Codex CLI through its `app-server` m
 The service runs in Electron's main process because it starts and manages a local system process:
 
 ```js
-spawn('codex', ['app-server', '--stdio'])
+spawn('codex', ['app-server', '--stdio']);
 ```
 
 It does not call an OpenAI HTTP API, handle API keys, or read Codex login credentials. Authentication remains owned by the installed CLI. The renderer accesses the service only through APIs exposed by `src/main/preload.js` and IPC handlers in `src/main/main.js`.
@@ -19,7 +19,7 @@ Codex app-server uses newline-delimited JSON-RPC over standard input and output.
 Requests are sent in this form:
 
 ```json
-{"jsonrpc":"2.0","id":1,"method":"method/name","params":{}}
+{ "jsonrpc": "2.0", "id": 1, "method": "method/name", "params": {} }
 ```
 
 `CodexAppServer` assigns each request an ID and keeps its Promise resolver in a pending-request map. It buffers stdout, parses complete JSON lines, and either resolves the matching request or forwards a notification to registered listeners. Each JSON-RPC request has a two-minute timeout.

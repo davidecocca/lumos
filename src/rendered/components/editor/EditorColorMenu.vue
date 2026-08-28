@@ -33,7 +33,7 @@ defineProps({
         type: Array,
         default: () => [],
     },
-})
+});
 
-const emit = defineEmits(['select'])
+const emit = defineEmits(['select']);
 </script>

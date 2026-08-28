@@ -1,21 +1,18 @@
 <template>
     <!-- Navigation drawer -->
-    <NavigationDrawer
-    v-model:rail="isDrawerRail"
-    @open-search="openSearch"
-    />
-    
+    <NavigationDrawer v-model:rail="isDrawerRail" @open-search="openSearch" />
+
     <!-- Main content area -->
     <v-main class="detail-pane">
         <v-container fluid>
             <router-view
-            :key="$route.fullPath"
-            :theme="themePreference"
-            @update:theme="themePreference = $event"
+                :key="$route.fullPath"
+                :theme="themePreference"
+                @update:theme="themePreference = $event"
             />
         </v-container>
     </v-main>
-    
+
     <SearchDialog v-model="isSearchOpen" />
     <AboutDialog v-model="isAboutOpen" />
 </template>
@@ -31,8 +28,8 @@ import LlmService from '../services/llmService';
 import { getGroqModels } from '../services/providers/groqService';
 
 import { watch, ref, onMounted, onBeforeUnmount } from 'vue';
-import { useTheme } from 'vuetify'
-import { useRoute, useRouter } from 'vue-router'
+import { useTheme } from 'vuetify';
+import { useRoute, useRouter } from 'vue-router';
 
 // Import the API from the Electron context
 const { api } = window;
@@ -45,7 +42,7 @@ const isAboutOpen = ref(false);
 const isFullscreen = ref(false);
 
 // Theme management
-const theme = useTheme()
+const theme = useTheme();
 
 // Store for AI preferences
 const aiStore = aiPreferencesStore();
@@ -58,8 +55,8 @@ const llmService = new LlmService();
 // Get the current route
 const route = useRoute();
 const router = useRouter();
-const TOGGLE_NOTE_CHAT_EVENT = 'lumos-toggle-note-chat'
-const SAVE_NOTE_EVENT = 'lumos-save-note'
+const TOGGLE_NOTE_CHAT_EVENT = 'lumos-toggle-note-chat';
+const SAVE_NOTE_EVENT = 'lumos-save-note';
 
 // Handler to update fullscreen state based on IPC messages
 const updateFullscreen = (event, isFs) => {
@@ -68,58 +65,61 @@ const updateFullscreen = (event, isFs) => {
 
 const toggleNavbar = () => {
     isDrawerRail.value = !isDrawerRail.value;
-}
+};
 
 const openSearch = () => {
     isSearchOpen.value = true;
-}
+};
 
 const handleMenuAction = (_, action) => {
     if (action === 'new-note') {
         if (foldersStore.folders.length) {
-            foldersStore.openCreateNoteDialog(foldersStore.activeFolderId, true)
+            foldersStore.openCreateNoteDialog(
+                foldersStore.activeFolderId,
+                true,
+            );
         }
-        return
+        return;
     }
 
     if (action === 'new-folder') {
-        foldersStore.openCreateFolderDialog()
-        return
+        foldersStore.openCreateFolderDialog();
+        return;
     }
 
     if (action === 'save-note') {
-        window.dispatchEvent(new Event(SAVE_NOTE_EVENT))
-        return
+        window.dispatchEvent(new Event(SAVE_NOTE_EVENT));
+        return;
     }
 
     if (action === 'open-search') {
-        openSearch()
-        return
+        openSearch();
+        return;
     }
 
     if (action === 'toggle-sidebar') {
-        toggleNavbar()
-        return
+        toggleNavbar();
+        return;
     }
 
     if (action === 'toggle-note-chat') {
-        window.dispatchEvent(new Event(TOGGLE_NOTE_CHAT_EVENT))
-        return
+        window.dispatchEvent(new Event(TOGGLE_NOTE_CHAT_EVENT));
+        return;
     }
 
     if (action === 'open-chat') {
-        isSearchOpen.value = false
-        router.push({ name: 'chat' })
-        return
+        isSearchOpen.value = false;
+        router.push({ name: 'chat' });
+        return;
     }
 
     if (action === 'about') {
-        isAboutOpen.value = true
+        isAboutOpen.value = true;
     }
-}
+};
 
 // Media query to detect OS theme changes
-const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
 // Store user preference for theme; if not set, default to 'light'
 const themePreference = ref(localStorage.getItem('themePreference') || 'light');
@@ -127,7 +127,7 @@ const themePreference = ref(localStorage.getItem('themePreference') || 'light');
 const updateTheme = () => {
     if (themePreference.value === 'auto') {
         // "auto" syncs with the OS setting
-        theme.global.name.value = mediaQuery.matches ? "dark" : "light";
+        theme.global.name.value = mediaQuery.matches ? 'dark' : 'light';
     } else {
         // "light" or "dark" overrides OS setting
         theme.global.name.value = themePreference.value;
@@ -153,7 +153,10 @@ const fetchAllModels = async () => {
 
     if (aiStore.apiKeys.groq) {
         try {
-            aiStore.updateAvailableModels('groq', await getGroqModels(aiStore.apiKeys.groq));
+            aiStore.updateAvailableModels(
+                'groq',
+                await getGroqModels(aiStore.apiKeys.groq),
+            );
         } catch (error) {
             aiStore.updateAvailableModels('groq', []);
             console.error('Error fetching Groq models:', error);
@@ -163,13 +166,13 @@ const fetchAllModels = async () => {
 
 onMounted(() => {
     // Set up listener for OS theme changes
-    mediaQuery.addEventListener("change", handleOSChange);
+    mediaQuery.addEventListener('change', handleOSChange);
     updateTheme();
-    
+
     // Register the IPC listener for fullscreen changes
     api.on('fullscreen-changed', updateFullscreen);
     api.on('menu-action', handleMenuAction);
-    
+
     // Load AI preferences once at app startup
     aiStore.loadPreferences();
     fetchAllModels();
@@ -178,13 +181,12 @@ onMounted(() => {
             .then((status) => aiStore.setCodexEnabled(true, status.models))
             .catch(() => aiStore.setCodexEnabled(false));
     }
-    
 });
 
 onBeforeUnmount(() => {
     // Clean up the media query event listener
-    mediaQuery.removeEventListener("change", handleOSChange);
-    
+    mediaQuery.removeEventListener('change', handleOSChange);
+
     // Remove the IPC listener for fullscreen changes to prevent memory leaks
     api.removeListener('fullscreen-changed', updateFullscreen);
     api.removeListener('menu-action', handleMenuAction);
@@ -197,18 +199,21 @@ watch(themePreference, (newVal) => {
 });
 
 // Watch for route changes and reset activeNoteId if not on notes page
-watch(() => route.name, (newRouteName) => {
-    if (newRouteName !== 'notes') {
-        foldersStore.activeNoteId = null;
-        foldersStore.activeNoteTitle = '';
-        foldersStore.activeNoteCurrentFolderId = null;
-        foldersStore.editorNoteId = null;
-        foldersStore.editorNoteTitle = '';
-        foldersStore.editorNoteCurrentFolderId = null;
-        foldersStore.editorNoteFavorite = null;
-        foldersStore.editorNoteDeletedId = null;
-    }
-});
+watch(
+    () => route.name,
+    (newRouteName) => {
+        if (newRouteName !== 'notes') {
+            foldersStore.activeNoteId = null;
+            foldersStore.activeNoteTitle = '';
+            foldersStore.activeNoteCurrentFolderId = null;
+            foldersStore.editorNoteId = null;
+            foldersStore.editorNoteTitle = '';
+            foldersStore.editorNoteCurrentFolderId = null;
+            foldersStore.editorNoteFavorite = null;
+            foldersStore.editorNoteDeletedId = null;
+        }
+    },
+);
 
 watch(
     [() => foldersStore.folders.length, () => route.name],
@@ -218,7 +223,7 @@ watch(
             hasOpenNote: routeName === 'notes',
         });
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 
@@ -274,5 +279,4 @@ watch(
     min-height: 100vh;
     padding-top: 56px;
 }
-
 </style>

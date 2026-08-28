@@ -1,8 +1,5 @@
 <template>
-    <v-menu
-        v-model="isOpen"
-        location="bottom end"
-    >
+    <v-menu v-model="isOpen" location="bottom end">
         <template v-slot:activator="{ props: menuProps }">
             <v-tooltip text="Recents" location="bottom">
                 <template v-slot:activator="{ props: tooltipProps }">
@@ -17,7 +14,12 @@
             </v-tooltip>
         </template>
 
-        <v-list min-width="280" max-height="360" density="compact" class="overflow-y-auto pl-1 pr-1 pt-2 pb-2">
+        <v-list
+            min-width="280"
+            max-height="360"
+            density="compact"
+            class="overflow-y-auto pl-1 pr-1 pt-2 pb-2"
+        >
             <v-list-subheader>Recents</v-list-subheader>
             <v-list-item
                 v-if="conversations.length === 0"
@@ -32,13 +34,19 @@
                 density="compact"
                 @click="selectConversation(conversation.id)"
             >
-                <v-list-item-title>{{ conversation.title || 'New chat' }}</v-list-item-title>
-                <v-list-item-subtitle>{{ formatConversationTime(conversation.updatedAt) }}</v-list-item-subtitle>
+                <v-list-item-title>{{
+                    conversation.title || 'New chat'
+                }}</v-list-item-title>
+                <v-list-item-subtitle>{{
+                    formatConversationTime(conversation.updatedAt)
+                }}</v-list-item-subtitle>
                 <template v-slot:append>
                     <v-menu>
                         <template v-slot:activator="{ props }">
                             <v-tooltip text="More" location="top">
-                                <template v-slot:activator="{ props: tooltipProps }">
+                                <template
+                                    v-slot:activator="{ props: tooltipProps }"
+                                >
                                     <v-btn
                                         v-bind="{ ...props, ...tooltipProps }"
                                         icon="ph-dots-three"
@@ -51,8 +59,15 @@
                                 </template>
                             </v-tooltip>
                         </template>
-                        <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
-                            <v-list-item @click.stop="emit('rename', conversation)" rounded="lg">
+                        <v-list
+                            density="compact"
+                            rounded="lg"
+                            class="pl-1 pr-1 pt-2 pb-2"
+                        >
+                            <v-list-item
+                                @click.stop="emit('rename', conversation)"
+                                rounded="lg"
+                            >
                                 <template v-slot:append>
                                     <v-icon icon="ph-pencil-line"></v-icon>
                                 </template>
@@ -78,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, mergeProps } from 'vue'
+import { ref, mergeProps } from 'vue';
 
 defineProps({
     conversations: {
@@ -89,24 +104,24 @@ defineProps({
         type: [Number, String],
         default: null,
     },
-})
+});
 
-const emit = defineEmits(['load', 'select', 'rename', 'delete'])
+const emit = defineEmits(['load', 'select', 'rename', 'delete']);
 
-const isOpen = ref(false)
+const isOpen = ref(false);
 
 const selectConversation = (conversationId) => {
-    isOpen.value = false
-    emit('select', conversationId)
-}
+    isOpen.value = false;
+    emit('select', conversationId);
+};
 
 const formatConversationTime = (value) => {
-    if (!value) return ''
+    if (!value) return '';
     return new Intl.DateTimeFormat(undefined, {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-    }).format(new Date(value))
-}
+    }).format(new Date(value));
+};
 </script>

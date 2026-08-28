@@ -1,11 +1,7 @@
 <template>
     <div class="editor-layout">
         <div class="editor-content">
-            <v-card
-                elevation="0"
-                class="rounded-md border ma-3"
-                rounded="lg"
-            >
+            <v-card elevation="0" class="rounded-md border ma-3" rounded="lg">
                 <v-card-text>
                     <div ref="editorShellRef" class="editor-shell">
                         <TableOverlayControls
@@ -13,7 +9,7 @@
                             :editor="editor"
                             :container-ref="editorShellRef"
                         />
-                        <editor-content :editor="editor"/>
+                        <editor-content :editor="editor" />
                     </div>
                 </v-card-text>
             </v-card>
@@ -22,19 +18,19 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { EditorContent } from '@tiptap/vue-3'
-import TableOverlayControls from './overlay-controls/TableOverlayControls.vue'
-import './styles/editorContent.css'
+import { ref } from 'vue';
+import { EditorContent } from '@tiptap/vue-3';
+import TableOverlayControls from './overlay-controls/TableOverlayControls.vue';
+import './styles/editorContent.css';
 
 defineProps({
     editor: {
         type: Object,
         default: null,
     },
-})
+});
 
-const editorShellRef = ref(null)
+const editorShellRef = ref(null);
 </script>
 
 <style scoped>

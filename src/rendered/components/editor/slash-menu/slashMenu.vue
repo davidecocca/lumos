@@ -3,24 +3,24 @@
         <v-list density="comfortable" nav>
             <v-list-subheader>Insert</v-list-subheader>
             <v-list-item
-            v-for="(item, index) in items"
-            :key="item.title"
-            :active="selectedIndex === index"
-            rounded="lg"
-            @click="selectItem(index)"
+                v-for="(item, index) in items"
+                :key="item.title"
+                :active="selectedIndex === index"
+                rounded="lg"
+                @click="selectItem(index)"
             >
-            <template v-slot:prepend>
-                <v-icon :icon="item.icon"></v-icon>
-            </template>
-            <v-list-item-title>{{ item.title }}</v-list-item-title>
-            <v-list-item-subtitle>{{ item.subtitle }}</v-list-item-subtitle>
-        </v-list-item>
-    </v-list>
-</v-card>
+                <template v-slot:prepend>
+                    <v-icon :icon="item.icon"></v-icon>
+                </template>
+                <v-list-item-title>{{ item.title }}</v-list-item-title>
+                <v-list-item-subtitle>{{ item.subtitle }}</v-list-item-subtitle>
+            </v-list-item>
+        </v-list>
+    </v-card>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch } from 'vue';
 
 const props = defineProps({
     items: {
@@ -31,55 +31,56 @@ const props = defineProps({
         type: Function,
         required: true,
     },
-})
+});
 
-const selectedIndex = ref(0)
+const selectedIndex = ref(0);
 
-watch(() => props.items, () => {
-    selectedIndex.value = 0
-}, { immediate: true })
+watch(
+    () => props.items,
+    () => {
+        selectedIndex.value = 0;
+    },
+    { immediate: true },
+);
 
 const selectItem = (index) => {
-    const item = props.items[index]
-    
+    const item = props.items[index];
+
     if (!item) {
-        return
+        return;
     }
-    
-    props.command(item)
-}
+
+    props.command(item);
+};
 
 const onKeyDown = ({ event }) => {
     if (!props.items.length) {
-        return false
+        return false;
     }
-    
+
     if (event.key === 'ArrowUp') {
-        event.preventDefault()
-        selectedIndex.value = (
-        (selectedIndex.value + props.items.length - 1) % props.items.length
-        )
-        return true
+        event.preventDefault();
+        selectedIndex.value =
+            (selectedIndex.value + props.items.length - 1) % props.items.length;
+        return true;
     }
-    
+
     if (event.key === 'ArrowDown') {
-        event.preventDefault()
-        selectedIndex.value = (
-        (selectedIndex.value + 1) % props.items.length
-        )
-        return true
+        event.preventDefault();
+        selectedIndex.value = (selectedIndex.value + 1) % props.items.length;
+        return true;
     }
-    
+
     if (event.key === 'Enter') {
-        event.preventDefault()
-        selectItem(selectedIndex.value)
-        return true
+        event.preventDefault();
+        selectItem(selectedIndex.value);
+        return true;
     }
-    
-    return false
-}
+
+    return false;
+};
 
 defineExpose({
     onKeyDown,
-})
+});
 </script>

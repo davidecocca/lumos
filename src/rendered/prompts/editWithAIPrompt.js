@@ -6,6 +6,6 @@ Reply in original language.
 
 Return only the edited text. Do not include explanations, the original text, or the instruction itself.
 
-Instruction: "${userPrompt}"`
+Instruction: "${userPrompt}"`;
 
 export default editWithAIPrompt;

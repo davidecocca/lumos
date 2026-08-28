@@ -20,11 +20,12 @@
                         dense
                         no-gutters
                     >
-                        <v-col
-                            v-for="item in row.items"
-                            :key="item.key"
-                        >
-                            <v-tooltip v-if="item.type === 'button'" :text="item.label" location="top">
+                        <v-col v-for="item in row.items" :key="item.key">
+                            <v-tooltip
+                                v-if="item.type === 'button'"
+                                :text="item.label"
+                                location="top"
+                            >
                                 <template v-slot:activator="{ props }">
                                     <v-btn
                                         v-bind="props"
@@ -37,12 +38,28 @@
                                 </template>
                             </v-tooltip>
 
-                            <v-menu v-else-if="item.type === 'style'" min-width="200px" width="200px">
-                                <template v-slot:activator="{ props: menuProps }">
-                                    <v-tooltip :text="item.label" location="top">
-                                        <template v-slot:activator="{ props: tooltipProps }">
+                            <v-menu
+                                v-else-if="item.type === 'style'"
+                                min-width="200px"
+                                width="200px"
+                            >
+                                <template
+                                    v-slot:activator="{ props: menuProps }"
+                                >
+                                    <v-tooltip
+                                        :text="item.label"
+                                        location="top"
+                                    >
+                                        <template
+                                            v-slot:activator="{
+                                                props: tooltipProps,
+                                            }"
+                                        >
                                             <v-btn
-                                                v-bind="{ ...menuProps, ...tooltipProps }"
+                                                v-bind="{
+                                                    ...menuProps,
+                                                    ...tooltipProps,
+                                                }"
                                                 :icon="item.icon"
                                                 variant="text"
                                                 rounded="lg"
@@ -61,11 +78,23 @@
                             </v-menu>
 
                             <v-menu v-else-if="item.type === 'highlight'">
-                                <template v-slot:activator="{ props: menuProps }">
-                                    <v-tooltip :text="item.label" location="top">
-                                        <template v-slot:activator="{ props: tooltipProps }">
+                                <template
+                                    v-slot:activator="{ props: menuProps }"
+                                >
+                                    <v-tooltip
+                                        :text="item.label"
+                                        location="top"
+                                    >
+                                        <template
+                                            v-slot:activator="{
+                                                props: tooltipProps,
+                                            }"
+                                        >
                                             <v-btn
-                                                v-bind="{ ...menuProps, ...tooltipProps }"
+                                                v-bind="{
+                                                    ...menuProps,
+                                                    ...tooltipProps,
+                                                }"
                                                 :icon="item.icon"
                                                 variant="text"
                                                 rounded="lg"
@@ -82,11 +111,23 @@
                             </v-menu>
 
                             <v-menu v-else-if="item.type === 'color'">
-                                <template v-slot:activator="{ props: menuProps }">
-                                    <v-tooltip :text="item.label" location="top">
-                                        <template v-slot:activator="{ props: tooltipProps }">
+                                <template
+                                    v-slot:activator="{ props: menuProps }"
+                                >
+                                    <v-tooltip
+                                        :text="item.label"
+                                        location="top"
+                                    >
+                                        <template
+                                            v-slot:activator="{
+                                                props: tooltipProps,
+                                            }"
+                                        >
                                             <v-btn
-                                                v-bind="{ ...menuProps, ...tooltipProps }"
+                                                v-bind="{
+                                                    ...menuProps,
+                                                    ...tooltipProps,
+                                                }"
                                                 :icon="item.icon"
                                                 variant="text"
                                                 rounded="lg"
@@ -130,11 +171,23 @@
 
                         <v-col class="d-flex justify-center">
                             <v-menu>
-                                <template v-slot:activator="{ props: menuProps }">
-                                    <v-tooltip text="Other AI options" location="bottom">
-                                        <template v-slot:activator="{ props: tooltipProps }">
+                                <template
+                                    v-slot:activator="{ props: menuProps }"
+                                >
+                                    <v-tooltip
+                                        text="Other AI options"
+                                        location="bottom"
+                                    >
+                                        <template
+                                            v-slot:activator="{
+                                                props: tooltipProps,
+                                            }"
+                                        >
                                             <v-btn
-                                                v-bind="{ ...menuProps, ...tooltipProps }"
+                                                v-bind="{
+                                                    ...menuProps,
+                                                    ...tooltipProps,
+                                                }"
                                                 icon="ph-dots-three"
                                                 variant="text"
                                                 rounded="lg"
@@ -150,8 +203,12 @@
                                     @make-shorter="emit('ai-make-shorter')"
                                     @make-longer="emit('ai-make-longer')"
                                     @simplify="emit('ai-simplify')"
-                                    @change-tone="emit('ai-change-tone', $event)"
-                                    @translate-to="emit('ai-translate-to', $event)"
+                                    @change-tone="
+                                        emit('ai-change-tone', $event)
+                                    "
+                                    @translate-to="
+                                        emit('ai-translate-to', $event)
+                                    "
                                 />
                             </v-menu>
                         </v-col>
@@ -163,12 +220,12 @@
 </template>
 
 <script setup>
-import { BubbleMenu } from '@tiptap/vue-3/menus'
-import { computed } from 'vue'
-import EditorAIMenu from './EditorAIMenu.vue'
-import EditorBlockStyleMenu from './EditorBlockStyleMenu.vue'
-import EditorColorMenu from './EditorColorMenu.vue'
-import { formatShortcut } from '../../utils/shortcuts'
+import { BubbleMenu } from '@tiptap/vue-3/menus';
+import { computed } from 'vue';
+import EditorAIMenu from './EditorAIMenu.vue';
+import EditorBlockStyleMenu from './EditorBlockStyleMenu.vue';
+import EditorColorMenu from './EditorColorMenu.vue';
+import { formatShortcut } from '../../utils/shortcuts';
 
 const props = defineProps({
     editor: {
@@ -207,7 +264,7 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-})
+});
 
 const emit = defineEmits([
     'insert-details',
@@ -223,7 +280,7 @@ const emit = defineEmits([
     'ai-simplify',
     'ai-change-tone',
     'ai-translate-to',
-])
+]);
 
 const formatRows = computed(() => [
     {
@@ -248,7 +305,8 @@ const formatRows = computed(() => [
                 type: 'button',
                 label: `Underline (${formatShortcut('⌘U')})`,
                 icon: 'ph-text-underline',
-                action: () => props.editor.chain().focus().toggleUnderline().run(),
+                action: () =>
+                    props.editor.chain().focus().toggleUnderline().run(),
             },
             {
                 key: 'strike',
@@ -292,18 +350,20 @@ const formatRows = computed(() => [
                 type: 'button',
                 label: `Superscript (${formatShortcut('⌘.')})`,
                 icon: 'ph-text-superscript',
-                action: () => props.editor.chain().focus().toggleSuperscript().run(),
+                action: () =>
+                    props.editor.chain().focus().toggleSuperscript().run(),
             },
             {
                 key: 'subscript',
                 type: 'button',
                 label: `Subscript (${formatShortcut('⌘,')})`,
                 icon: 'ph-text-subscript',
-                action: () => props.editor.chain().focus().toggleSubscript().run(),
+                action: () =>
+                    props.editor.chain().focus().toggleSubscript().run(),
             },
         ],
     },
-])
+]);
 
 const aiQuickActions = [
     {
@@ -330,7 +390,7 @@ const aiQuickActions = [
         icon: 'ph-sparkle',
         event: 'ai-improve-writing',
     },
-]
+];
 </script>
 
 <style scoped>

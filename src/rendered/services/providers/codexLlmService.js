@@ -10,7 +10,8 @@ export class CodexLlmService {
     buildPrompt(message, history) {
         const historyText = history
             .map((entry) => {
-                const role = entry instanceof HumanMessage ? 'User' : 'Assistant';
+                const role =
+                    entry instanceof HumanMessage ? 'User' : 'Assistant';
                 return `${role}: ${entry.content}`;
             })
             .join('\n\n');
@@ -19,7 +20,9 @@ export class CodexLlmService {
             this.systemPrompt,
             historyText && `Conversation history:\n${historyText}`,
             `User: ${message}`,
-        ].filter(Boolean).join('\n\n');
+        ]
+            .filter(Boolean)
+            .join('\n\n');
     }
 
     async generate(message, history = []) {
@@ -41,7 +44,8 @@ export class CodexLlmService {
             if (event.requestId !== requestId) return;
             if (event.type === 'delta') chunks.push(event.text);
             if (event.type === 'error') error = new Error(event.error);
-            if (event.type === 'complete' || event.type === 'error') complete = true;
+            if (event.type === 'complete' || event.type === 'error')
+                complete = true;
             wake();
         });
 

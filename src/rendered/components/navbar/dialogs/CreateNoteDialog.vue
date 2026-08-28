@@ -16,7 +16,7 @@
             variant="outlined"
             density="comfortable"
             class="mb-3"
-            :rules="[v => !!v || 'Folder is required']"
+            :rules="[(v) => !!v || 'Folder is required']"
         ></v-select>
 
         <v-text-field
@@ -32,23 +32,29 @@
         <template #actions>
             <v-spacer />
             <v-btn variant="text" @click="closeDialog()">Cancel</v-btn>
-            <v-btn color="primary" variant="tonal" @click="saveNote" :disabled="!noteTitle.trim() || !selectedFolderId">Create</v-btn>
+            <v-btn
+                color="primary"
+                variant="tonal"
+                @click="saveNote"
+                :disabled="!noteTitle.trim() || !selectedFolderId"
+                >Create</v-btn
+            >
         </template>
     </BaseDialog>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import BaseDialog from '../../commons/BaseDialog.vue'
+import { ref, watch } from 'vue';
+import BaseDialog from '../../commons/BaseDialog.vue';
 
 const props = defineProps({
     modelValue: {
         type: Boolean,
-        default: false
+        default: false,
     },
     folders: {
         type: Array,
-        default: () => []
+        default: () => [],
     },
     folderId: {
         type: Number,
@@ -58,50 +64,54 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-})
+});
 
-const emit = defineEmits(['update:modelValue', 'create-note'])
+const emit = defineEmits(['update:modelValue', 'create-note']);
 
-const noteTitle = ref('Untitled note')
-const selectedFolderId = ref(null)
+const noteTitle = ref('Untitled note');
+const selectedFolderId = ref(null);
 
 const syncFolder = () => {
-    const isKnownFolder = (id) => props.folders.some(folder => folder.id === id)
+    const isKnownFolder = (id) =>
+        props.folders.some((folder) => folder.id === id);
 
     if (isKnownFolder(props.folderId)) {
-        selectedFolderId.value = props.folderId
+        selectedFolderId.value = props.folderId;
     } else if (props.folders.length) {
-        selectedFolderId.value = props.folders[0].id
+        selectedFolderId.value = props.folders[0].id;
     } else {
-        selectedFolderId.value = null
+        selectedFolderId.value = null;
     }
-}
+};
 
-watch(() => props.modelValue, (isOpen) => {
-    if (isOpen) {
-        syncFolder()
-    }
-})
+watch(
+    () => props.modelValue,
+    (isOpen) => {
+        if (isOpen) {
+            syncFolder();
+        }
+    },
+);
 
 const closeDialog = () => {
-    emit('update:modelValue', false)
-    noteTitle.value = 'Untitled note'
-}
+    emit('update:modelValue', false);
+    noteTitle.value = 'Untitled note';
+};
 
 const handleClear = () => {
-    noteTitle.value = ''
-}
+    noteTitle.value = '';
+};
 
 const saveNote = () => {
     if (noteTitle.value.trim() && selectedFolderId.value) {
-        emit('create-note', selectedFolderId.value, noteTitle.value.trim())
-        noteTitle.value = 'Untitled note'
+        emit('create-note', selectedFolderId.value, noteTitle.value.trim());
+        noteTitle.value = 'Untitled note';
     }
-}
+};
 
 const handleEnter = () => {
     if (noteTitle.value.trim() && selectedFolderId.value) {
-        saveNote()
+        saveNote();
     }
-}
+};
 </script>

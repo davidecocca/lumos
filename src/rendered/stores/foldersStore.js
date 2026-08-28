@@ -1,10 +1,10 @@
-import { defineStore } from 'pinia'
+import { defineStore } from 'pinia';
 
 export const useFoldersStore = defineStore('folders', {
     state: () => ({
         folders: [],
-        favorites: [],  // Favorites state is unsorted; getter returns a sorted copy.
-        recents: [],    // Recently viewed notes state is unsorted; getter returns a sorted copy.
+        favorites: [], // Favorites state is unsorted; getter returns a sorted copy.
+        recents: [], // Recently viewed notes state is unsorted; getter returns a sorted copy.
         // Dialogs state
         addFolderDialog: false,
         renameFolderDialog: false,
@@ -34,184 +34,208 @@ export const useFoldersStore = defineStore('folders', {
         // Confirmation dialog state
         confirmationDialogTitle: '',
         confirmationDialogText: '',
-        confirmationDialogButtonColor: 'primary'
+        confirmationDialogButtonColor: 'primary',
     }),
     getters: {
         favoriteNotes(state) {
             // Return favorite notes sorted by title
-            return state.favorites.slice().sort((a, b) => a.title.localeCompare(b.title))
+            return state.favorites
+                .slice()
+                .sort((a, b) => a.title.localeCompare(b.title));
         },
         recentNotes(state) {
             // Return recent notes sorted by access date (descending)
-            return state.recents.slice().sort((a, b) => new Date(b.last_viewed_at) - new Date(a.last_viewed_at))
-        }
+            return state.recents
+                .slice()
+                .sort(
+                    (a, b) =>
+                        new Date(b.last_viewed_at) - new Date(a.last_viewed_at),
+                );
+        },
     },
     actions: {
         sortNotesByTitle(notes) {
-            notes.sort((a, b) => a.title.localeCompare(b.title))
+            notes.sort((a, b) => a.title.localeCompare(b.title));
         },
         updateNoteFolderMetadata(note, folder) {
-            if (!note || !folder) return note
-            note.folder_id = folder.id
-            note.folder_name = folder.name
-            note.folderId = folder.id
-            note.folderName = folder.name
-            return note
+            if (!note || !folder) return note;
+            note.folder_id = folder.id;
+            note.folder_name = folder.name;
+            note.folderId = folder.id;
+            note.folderName = folder.name;
+            return note;
         },
         syncNoteFolderReferences(noteId, folder) {
-            if (!folder) return
-            this.favorites.forEach(note => {
+            if (!folder) return;
+            this.favorites.forEach((note) => {
                 if (note.id === noteId) {
-                    this.updateNoteFolderMetadata(note, folder)
+                    this.updateNoteFolderMetadata(note, folder);
                 }
-            })
-            this.recents.forEach(note => {
+            });
+            this.recents.forEach((note) => {
                 if (note.id === noteId) {
-                    this.updateNoteFolderMetadata(note, folder)
+                    this.updateNoteFolderMetadata(note, folder);
                 }
-            })
+            });
         },
         async fetchFolders() {
             try {
-                const results = await window.api.listFolders()
-                this.folders = results.map(folder => ({
+                const results = await window.api.listFolders();
+                this.folders = results.map((folder) => ({
                     ...folder,
                     notes: [],
                     isOpen: false,
-                    loading: false
-                }))
+                    loading: false,
+                }));
             } catch (err) {
-                console.error('Error fetching folders:', err)
+                console.error('Error fetching folders:', err);
             }
         },
         async fetchFavoriteNotes() {
             try {
-                const favNotes = await window.api.getFavoriteNotes()
-                this.favorites = favNotes.map(note => ({
+                const favNotes = await window.api.getFavoriteNotes();
+                this.favorites = favNotes.map((note) => ({
                     ...note,
-                }))
+                }));
             } catch (err) {
-                console.error('Error fetching favorite notes:', err)
+                console.error('Error fetching favorite notes:', err);
             }
         },
         async fetchLastViewedNotes() {
             try {
-                const recentNotes = await window.api.getLastViewedNotes()
-                this.recents = recentNotes.map(note => ({
+                const recentNotes = await window.api.getLastViewedNotes();
+                this.recents = recentNotes.map((note) => ({
                     ...note,
-                }))
+                }));
             } catch (err) {
-                console.error('Error fetching recent notes:', err)
+                console.error('Error fetching recent notes:', err);
             }
         },
         async searchNotes(query, options = {}) {
             const payload = {
                 query,
                 limit: options.limit ?? 10,
-            }
+            };
 
-            return window.api.searchNotes(payload)
+            return window.api.searchNotes(payload);
         },
         async loadFolderNotes(folder) {
-            folder.loading = true
+            folder.loading = true;
             try {
-                const notes = await window.api.getFolderContent(folder.id)
-                folder.notes = notes
+                const notes = await window.api.getFolderContent(folder.id);
+                folder.notes = notes;
             } catch (err) {
-                console.error('Error fetching notes:', err)
+                console.error('Error fetching notes:', err);
             } finally {
-                folder.loading = false
+                folder.loading = false;
             }
         },
         async toggleFolderOpen(folder) {
-            folder.isOpen = !folder.isOpen
+            folder.isOpen = !folder.isOpen;
             if (folder.isOpen) {
-                await this.loadFolderNotes(folder)
+                await this.loadFolderNotes(folder);
             }
         },
         openCreateFolderDialog() {
-            this.addFolderDialog = true
+            this.addFolderDialog = true;
         },
         async createFolder(folderName) {
             if (folderName) {
                 try {
-                    const folderId = await window.api.createFolder(folderName)
+                    const folderId = await window.api.createFolder(folderName);
                     this.folders.push({
                         name: folderName,
                         id: folderId,
                         notes: [],
                         isOpen: false,
-                        loading: false
-                    })
-                    this.folders.sort((a, b) => a.name.localeCompare(b.name))
-                    this.addFolderDialog = false
+                        loading: false,
+                    });
+                    this.folders.sort((a, b) => a.name.localeCompare(b.name));
+                    this.addFolderDialog = false;
                 } catch (err) {
-                    console.error('Error creating folder:', err)
-                    this.errorDialogText = 'An error occurred while creating the folder.'
-                    this.errorDialogTitle = 'Folder Creation Error'
-                    this.errorDialogDetails = err.message
-                    this.isErrorDialogVisible = true
+                    console.error('Error creating folder:', err);
+                    this.errorDialogText =
+                        'An error occurred while creating the folder.';
+                    this.errorDialogTitle = 'Folder Creation Error';
+                    this.errorDialogDetails = err.message;
+                    this.isErrorDialogVisible = true;
                 }
             }
         },
         openDeleteFolderConfirmationDialog(folderId) {
-            this.activeFolderId = folderId
-            this.confirmationDialogTitle = 'Delete folder'
-            this.confirmationDialogText = 'This folder will be permanently deleted, including all notes. This action cannot be undone.'
-            this.confirmationDialogButtonColor = 'error'
-            this.deleteFolderDialog = true
+            this.activeFolderId = folderId;
+            this.confirmationDialogTitle = 'Delete folder';
+            this.confirmationDialogText =
+                'This folder will be permanently deleted, including all notes. This action cannot be undone.';
+            this.confirmationDialogButtonColor = 'error';
+            this.deleteFolderDialog = true;
         },
         async deleteFolder(folderId) {
             try {
                 // Get all ids of notes in the folder
-                const notes = await window.api.getFolderContent(folderId)
-                const noteIds = notes.map(note => note.id)
+                const notes = await window.api.getFolderContent(folderId);
+                const noteIds = notes.map((note) => note.id);
                 // First delete all notes in the folder
-                await window.api.deleteNotesInFolder(folderId)
+                await window.api.deleteNotesInFolder(folderId);
                 // Then delete the folder itself
-                await window.api.deleteFolder(folderId)
+                await window.api.deleteFolder(folderId);
                 // Remove the folder from the folders array
-                this.folders = this.folders.filter(folder => folder.id !== folderId)
+                this.folders = this.folders.filter(
+                    (folder) => folder.id !== folderId,
+                );
                 // Remove deleted notes from favorites and recents
-                this.favorites = this.favorites.filter(note => !noteIds.includes(note.id))
-                this.recents = this.recents.filter(note => !noteIds.includes(note.id))
-                this.deleteFolderDialog = false
+                this.favorites = this.favorites.filter(
+                    (note) => !noteIds.includes(note.id),
+                );
+                this.recents = this.recents.filter(
+                    (note) => !noteIds.includes(note.id),
+                );
+                this.deleteFolderDialog = false;
             } catch (err) {
-                console.error('Error deleting folder:', err)
-                this.errorDialogText = 'An error occurred while deleting the folder.'
-                this.errorDialogTitle = 'Folder Deletion Error'
-                this.errorDialogDetails = err.message
-                this.isErrorDialogVisible = true
+                console.error('Error deleting folder:', err);
+                this.errorDialogText =
+                    'An error occurred while deleting the folder.';
+                this.errorDialogTitle = 'Folder Deletion Error';
+                this.errorDialogDetails = err.message;
+                this.isErrorDialogVisible = true;
             }
         },
         openRenameFolderDialog(folderId, folderName) {
-            this.activeFolderId = folderId
-            this.activeFolderName = folderName
-            this.renameFolderDialog = true
+            this.activeFolderId = folderId;
+            this.activeFolderName = folderName;
+            this.renameFolderDialog = true;
         },
         async renameFolder(folderId, newFolderName) {
             if (newFolderName) {
                 try {
-                    await window.api.updateFolder({id: folderId, newName: newFolderName})
-                    const folder = this.folders.find(folder => folder.id === folderId)
+                    await window.api.updateFolder({
+                        id: folderId,
+                        newName: newFolderName,
+                    });
+                    const folder = this.folders.find(
+                        (folder) => folder.id === folderId,
+                    );
                     if (folder) {
-                        folder.name = newFolderName
-                        this.folders.sort((a, b) => a.name.localeCompare(b.name))
+                        folder.name = newFolderName;
+                        this.folders.sort((a, b) =>
+                            a.name.localeCompare(b.name),
+                        );
                     }
-                    this.renameFolderDialog = false
+                    this.renameFolderDialog = false;
                 } catch (err) {
-                    console.error('Error renaming folder:', err)
-                    this.errorDialogText = 'An error occurred while renaming the folder.'
-                    this.errorDialogTitle = 'Folder Renaming Error'
-                    this.errorDialogDetails = err.message
-                    this.isErrorDialogVisible = true
+                    console.error('Error renaming folder:', err);
+                    this.errorDialogText =
+                        'An error occurred while renaming the folder.';
+                    this.errorDialogTitle = 'Folder Renaming Error';
+                    this.errorDialogDetails = err.message;
+                    this.isErrorDialogVisible = true;
                 }
             }
         },
         openCreateNoteDialog(folderId, showFolderPicker = false) {
-            this.activeFolderId = folderId
-            this.createNoteShowFolderPicker = showFolderPicker
-            this.createNoteDialog = true
+            this.activeFolderId = folderId;
+            this.createNoteShowFolderPicker = showFolderPicker;
+            this.createNoteDialog = true;
         },
         async createNote(folderId, noteTitle) {
             if (noteTitle) {
@@ -221,245 +245,302 @@ export const useFoldersStore = defineStore('folders', {
                         title: noteTitle,
                         contentJson: '{}',
                         contentText: '',
-                    }
-                    const noteId = await window.api.createNote(payload)
-                    const folder = this.folders.find(folder => folder.id === folderId)
+                    };
+                    const noteId = await window.api.createNote(payload);
+                    const folder = this.folders.find(
+                        (folder) => folder.id === folderId,
+                    );
                     if (folder) {
-                        const newNote = await window.api.getNote(noteId)
-                        folder.notes.push(newNote)
-                        this.sortNotesByTitle(folder.notes)
+                        const newNote = await window.api.getNote(noteId);
+                        folder.notes.push(newNote);
+                        this.sortNotesByTitle(folder.notes);
                     }
-                    this.createNoteDialog = false
+                    this.createNoteDialog = false;
                 } catch (err) {
-                    console.error('Error creating note:', err)
-                    this.errorDialogText = 'An error occurred while creating the note.'
-                    this.errorDialogTitle = 'Note Creation Error'
-                    this.errorDialogDetails = err.message
-                    this.isErrorDialogVisible = true
+                    console.error('Error creating note:', err);
+                    this.errorDialogText =
+                        'An error occurred while creating the note.';
+                    this.errorDialogTitle = 'Note Creation Error';
+                    this.errorDialogDetails = err.message;
+                    this.isErrorDialogVisible = true;
                 }
             }
         },
         openRenameNoteDialog(noteId, noteTitle) {
-            this.activeNoteId = noteId
-            this.activeNoteTitle = noteTitle
-            this.renameNoteDialog = true
+            this.activeNoteId = noteId;
+            this.activeNoteTitle = noteTitle;
+            this.renameNoteDialog = true;
         },
         async renameNote(noteId, newNoteTitle) {
             if (newNoteTitle) {
                 try {
-                    await window.api.renameNote({ id: noteId, newTitle: newNoteTitle })
+                    await window.api.renameNote({
+                        id: noteId,
+                        newTitle: newNoteTitle,
+                    });
                     // Update note in all loaded folder notes and re-sort each folder.
-                    this.folders.forEach(folder => {
-                        folder.notes.forEach(note => {
+                    this.folders.forEach((folder) => {
+                        folder.notes.forEach((note) => {
                             if (note.id === noteId) {
-                                note.title = newNoteTitle
+                                note.title = newNoteTitle;
                             }
-                        })
-                        this.sortNotesByTitle(folder.notes)
-                    })
+                        });
+                        this.sortNotesByTitle(folder.notes);
+                    });
                     // Update in favorites if present.
-                    const favIndex = this.favorites.findIndex(note => note.id === noteId)
+                    const favIndex = this.favorites.findIndex(
+                        (note) => note.id === noteId,
+                    );
                     if (favIndex !== -1) {
-                        this.favorites[favIndex].title = newNoteTitle
+                        this.favorites[favIndex].title = newNoteTitle;
                     }
                     // Update in recents if present
-                    const recentIndex = this.recents.findIndex(note => note.id === noteId)
+                    const recentIndex = this.recents.findIndex(
+                        (note) => note.id === noteId,
+                    );
                     if (recentIndex !== -1) {
-                        this.recents[recentIndex].title = newNoteTitle
+                        this.recents[recentIndex].title = newNoteTitle;
                     }
                     if (this.editorNoteId === noteId) {
-                        this.editorNoteTitle = newNoteTitle
+                        this.editorNoteTitle = newNoteTitle;
                     }
-                    this.renameNoteDialog = false
+                    this.renameNoteDialog = false;
                 } catch (err) {
-                    console.error('Error renaming note:', err)
-                    this.errorDialogText = 'An error occurred while renaming the note.'
-                    this.errorDialogTitle = 'Note Renaming Error'
-                    this.errorDialogDetails = err.message
-                    this.isErrorDialogVisible = true
+                    console.error('Error renaming note:', err);
+                    this.errorDialogText =
+                        'An error occurred while renaming the note.';
+                    this.errorDialogTitle = 'Note Renaming Error';
+                    this.errorDialogDetails = err.message;
+                    this.isErrorDialogVisible = true;
                 }
             }
         },
         openMoveNoteDialog(noteId, noteFolderId) {
-            this.activeNoteId = noteId
-            this.activeNoteCurrentFolderId = noteFolderId
-            this.moveToFolderDialog = true
+            this.activeNoteId = noteId;
+            this.activeNoteCurrentFolderId = noteFolderId;
+            this.moveToFolderDialog = true;
         },
-        async moveNote(noteId, newFolderId, currentFolderId = this.activeNoteCurrentFolderId, options = {}) {
-            if (!newFolderId) return
+        async moveNote(
+            noteId,
+            newFolderId,
+            currentFolderId = this.activeNoteCurrentFolderId,
+            options = {},
+        ) {
+            if (!newFolderId) return;
             if (currentFolderId === newFolderId) {
-                this.moveToFolderDialog = false
-                return
+                this.moveToFolderDialog = false;
+                return;
             }
             try {
-                await window.api.moveNoteToFolder({noteId: noteId, newFolderId: newFolderId})
-                const resolvedCurrentFolderId = currentFolderId ?? this.folders.find(folder => folder.notes.some(note => note.id === noteId))?.id
-                const currentFolder = this.folders.find(folder => folder.id === resolvedCurrentFolderId)
-                const newFolder = this.folders.find(folder => folder.id === newFolderId)
-                
+                await window.api.moveNoteToFolder({
+                    noteId: noteId,
+                    newFolderId: newFolderId,
+                });
+                const resolvedCurrentFolderId =
+                    currentFolderId ??
+                    this.folders.find((folder) =>
+                        folder.notes.some((note) => note.id === noteId),
+                    )?.id;
+                const currentFolder = this.folders.find(
+                    (folder) => folder.id === resolvedCurrentFolderId,
+                );
+                const newFolder = this.folders.find(
+                    (folder) => folder.id === newFolderId,
+                );
+
                 if (currentFolder) {
-                    currentFolder.notes = currentFolder.notes.filter(note => note.id !== noteId)
+                    currentFolder.notes = currentFolder.notes.filter(
+                        (note) => note.id !== noteId,
+                    );
                 }
-                
+
                 if (newFolder) {
-                    const note = await window.api.getNote(noteId)
-                    this.updateNoteFolderMetadata(note, newFolder)
-                    const existingNoteIndex = newFolder.notes.findIndex(existingNote => existingNote.id === noteId)
+                    const note = await window.api.getNote(noteId);
+                    this.updateNoteFolderMetadata(note, newFolder);
+                    const existingNoteIndex = newFolder.notes.findIndex(
+                        (existingNote) => existingNote.id === noteId,
+                    );
                     if (existingNoteIndex === -1) {
-                        newFolder.notes.push({ ...note })
+                        newFolder.notes.push({ ...note });
                     } else {
-                        newFolder.notes.splice(existingNoteIndex, 1, { ...note })
+                        newFolder.notes.splice(existingNoteIndex, 1, {
+                            ...note,
+                        });
                     }
-                    this.sortNotesByTitle(newFolder.notes)
+                    this.sortNotesByTitle(newFolder.notes);
                     if (options.revealTarget) {
-                        newFolder.isOpen = true
-                        await this.loadFolderNotes(newFolder)
+                        newFolder.isOpen = true;
+                        await this.loadFolderNotes(newFolder);
                     }
                 }
-                
+
                 if (newFolder) {
-                    this.syncNoteFolderReferences(noteId, newFolder)
+                    this.syncNoteFolderReferences(noteId, newFolder);
                 }
-                
+
                 if (this.activeNoteId === noteId) {
-                    this.activeNoteCurrentFolderId = newFolderId
+                    this.activeNoteCurrentFolderId = newFolderId;
                 }
                 if (this.editorNoteId === noteId) {
-                    this.editorNoteCurrentFolderId = newFolderId
+                    this.editorNoteCurrentFolderId = newFolderId;
                 }
-                this.moveToFolderDialog = false
+                this.moveToFolderDialog = false;
             } catch (err) {
-                console.error('Error moving note:', err)
-                this.errorDialogText = 'An error occurred while moving the note.'
-                this.errorDialogTitle = 'Note Moving Error'
-                this.errorDialogDetails = err.message
-                this.isErrorDialogVisible = true
+                console.error('Error moving note:', err);
+                this.errorDialogText =
+                    'An error occurred while moving the note.';
+                this.errorDialogTitle = 'Note Moving Error';
+                this.errorDialogDetails = err.message;
+                this.isErrorDialogVisible = true;
             }
         },
         openDeleteNoteConfirmationDialog(noteId) {
-            this.activeNoteId = noteId
-            this.confirmationDialogTitle = 'Delete note'
-            this.confirmationDialogText = 'This note will be permanently deleted. This action cannot be undone.'
-            this.confirmationDialogButtonColor = 'error'
-            this.deleteNoteDialog = true
+            this.activeNoteId = noteId;
+            this.confirmationDialogTitle = 'Delete note';
+            this.confirmationDialogText =
+                'This note will be permanently deleted. This action cannot be undone.';
+            this.confirmationDialogButtonColor = 'error';
+            this.deleteNoteDialog = true;
         },
         async deleteNote(noteId) {
             try {
-                await window.api.deleteNote(noteId)
-                const folder = this.folders.find(folder => folder.notes.some(note => note.id === noteId))
+                await window.api.deleteNote(noteId);
+                const folder = this.folders.find((folder) =>
+                    folder.notes.some((note) => note.id === noteId),
+                );
                 if (folder) {
-                    folder.notes = folder.notes.filter(note => note.id !== noteId)
+                    folder.notes = folder.notes.filter(
+                        (note) => note.id !== noteId,
+                    );
                 }
                 // Remove from favorites if present.
-                this.favorites = this.favorites.filter(note => note.id !== noteId)
+                this.favorites = this.favorites.filter(
+                    (note) => note.id !== noteId,
+                );
                 // Remove from recents if present
-                this.recents = this.recents.filter(note => note.id !== noteId)
+                this.recents = this.recents.filter(
+                    (note) => note.id !== noteId,
+                );
                 if (this.editorNoteId === noteId) {
-                    this.editorNoteId = null
-                    this.editorNoteTitle = ''
-                    this.editorNoteCurrentFolderId = null
-                    this.editorNoteFavorite = null
-                    this.editorNoteDeletedId = noteId
+                    this.editorNoteId = null;
+                    this.editorNoteTitle = '';
+                    this.editorNoteCurrentFolderId = null;
+                    this.editorNoteFavorite = null;
+                    this.editorNoteDeletedId = noteId;
                 }
-                this.deleteNoteDialog = false
+                this.deleteNoteDialog = false;
             } catch (err) {
-                console.error('Error deleting note:', err)
-                this.errorDialogText = 'An error occurred while deleting the note.'
-                this.errorDialogTitle = 'Note Deletion Error'
-                this.errorDialogDetails = err.message
-                this.isErrorDialogVisible = true
+                console.error('Error deleting note:', err);
+                this.errorDialogText =
+                    'An error occurred while deleting the note.';
+                this.errorDialogTitle = 'Note Deletion Error';
+                this.errorDialogDetails = err.message;
+                this.isErrorDialogVisible = true;
             }
         },
         async toggleNoteFavorite(noteId) {
             try {
                 // Fetch the note to get the current favorite status
-                const note = await window.api.getNote(noteId)
+                const note = await window.api.getNote(noteId);
                 // Toggle the favorite status
-                const newFav = note.favorite === 0 ? 1 : 0
+                const newFav = note.favorite === 0 ? 1 : 0;
                 // Update the note in the backend
-                await window.api.setNoteFavorite({ id: noteId, isFavorite: newFav })
-                
+                await window.api.setNoteFavorite({
+                    id: noteId,
+                    isFavorite: newFav,
+                });
+
                 // Update the note in all folder (if present)
-                this.folders.forEach(folder => {
-                    const noteIndex = folder.notes.findIndex(note => note.id === noteId)
+                this.folders.forEach((folder) => {
+                    const noteIndex = folder.notes.findIndex(
+                        (note) => note.id === noteId,
+                    );
                     if (noteIndex !== -1) {
                         // Update the note's favorite flag.
-                        folder.notes[noteIndex] = { 
+                        folder.notes[noteIndex] = {
                             ...folder.notes[noteIndex],
-                            favorite: newFav
-                        }
+                            favorite: newFav,
+                        };
                     }
-                })
-                
+                });
+
                 // Update the note in the recents list (if present)
-                const recentIndex = this.recents.findIndex(note => note.id === noteId)
+                const recentIndex = this.recents.findIndex(
+                    (note) => note.id === noteId,
+                );
                 if (recentIndex !== -1) {
                     this.recents[recentIndex] = {
                         ...this.recents[recentIndex],
-                        favorite: newFav
-                    }
+                        favorite: newFav,
+                    };
                 }
-                
+
                 // Add or remove the note from favorites list
-                const favIndex = this.favorites.findIndex(note => note.id === noteId)
-                
+                const favIndex = this.favorites.findIndex(
+                    (note) => note.id === noteId,
+                );
+
                 const updatedNote = {
                     ...note,
-                    favorite: newFav
-                }
-                
+                    favorite: newFav,
+                };
+
                 if (newFav === 1 && favIndex === -1) {
                     // Add to favorites
-                    this.favorites.push(updatedNote)
+                    this.favorites.push(updatedNote);
                 } else if (newFav === 0 && favIndex !== -1) {
                     // Remove from favorites
-                    this.favorites.splice(favIndex, 1)
+                    this.favorites.splice(favIndex, 1);
                 }
-                
+
                 if (this.editorNoteId === noteId) {
-                    this.editorNoteFavorite = newFav
+                    this.editorNoteFavorite = newFav;
                 }
             } catch (err) {
-                console.error('Error toggling favorite:', err)
-                this.errorDialogText = 'An error occurred while setting the note as favorite.'
-                this.errorDialogTitle = 'Setting note as favorite Error'
-                this.errorDialogDetails = err.message
-                this.isErrorDialogVisible = true
+                console.error('Error toggling favorite:', err);
+                this.errorDialogText =
+                    'An error occurred while setting the note as favorite.';
+                this.errorDialogTitle = 'Setting note as favorite Error';
+                this.errorDialogDetails = err.message;
+                this.isErrorDialogVisible = true;
             }
         },
         async openNote(noteId, router) {
             try {
                 // Navigate to the note
-                await router.push({ name: 'notes', params: { noteId } })
+                await router.push({ name: 'notes', params: { noteId } });
 
                 // Update last viewed time in the backend
-                await window.api.updateNoteLastViewed(noteId)
-                
+                await window.api.updateNoteLastViewed(noteId);
+
                 // Fetch the note to get the updated timestamp from backend
-                const note = await window.api.getNote(noteId)
-                
+                const note = await window.api.getNote(noteId);
+
                 // Update recents array
-                const existingIndex = this.recents.findIndex(recent => recent.id === noteId)
-                
+                const existingIndex = this.recents.findIndex(
+                    (recent) => recent.id === noteId,
+                );
+
                 if (existingIndex !== -1) {
                     // Remove existing entry
-                    this.recents.splice(existingIndex, 1)
+                    this.recents.splice(existingIndex, 1);
                 }
-                
+
                 // Add to recents
-                this.recents.push(note)
-                
+                this.recents.push(note);
+
                 // Cap recents list at 10 items
                 if (this.recents.length > 10) {
-                    this.recents = this.recents.slice(-10)
+                    this.recents = this.recents.slice(-10);
                 }
             } catch (err) {
-                console.error('Error opening note:', err)
-                this.errorDialogText = 'An error occurred while opening the note.'
-                this.errorDialogTitle = 'Note Opening Error'
-                this.errorDialogDetails = err.message
-                this.isErrorDialogVisible = true
+                console.error('Error opening note:', err);
+                this.errorDialogText =
+                    'An error occurred while opening the note.';
+                this.errorDialogTitle = 'Note Opening Error';
+                this.errorDialogDetails = err.message;
+                this.isErrorDialogVisible = true;
             }
         },
-    }
-})
+    },
+});

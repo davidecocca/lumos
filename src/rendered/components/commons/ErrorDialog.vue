@@ -21,46 +21,48 @@
                 {{ showErrorDetails ? 'Hide Log' : 'Show Log' }}
             </v-btn>
             <v-spacer />
-            <v-btn color="primary" variant="tonal" @click="closeDialog">Close</v-btn>
+            <v-btn color="primary" variant="tonal" @click="closeDialog"
+                >Close</v-btn
+            >
         </template>
     </BaseDialog>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import BaseDialog from './BaseDialog.vue'
+import { ref } from 'vue';
+import BaseDialog from './BaseDialog.vue';
 
 const props = defineProps({
     modelValue: {
         type: Boolean,
-        default: false
+        default: false,
     },
     errorDialogText: {
         type: String,
-        default: ''
+        default: '',
     },
     errorDialogTitle: {
         type: String,
-        default: ''
+        default: '',
     },
     errorDialogDetails: {
         type: String,
-        default: ''
-    }
-})
+        default: '',
+    },
+});
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue']);
 
-const showErrorDetails = ref(false)
+const showErrorDetails = ref(false);
 
 const closeDialog = () => {
-    emit('update:modelValue', false)
-    showErrorDetails.value = false
-}
+    emit('update:modelValue', false);
+    showErrorDetails.value = false;
+};
 
 const toggleErrorDetails = () => {
-    showErrorDetails.value = !showErrorDetails.value
-}
+    showErrorDetails.value = !showErrorDetails.value;
+};
 </script>
 
 <style scoped>

@@ -14,16 +14,12 @@
         {
             "from": "resources/models",
             "to": "models",
-            "filter": [
-                "**/*"
-            ]
+            "filter": ["**/*"]
         },
         {
             "from": "resources/licenses",
             "to": "licenses",
-            "filter": [
-                "**/*"
-            ]
+            "filter": ["**/*"]
         }
     ],
     "asarUnpack": [

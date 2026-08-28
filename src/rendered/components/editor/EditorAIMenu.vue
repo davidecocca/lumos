@@ -1,5 +1,10 @@
 <template>
-    <v-list density="compact" rounded="lg" nav class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark">
+    <v-list
+        density="compact"
+        rounded="lg"
+        nav
+        class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark"
+    >
         <v-list-item
             v-for="item in editMenuItems"
             :key="item.value"
@@ -24,8 +29,19 @@
                     <v-list-item-title>Change tone to</v-list-item-title>
                 </v-list-item>
             </template>
-            <v-list density="compact" nav style="min-width: 180px;" rounded="lg" class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark">
-                <v-list-item v-for="tone in supportedTones" :key="tone.key" @click="emit('change-tone', tone.key)" rounded="lg">
+            <v-list
+                density="compact"
+                nav
+                style="min-width: 180px"
+                rounded="lg"
+                class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark"
+            >
+                <v-list-item
+                    v-for="tone in supportedTones"
+                    :key="tone.key"
+                    @click="emit('change-tone', tone.key)"
+                    rounded="lg"
+                >
                     <template v-slot:prepend>
                         <v-icon :icon="tone.icon"></v-icon>
                     </template>
@@ -46,10 +62,24 @@
                     <v-list-item-title>Translate to</v-list-item-title>
                 </v-list-item>
             </template>
-            <v-list density="compact" nav style="min-width: 160px;" rounded="lg" class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark">
-                <v-list-item v-for="lang in supportedLanguages" :key="lang.key" @click="emit('translate-to', lang.key)" rounded="lg">
+            <v-list
+                density="compact"
+                nav
+                style="min-width: 160px"
+                rounded="lg"
+                class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark"
+            >
+                <v-list-item
+                    v-for="lang in supportedLanguages"
+                    :key="lang.key"
+                    @click="emit('translate-to', lang.key)"
+                    rounded="lg"
+                >
                     <v-list-item-title class="d-flex align-center">
-                        <span style="margin-right: 32px; font-size: 24px;">{{ lang.icon }}</span>{{ lang.label }}
+                        <span style="margin-right: 32px; font-size: 24px">{{
+                            lang.icon
+                        }}</span
+                        >{{ lang.label }}
                     </v-list-item-title>
                 </v-list-item>
             </v-list>
@@ -77,7 +107,7 @@ const editMenuItems = [
         icon: 'ph-feather',
         event: 'simplify',
     },
-]
+];
 
 defineProps({
     supportedTones: {
@@ -88,7 +118,7 @@ defineProps({
         type: Array,
         default: () => [],
     },
-})
+});
 
 const emit = defineEmits([
     'make-shorter',
@@ -96,5 +126,5 @@ const emit = defineEmits([
     'simplify',
     'change-tone',
     'translate-to',
-])
+]);
 </script>

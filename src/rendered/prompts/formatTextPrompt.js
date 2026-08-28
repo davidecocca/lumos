@@ -14,7 +14,6 @@ const formatTextPrompt = `You are an expert writing assistant.
 2. DO NOT use <br> tags for line breaks.
 3. DO NOT include any markdown code fences or triple backticks (\`\`\`) anywhere.
 
-Return ONLY the formatted text. Do not alter the original text in any way and do not add any additional text.`
-
+Return ONLY the formatted text. Do not alter the original text in any way and do not add any additional text.`;
 
 export default formatTextPrompt;

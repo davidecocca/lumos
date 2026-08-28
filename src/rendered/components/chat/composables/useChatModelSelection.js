@@ -1,13 +1,19 @@
-import { computed } from 'vue'
-import { aiPreferencesStore } from '../../../stores/aiPreferencesStore'
-import { buildModelItems, getProviderTitle } from '../../../utils/modelProviders'
+import { computed } from 'vue';
+import { aiPreferencesStore } from '../../../stores/aiPreferencesStore';
+import {
+    buildModelItems,
+    getProviderTitle,
+} from '../../../utils/modelProviders';
 
 export function useChatModelSelection() {
-    const aiStore = aiPreferencesStore()
+    const aiStore = aiPreferencesStore();
 
     const availableChatModels = computed(() => {
-        return buildModelItems(aiStore.availableProviders, aiStore.getProviderModels)
-    })
+        return buildModelItems(
+            aiStore.availableProviders,
+            aiStore.getProviderModels,
+        );
+    });
 
     const selectedModel = computed({
         get: () => ({
@@ -15,41 +21,46 @@ export function useChatModelSelection() {
             model: aiStore.chat.model,
         }),
         set: (value) => {
-            if (!value) return
+            if (!value) return;
 
-            aiStore.setProvider('chat', value.provider)
-            aiStore.setModel('chat', value.model)
+            aiStore.setProvider('chat', value.provider);
+            aiStore.setModel('chat', value.model);
         },
-    })
+    });
 
     const selectModel = (modelValue) => {
-        selectedModel.value = modelValue
-    }
+        selectedModel.value = modelValue;
+    };
 
     const selectedModelTitle = computed(() => {
-        const match = availableChatModels.value.find((item) => (
-            item.value.provider === aiStore.chat.provider &&
-            item.value.model === aiStore.chat.model
-        ))
+        const match = availableChatModels.value.find(
+            (item) =>
+                item.value.provider === aiStore.chat.provider &&
+                item.value.model === aiStore.chat.model,
+        );
 
-        if (!match) return 'Model'
+        if (!match) return 'Model';
 
         const reasoningEffort = aiStore.getModelReasoningEffort(
             'chat',
             match.value.provider,
             match.value.model,
-        )
-        const provider = getProviderTitle(match.value.provider)
-        const reasoning = reasoningEffort === 'xhigh'
-            ? 'Extra high'
-            : reasoningEffort ? reasoningEffort.charAt(0).toUpperCase() + reasoningEffort.slice(1) : null
+        );
+        const provider = getProviderTitle(match.value.provider);
+        const reasoning =
+            reasoningEffort === 'xhigh'
+                ? 'Extra high'
+                : reasoningEffort
+                  ? reasoningEffort.charAt(0).toUpperCase() +
+                    reasoningEffort.slice(1)
+                  : null;
 
-        return [provider, match.title, reasoning].filter(Boolean).join(' · ')
-    })
+        return [provider, match.title, reasoning].filter(Boolean).join(' · ');
+    });
 
     const loadModelPreferences = () => {
-        aiStore.loadPreferences()
-    }
+        aiStore.loadPreferences();
+    };
 
     return {
         loadModelPreferences,
@@ -57,5 +68,5 @@ export function useChatModelSelection() {
         selectedModel,
         selectedModelTitle,
         selectModel,
-    }
+    };
 }

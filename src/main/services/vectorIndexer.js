@@ -1,4 +1,4 @@
-const vectorStore = require("../database/vectorStore");
+const vectorStore = require('../database/vectorStore');
 
 // Background worker that keeps LanceDB synchronized with SQLite notes.
 // Its main purpose is: save the note immediately, create embeddings later.
@@ -26,7 +26,7 @@ const retryDelayMs = 1500;
 
 class VectorIndexer {
     constructor() {
-        this.pendingIds = new Set();    // Coalescing: use a Set to avoid duplicate note IDs in the queue.
+        this.pendingIds = new Set(); // Coalescing: use a Set to avoid duplicate note IDs in the queue.
         this.processing = false;
         this.statusListeners = new Set();
         this.lastError = null;
@@ -71,12 +71,14 @@ class VectorIndexer {
         return {
             indexing: this.processing || this.pendingIds.size > 0,
             pending: this.pendingIds.size + (this.processing ? 1 : 0),
-            lastError: this.lastError ? String(this.lastError.message || this.lastError) : null,
+            lastError: this.lastError
+                ? String(this.lastError.message || this.lastError)
+                : null,
         };
     }
 
     async processQueue() {
-        if (this.processing) return;    // Only one worker runs
+        if (this.processing) return; // Only one worker runs
         this.processing = true;
         this.notifyStatus();
 
@@ -90,14 +92,19 @@ class VectorIndexer {
                     this.lastError = null;
                 } catch (err) {
                     this.lastError = err;
-                    console.error(`Failed to index note ${noteId}:`, err.message);
+                    console.error(
+                        `Failed to index note ${noteId}:`,
+                        err.message,
+                    );
                 }
 
                 if (this.pendingIds.size > 0) {
-                    await new Promise((resolve) => setTimeout(resolve, interJobDelayMs));
+                    await new Promise((resolve) =>
+                        setTimeout(resolve, interJobDelayMs),
+                    );
                 }
             }
-        // Always clear the processing flag, so indexer cannot be permanently stuck in the "currently processing" state.
+            // Always clear the processing flag, so indexer cannot be permanently stuck in the "currently processing" state.
         } finally {
             this.processing = false;
             this.notifyStatus();
@@ -108,14 +115,16 @@ class VectorIndexer {
     async indexNote(noteId, attempt = 1) {
         // Lazy require: crud.js imports this module, so requiring it at the top
         // would create a circular dependency.
-        const crud = require("../database/crud");
+        const crud = require('../database/crud');
 
         let note = null;
         try {
             // Latest state wins rule:
             // Read the note from SQLite right before embedding it, so we always embed the freshest content.
             note = await new Promise((resolve, reject) => {
-                crud.getNoteRawForIndexing(noteId, (err, row) => err ? reject(err) : resolve(row));
+                crud.getNoteRawForIndexing(noteId, (err, row) =>
+                    err ? reject(err) : resolve(row),
+                );
             });
         } catch (err) {
             throw err;
@@ -145,7 +154,9 @@ class VectorIndexer {
             // Second failure -> wait 3 seconds, then retry.
             // Third failure -> give up and log the error.
             if (attempt < maxAttempts) {
-                await new Promise((resolve) => setTimeout(resolve, retryDelayMs * attempt));
+                await new Promise((resolve) =>
+                    setTimeout(resolve, retryDelayMs * attempt),
+                );
                 return this.indexNote(noteId, attempt + 1);
             }
             // No sync row written: startup reconciliation will retry later.
@@ -163,13 +174,15 @@ class VectorIndexer {
     }
 
     async markSynced(noteId, updatedAt) {
-        const crud = require("../database/crud");
+        const crud = require('../database/crud');
         await new Promise((resolve, reject) => {
-            crud.setNoteVectorSynced(noteId, updatedAt, (err) => err ? reject(err) : resolve());
+            crud.setNoteVectorSynced(noteId, updatedAt, (err) =>
+                err ? reject(err) : resolve(),
+            );
         });
     }
 
-    // At startup, asks SQLite for notes that are:  
+    // At startup, asks SQLite for notes that are:
     // - missing a vector_sync row
     // - or newer than their recorded synced_at
     // And re-queues them for indexing.
@@ -178,7 +191,7 @@ class VectorIndexer {
      * @returns {Promise<number>} number of notes queued
      */
     async reconcile() {
-        const crud = require("../database/crud");
+        const crud = require('../database/crud');
         const noteIds = await new Promise((resolve, reject) => {
             crud.getNotesNeedingVectorSync((err, rows) => {
                 if (err) reject(err);
@@ -191,7 +204,9 @@ class VectorIndexer {
         }
 
         if (noteIds.length > 0) {
-            console.log(`Vector index: ${noteIds.length} note(s) queued for indexing.`);
+            console.log(
+                `Vector index: ${noteIds.length} note(s) queued for indexing.`,
+            );
         }
         return noteIds.length;
     }
@@ -200,9 +215,9 @@ class VectorIndexer {
      * Clear all sync markers (after a full index rebuild) and re-queue everything.
      */
     async rebuildAll() {
-        const crud = require("../database/crud");
+        const crud = require('../database/crud');
         await new Promise((resolve, reject) => {
-            crud.clearVectorSync((err) => err ? reject(err) : resolve());
+            crud.clearVectorSync((err) => (err ? reject(err) : resolve()));
         });
         return this.reconcile();
     }
@@ -211,7 +226,7 @@ class VectorIndexer {
      * Aggregate status for the settings UI.
      */
     async getStatus() {
-        const crud = require("../database/crud");
+        const crud = require('../database/crud');
         const stats = await new Promise((resolve, reject) => {
             crud.getVectorSyncStats((err, rows) => {
                 if (err) reject(err);
@@ -224,8 +239,8 @@ class VectorIndexer {
             error: vectorStore.lastError
                 ? String(vectorStore.lastError.message || vectorStore.lastError)
                 : this.lastError
-                    ? String(this.lastError.message || this.lastError)
-                    : null,
+                  ? String(this.lastError.message || this.lastError)
+                  : null,
             ...this.getQueueStatus(),
             indexedCount: stats.indexedCount || 0,
             totalNotes: stats.totalNotes || 0,

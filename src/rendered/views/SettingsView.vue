@@ -1,35 +1,26 @@
 <template>
     <div class="d-flex flex-column">
         <!-- Page title -->
-        <ViewTitle
-        title="Settings"
-        subtitle="Set things your way."
-        />
-        
-        <v-tabs
-        v-model="tab"
-        align-tabs="center"
-        color="primary"
-        class="mb-4"
-        >
-        <v-tab :value="appearanceTab" prepend-icon="ph-broom">Appearance</v-tab>
-        <v-tab :value="lumosAITab" prepend-icon="ph-brain">Lumos AI</v-tab>
-    </v-tabs>
-    
-    <v-tabs-window v-model="tab">
-        <!-- Appearance settings -->
-        <v-tabs-window-item>
-            <ChangeThemeCard
-            :theme="theme"
-            @update:theme="updateTheme"
-            />
-        </v-tabs-window-item>
-        <!-- Lumos AI settings -->
-        <v-tabs-window-item>
-            <LumosAICard />
-        </v-tabs-window-item>
-    </v-tabs-window>
-</div>
+        <ViewTitle title="Settings" subtitle="Set things your way." />
+
+        <v-tabs v-model="tab" align-tabs="center" color="primary" class="mb-4">
+            <v-tab :value="appearanceTab" prepend-icon="ph-broom"
+                >Appearance</v-tab
+            >
+            <v-tab :value="lumosAITab" prepend-icon="ph-brain">Lumos AI</v-tab>
+        </v-tabs>
+
+        <v-tabs-window v-model="tab">
+            <!-- Appearance settings -->
+            <v-tabs-window-item>
+                <ChangeThemeCard :theme="theme" @update:theme="updateTheme" />
+            </v-tabs-window-item>
+            <!-- Lumos AI settings -->
+            <v-tabs-window-item>
+                <LumosAICard />
+            </v-tabs-window-item>
+        </v-tabs-window>
+    </div>
 </template>
 
 <script setup>
@@ -43,14 +34,14 @@ const props = defineProps({
     theme: {
         type: String,
         default: 'light',
-        validator: (value) => ['light', 'dark', 'auto'].includes(value)
-    }
+        validator: (value) => ['light', 'dark', 'auto'].includes(value),
+    },
 });
 
 const emit = defineEmits(['update:theme']);
 
 // Tab states
-const tab = ref('appearanceTab')
+const tab = ref('appearanceTab');
 
 // Use computed property to access the theme
 const theme = computed(() => props.theme);

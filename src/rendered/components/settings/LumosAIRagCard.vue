@@ -1,12 +1,27 @@
 <template>
-    <v-card class="rounded-md border mt-4" title="Indexing" subtitle="Index your notes to enable semantic search." rounded="lg" elevation="0">
+    <v-card
+        class="rounded-md border mt-4"
+        title="Indexing"
+        subtitle="Index your notes to enable semantic search."
+        rounded="lg"
+        elevation="0"
+    >
         <v-card-text class="mt-2">
             <v-sheet border rounded="lg" class="pa-4">
                 <div class="d-flex align-center ga-3">
-                    <v-icon :icon="statusIcon" :color="statusColor" size="small" />
+                    <v-icon
+                        :icon="statusIcon"
+                        :color="statusColor"
+                        size="small"
+                    />
                     <div class="flex-grow-1">
-                        <div class="text-body-2 font-weight-medium">{{ statusTitle }}</div>
-                        <div v-if="statusDetail" class="text-body-2 text-medium-emphasis mt-1">
+                        <div class="text-body-2 font-weight-medium">
+                            {{ statusTitle }}
+                        </div>
+                        <div
+                            v-if="statusDetail"
+                            class="text-body-2 text-medium-emphasis mt-1"
+                        >
                             {{ statusDetail }}
                         </div>
                     </div>
@@ -31,7 +46,9 @@
                     rounded
                 />
 
-                <div v-if="errorMessage" class="text-caption text-error mt-3">{{ errorMessage }}</div>
+                <div v-if="errorMessage" class="text-caption text-error mt-3">
+                    {{ errorMessage }}
+                </div>
             </v-sheet>
         </v-card-text>
 
@@ -41,12 +58,17 @@
             title="Rebuild index?"
             icon="ph-hammer"
         >
-            All notes will be re-analyzed for semantic search. This runs in the background and does not modify note content.
+            All notes will be re-analyzed for semantic search. This runs in the
+            background and does not modify note content.
 
             <template #actions>
                 <v-spacer />
-                <v-btn variant="text" @click="rebuildDialog = false">Cancel</v-btn>
-                <v-btn color="primary" variant="tonal" @click="rebuildIndex">Rebuild</v-btn>
+                <v-btn variant="text" @click="rebuildDialog = false"
+                    >Cancel</v-btn
+                >
+                <v-btn color="primary" variant="tonal" @click="rebuildIndex"
+                    >Rebuild</v-btn
+                >
             </template>
         </BaseDialog>
     </v-card>
@@ -66,7 +88,9 @@ let unsubscribe = null;
 const errorMessage = computed(() => {
     if (!status.value) return null;
     if (!status.value.ready) {
-        return status.value.error || 'The local embedding model is unavailable.';
+        return (
+            status.value.error || 'The local embedding model is unavailable.'
+        );
     }
     return status.value.lastError || null;
 });
@@ -98,12 +122,16 @@ const statusDetail = computed(() => {
 
     if (!ready) return null;
     if (indexing) {
-        return pending > 0 ? `${pending} note${pending === 1 ? '' : 's'} remaining` : 'Working…';
+        return pending > 0
+            ? `${pending} note${pending === 1 ? '' : 's'} remaining`
+            : 'Working…';
     }
     return `${indexedCount} of ${totalNotes} note${totalNotes === 1 ? '' : 's'} indexed`;
 });
 
-const canRebuild = computed(() => Boolean(status.value?.ready) && !rebuilding.value);
+const canRebuild = computed(
+    () => Boolean(status.value?.ready) && !rebuilding.value,
+);
 
 async function refresh() {
     try {

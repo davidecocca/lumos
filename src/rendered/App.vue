@@ -6,7 +6,6 @@
 
 <script setup>
 import MainWindoView from './views/MainWindowView.vue';
-
 </script>
 
 <style>
