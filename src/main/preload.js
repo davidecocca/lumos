@@ -43,6 +43,20 @@ contextBridge.exposeInMainWorld('api', {
     searchNotes: (payload) => ipcRenderer.invoke('search-notes', payload),
     searchSimilarNotes: (payload) => ipcRenderer.invoke('search-similar-notes', payload),
 
+    // RAG index management
+    getRagStatus: () => ipcRenderer.invoke('rag-get-status'),
+    rebuildRagIndex: () => ipcRenderer.invoke('rag-rebuild'),
+    onRagStatus: (callback) => {
+        const listener = (_, status) => callback(status);
+        ipcRenderer.on('rag-status', listener);
+        return () => ipcRenderer.removeListener('rag-status', listener);
+    },
+    onFlushSaves: (callback) => {
+        const listener = () => callback();
+        ipcRenderer.on('flush-saves', listener);
+        return () => ipcRenderer.removeListener('flush-saves', listener);
+    },
+
     // Chat
     createChatConversation: (payload) => ipcRenderer.invoke('create-chat-conversation', payload),
     listChatConversations: (payload) => ipcRenderer.invoke('list-chat-conversations', payload),

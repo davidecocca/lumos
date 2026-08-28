@@ -5,7 +5,6 @@
                 elevation="0"
                 class="rounded-md border ma-3"
                 rounded="lg"
-                :loading="isLoading"
             >
                 <v-card-text>
                     <div ref="editorShellRef" class="editor-shell">
@@ -32,10 +31,6 @@ defineProps({
     editor: {
         type: Object,
         default: null,
-    },
-    isLoading: {
-        type: Boolean,
-        default: false,
     },
 })
 

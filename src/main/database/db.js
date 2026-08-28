@@ -56,6 +56,17 @@ db.serialize(() => {
     else console.log('Note search FTS table ready.');
   });
 
+  // Tracks which notes are up to date in the vector index (background RAG queue)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS vector_sync (
+      note_id INTEGER PRIMARY KEY,
+      synced_at TEXT NOT NULL
+    )
+  `, (err) => {
+    if (err) console.error('Error creating vector_sync table:', err.message);
+    else console.log('Vector sync table ready.');
+  });
+
   db.run(`
     CREATE TABLE IF NOT EXISTS chat_conversations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

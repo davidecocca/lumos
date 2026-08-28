@@ -6,6 +6,7 @@
                 :note="note"
                 :breadcrumbs-items="breadcrumbsItems"
                 :editor="editor"
+                :auto-save="{ dirty: isDirty, saving: isAutoSaving || isLoading, savedAt: lastSavedAt }"
                 @chat="toggleSidebarChat"
                 @save="saveNoteManually"
                 @toggle-favorite="toggleFavorite"
@@ -42,7 +43,6 @@
 
             <EditorSurface
                 :editor="editor"
-                :is-loading="isLoading"
             />
 
             <EditorDialogs
@@ -213,6 +213,18 @@ const isLoading = ref(false)
 const isChatOpen = ref(false)
 const chatWidth = ref(450)
 const isResizing = ref(false)
+
+// Auto-save state
+const AUTOSAVE_DEBOUNCE_MS = 2000
+const SAFETY_SAVE_INTERVAL_MS = 30000
+const MIN_AUTOSAVE_INDICATOR_MS = 500
+const isDirty = ref(false)
+const isAutoSaving = ref(false)
+const lastSavedAt = ref(null)
+let autosaveTimer = null
+let safetySaveInterval = null
+let saveInFlight = null
+let unsubscribeFlushSaves = null
 
 const {
     inlineAIEdit,
@@ -418,18 +430,80 @@ const persistEditorContent = async ({ refreshTopic = false } = {}) => {
     note.value.topic = topic
 }
 
+// refreshTopic: true to regenarate the topic; false to skip
+// auto-save does not regenerate the topic
+// manual save regenerates the topic
+const doPersist = async (refreshTopic) => {
+    // Serialize overlapping saves (manual + auto): wait for any in-flight one.
+    while (saveInFlight) {
+        await saveInFlight
+    }
+    try {
+        saveInFlight = persistEditorContent({ refreshTopic })
+        await saveInFlight
+    } finally {
+        saveInFlight = null
+    }
+}
+
+// Persist unsaved edits without waiting on AI topic generation.
+const flushPendingSave = async () => {
+    clearTimeout(autosaveTimer)
+    autosaveTimer = null
+
+    if (!isDirty.value || !editor.value || !note.value) {
+        return
+    }
+
+    // Optimistically clear; keystrokes during the save re-mark it dirty and
+    // reschedule via handleEditorUpdate.
+    isDirty.value = false
+    isAutoSaving.value = true
+    const startedAt = Date.now()
+    try {
+        await doPersist(false)
+        lastSavedAt.value = Date.now()
+    } catch (error) {
+        isDirty.value = true
+        console.error('Auto-save failed:', error)
+    } finally {
+        const remainingMs = MIN_AUTOSAVE_INDICATOR_MS - (Date.now() - startedAt)
+        if (remainingMs > 0) {
+            await new Promise((resolve) => setTimeout(resolve, remainingMs))
+        }
+        isAutoSaving.value = false
+    }
+}
+
+const scheduleAutosave = () => {
+    clearTimeout(autosaveTimer)
+    autosaveTimer = setTimeout(() => {
+        void flushPendingSave()
+    }, AUTOSAVE_DEBOUNCE_MS)
+}
+
+const handleEditorUpdate = () => {
+    isDirty.value = true
+    scheduleAutosave()
+}
+
 const saveNoteManually = async () => {
     try {
         // Enable loading state
         isLoading.value = true
-        
-        await persistEditorContent({ refreshTopic: true })
-        
+
+        await doPersist(true)
+        clearTimeout(autosaveTimer)
+        autosaveTimer = null
+        isDirty.value = false
+        lastSavedAt.value = Date.now()
+
         // Stop loading state
         isLoading.value = false
     } catch (error) {
         const errorMsg = 'Failed to save note'
         console.error(errorMsg, error)
+        isDirty.value = true
         isLoading.value = false
     }
 }
@@ -704,16 +778,24 @@ onMounted(async () => {
             modestBranding: true,
         }),
         ],
+        onUpdate: handleEditorUpdate,
     })
     
     await nextTick()
     await getNote(props.noteId)
     window.addEventListener('keydown', handleKeyDown, true)
+    window.addEventListener('blur', flushPendingSave)
     window.addEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
     window.addEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
     window.addEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openyoutubeDialog)
     window.addEventListener(TOGGLE_NOTE_CHAT_EVENT, toggleSidebarChat)
     window.addEventListener(SAVE_NOTE_EVENT, saveNoteManually)
+    unsubscribeFlushSaves = window.api.onFlushSaves(() => {
+        void flushPendingSave()
+    })
+    safetySaveInterval = setInterval(() => {
+        if (isDirty.value) void flushPendingSave()
+    }, SAFETY_SAVE_INTERVAL_MS)
     window.__lumosActiveEditor = editor.value
     chatWidth.value = parseInt(localStorage.getItem('chatWidth')) || 450
 })
@@ -722,7 +804,10 @@ watch(() => props.noteId, async (nextNoteId, previousNoteId) => {
     if (!nextNoteId || nextNoteId === previousNoteId) {
         return
     }
-    
+
+    // Save the currently open note before its state is replaced.
+    await flushPendingSave()
+
     await nextTick()
     await getNote(nextNoteId)
 })
@@ -765,15 +850,21 @@ watch(() => store.editorNoteDeletedId, (deletedNoteId) => {
 
 onBeforeUnmount(() => {
     noteRequestId += 1
+    // Best-effort flush when leaving the editor (e.g. navigating to home/chat).
+    void flushPendingSave()
+    clearTimeout(autosaveTimer)
+    if (safetySaveInterval) clearInterval(safetySaveInterval)
     if (editor.value) {
         editor.value.destroy()
     }
     window.removeEventListener('keydown', handleKeyDown, true)
+    window.removeEventListener('blur', flushPendingSave)
     window.removeEventListener(IMAGE_MUTATION_EVENT, handleImageMutation)
     window.removeEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation)
     window.removeEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openyoutubeDialog)
     window.removeEventListener(TOGGLE_NOTE_CHAT_EVENT, toggleSidebarChat)
     window.removeEventListener(SAVE_NOTE_EVENT, saveNoteManually)
+    if (unsubscribeFlushSaves) unsubscribeFlushSaves()
     window.__lumosActiveEditor = null
     stopResize()
 })

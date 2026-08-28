@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain, nativeImage, Menu } = require('electron');
 const path = require('path');
 const vectorStore = require('./database/vectorStore');
+const vectorIndexer = require('./services/vectorIndexer');
+const localEmbeddings = require('./services/localEmbeddings');
 const imageService = require('./services/imageService');
 const { checkCodex, runCodex } = require('./services/codexService');
 const { randomUUID } = require('crypto');
@@ -27,6 +29,7 @@ const {
     getFavoriteNotes,
     getLastViewedNotes,
     searchNotes,
+    clearVectorSync,
     createChatConversation,
     listChatConversations,
     getChatConversation,
@@ -131,6 +134,24 @@ function createApplicationMenu() {
     return Menu.buildFromTemplate(template);
 }
 
+// Give the renderer a short grace period to flush pending auto-saves
+// before the app (or the window) goes away.
+let flushSent = false;
+function requestFlushAndContinue(continueFn) {
+    if (flushSent) {
+        continueFn();
+        return;
+    }
+    const windows = BrowserWindow.getAllWindows();
+    if (windows.length === 0) {
+        continueFn();
+        return;
+    }
+    flushSent = true;
+    windows.forEach((w) => w.webContents.send('flush-saves'));
+    setTimeout(continueFn, 900);
+}
+
 // Create the BrowserWindow
 function createWindow() {
     const iconPath = path.join(__dirname, '..', 'rendered', 'assets', 'app_logo.png');
@@ -145,6 +166,13 @@ function createWindow() {
             contextIsolation: true,     // Keep this true for security
             devTools: process.env.NODE_ENV === 'development', // Enable dev tools in development
         }
+    });
+
+    // Flush pending auto-saves before the window actually closes
+    win.on('close', (event) => {
+        if (flushSent) return;
+        event.preventDefault();
+        requestFlushAndContinue(() => win.close());
     });
     
     // DEV vs. PROD logic
@@ -419,11 +447,24 @@ function setupIPC() {
     });
     
     ipcMain.handle('search-similar-notes', async (event, { query, limit, filter }) => {
+        if (!vectorStore.ready) {
+            throw new Error('Semantic search is unavailable: the local embedding model could not be loaded.');
+        }
         return new Promise((resolve, reject) => {
             vectorStore.searchSimilarNotes(query, limit, filter)
             .then(results => resolve(results))
             .catch(err => reject(err));
         });
+    });
+
+    // --- RAG index management ---
+    ipcMain.handle('rag-get-status', async () => vectorIndexer.getStatus());
+    ipcMain.handle('rag-rebuild', async () => {
+        if (!vectorStore.ready) {
+            throw new Error('Vector store is unavailable.');
+        }
+        await vectorIndexer.rebuildAll();
+        return vectorIndexer.getStatus();
     });
 
     // --- Chat IPC ---
@@ -485,6 +526,13 @@ function setupIPC() {
 // Set the app name
 app.setName('Lumos');
 
+// Broadcast background indexing progress to all renderer windows
+vectorIndexer.onStatus((status) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send('rag-status', status);
+    }
+});
+
 // App lifecycle
 app.whenReady().then(() => {
     Menu.setApplicationMenu(createApplicationMenu());
@@ -496,21 +544,40 @@ app.whenReady().then(() => {
         const icon = nativeImage.createFromPath(iconPath);
         app.dock.setIcon(icon);
     }
-    
-    // Initialize the vector store
-    vectorStore.initialize()
-    .then(() => {
+
+    // Initialize the vector store. RAG is a feature, not a launch requirement:
+    // if it fails, Lumos still opens and search/chat simply report it.
+    const lancePath = path.join(app.getPath('userData'), 'lancedb');
+    vectorStore.initialize(lancePath)
+    .then(async ({ rebuilt }) => {
+        if (rebuilt) {
+            await clearVectorSync();
+        }
+
         createWindow();
         setupIPC();
+
+        localEmbeddings.warmup();
+        vectorIndexer.reconcile().catch((err) => {
+            console.error('Vector index reconciliation failed:', err);
+        });
     })
     .catch((err) => {
-        console.error('Failed to initialize vector store:', err);
-        app.quit();
+        console.error('Failed to initialize vector store, continuing without RAG:', err);
+        createWindow();
+        setupIPC();
     });
-    
+
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
+});
+
+// Flush pending auto-saves before quitting (menu quit / Cmd+Q)
+app.on('before-quit', (event) => {
+    if (flushSent) return;
+    event.preventDefault();
+    requestFlushAndContinue(() => app.quit());
 });
 
 app.on('window-all-closed', () => {

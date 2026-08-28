@@ -11,41 +11,56 @@
         <v-spacer></v-spacer>
 
         <div class="d-flex align-center">
-            <v-btn-toggle variant="text" divided multiple :max="0">
-                <v-tooltip
-                    v-for="button in toolbarButtons"
-                    :key="button.value"
-                    :text="button.tooltip"
-                    location="bottom"
-                >
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" @click="button.action">
-                            <v-icon>{{ button.icon }}</v-icon>
-                        </v-btn>
-                    </template>
-                </v-tooltip>
+            <v-tooltip :text="saveStatusTooltip" location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn
+                        v-bind="props"
+                        :icon="saveStatusIcon"
+                        :loading="isSaveButtonLoading"
+                        :disabled="isSaveButtonLoading"
+                        variant="text"
+                        rounded="lg"
+                        @mouseenter="isSaveButtonHovered = true"
+                        @mouseleave="isSaveButtonHovered = false"
+                        @click="handleSave"
+                    ></v-btn>
+                </template>
+            </v-tooltip>
 
-                <NoteActionMenu
-                    :model-value="noteActionMenu"
-                    :note="note"
-                    visible
-                    button-size="default"
-                    button-density="default"
-                    button-class="editor-note-action-btn"
-                    tooltip-location="bottom"
-                    @update:model-value="emit('update:noteActionMenu', $event)"
-                    @toggle-favorite="emit('toggle-favorite', $event)"
-                    @rename-note="handleRenameNote"
-                    @move-note="handleMoveNote"
-                    @delete-note="emit('delete-note', $event)"
-                />
-            </v-btn-toggle>
+            <v-tooltip :text="`Toggle note chat (${formatShortcut('⌘L')})`" location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn
+                        v-bind="props"
+                        icon="ph-chat-circle"
+                        variant="text"
+                        rounded="lg"
+                        @click="emit('chat')"
+                    ></v-btn>
+                </template>
+            </v-tooltip>
+
+            <NoteActionMenu
+                :model-value="noteActionMenu"
+                :note="note"
+                :editor-actions="true"
+                visible
+                button-size="default"
+                button-density="default"
+                tooltip-location="bottom"
+                @update:model-value="emit('update:noteActionMenu', $event)"
+                @toggle-favorite="emit('toggle-favorite', $event)"
+                @rename-note="handleRenameNote"
+                @move-note="handleMoveNote"
+                @delete-note="emit('delete-note', $event)"
+                @undo="handleUndo"
+                @redo="handleRedo"
+            />
         </div>
     </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import NoteActionMenu from '../navbar/menus/NoteActionMenu.vue'
 import { formatShortcut } from '../../utils/shortcuts'
 
@@ -66,6 +81,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    autoSave: {
+        type: Object,
+        default: () => ({ dirty: false, saving: false, savedAt: null }),
+    },
 })
 
 const emit = defineEmits([
@@ -78,33 +97,6 @@ const emit = defineEmits([
     'delete-note',
 ])
 
-const toolbarButtons = computed(() => [
-    {
-        value: 'chat',
-        tooltip: `Toggle note chat (${formatShortcut('⌘L')})`,
-        icon: 'ph-chat-circle',
-        action: () => emit('chat'),
-    },
-    {
-        value: 'undo',
-        tooltip: `Undo (${formatShortcut('⌘Z')})`,
-        icon: 'ph-arrow-counter-clockwise',
-        action: () => props.editor?.chain().focus().undo().run(),
-    },
-    {
-        value: 'redo',
-        tooltip: `Redo (${formatShortcut('⌘⇧Z')})`,
-        icon: 'ph-arrow-clockwise',
-        action: () => props.editor?.chain().focus().redo().run(),
-    },
-    {
-        value: 'save',
-        tooltip: `Save (${formatShortcut('⌘S')})`,
-        icon: 'ph-floppy-disk',
-        action: () => emit('save'),
-    },
-])
-
 const handleRenameNote = (noteId, title) => {
     emit('rename-note', noteId, title)
 }
@@ -112,11 +104,46 @@ const handleRenameNote = (noteId, title) => {
 const handleMoveNote = (noteId, currentFolderId) => {
     emit('move-note', noteId, currentFolderId)
 }
+
+const handleUndo = () => {
+    props.editor?.chain().focus().undo().run()
+}
+
+const handleRedo = () => {
+    props.editor?.chain().focus().redo().run()
+}
+
+const isSaving = computed(() => Boolean(props.autoSave?.saving))
+const isSaveButtonHovered = ref(false)
+const manualSaveRequested = ref(false)
+
+const isSaveButtonLoading = computed(() => (
+    isSaving.value || manualSaveRequested.value
+))
+
+const handleSave = async () => {
+    // Start the spinner immediately, before the parent save handler updates its state.
+    manualSaveRequested.value = true
+    emit('save')
+    await nextTick()
+    manualSaveRequested.value = false
+}
+
+const saveStatusIcon = computed(() => (
+    isSaveButtonHovered.value ? 'ph-floppy-disk' : 'ph-check'
+))
+
+const saveStatusTooltip = computed(() => {
+    if (!props.autoSave?.savedAt) return 'Save'
+    const date = new Date(props.autoSave.savedAt)
+    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    if (date.toDateString() === new Date().toDateString()) {
+        return `Last saved: ${time}`
+    }
+    const day = date.toLocaleDateString([], { day: 'numeric', month: 'short' })
+    return `Last saved: ${day}, ${time}`
+})
 </script>
 
 <style scoped>
-:deep(.editor-note-action-btn.v-btn) {
-    width: 64px;
-    min-width: 64px;
-}
 </style>

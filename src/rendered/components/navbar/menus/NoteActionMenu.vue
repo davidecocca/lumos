@@ -14,26 +14,28 @@
                 :size="buttonSize"
                 variant="text"
                 :density="buttonDensity"
-                rounded
+                rounded="sm"
                 ></v-btn>
             </template>
         </v-tooltip>
     </template>
     <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
-        <v-list-item
-        v-for="item in menuItems"
-        :key="item.title"
-        :class="item.class"
-        :base-color="item.baseColor"
-        @click="item.action"
-        rounded="lg"
-        >
-        <template v-slot:append>
-            <v-icon :icon="item.icon"></v-icon>
+        <template v-for="item in menuItems" :key="item.key">
+            <v-divider v-if="item.divider" class="my-1"></v-divider>
+            <v-list-item
+            v-else
+            :class="item.class"
+            :base-color="item.baseColor"
+            @click="item.action"
+            rounded="lg"
+            >
+            <template v-slot:append>
+                <v-icon :icon="item.icon"></v-icon>
+            </template>
+            <v-list-item-title>{{ item.title }}</v-list-item-title>
+        </v-list-item>
         </template>
-        <v-list-item-title>{{ item.title }}</v-list-item-title>
-    </v-list-item>
-</v-list>
+    </v-list>
 </v-menu>
 </template>
 
@@ -50,6 +52,10 @@ const props = defineProps({
         default: false
     },
     modelValue: {
+        type: Boolean,
+        default: false
+    },
+    editorActions: {
         type: Boolean,
         default: false
     },
@@ -76,31 +82,54 @@ const emit = defineEmits([
     'toggle-favorite',
     'rename-note',
     'move-note',
-    'delete-note'
+    'delete-note',
+    'undo',
+    'redo'
 ])
 
 const currentFolderId = computed(() => props.note.folder_id ?? props.note.folderId ?? null)
 
 const menuItems = computed(() => {
     const isFavorite = props.note.favorite == 1
-    
+
+    const editorMenuItems = props.editorActions ? [
+        {
+            key: 'undo',
+            title: 'Undo',
+            icon: 'ph-arrow-counter-clockwise',
+            action: () => emit('undo')
+        },
+        {
+            key: 'redo',
+            title: 'Redo',
+            icon: 'ph-arrow-clockwise',
+            action: () => emit('redo')
+        },
+        { key: 'editor-divider', divider: true }
+    ] : []
+
     return [
+    ...editorMenuItems,
     {
+        key: 'favorite',
         title: isFavorite ? 'Unfavorite' : 'Favorite',
         icon: isFavorite ? 'ph-heart-break' : 'ph-heart',
         action: () => emit('toggle-favorite', props.note.id)
     },
     {
+        key: 'rename',
         title: 'Rename',
         icon: 'ph-pencil-simple-line',
         action: () => emit('rename-note', props.note.id, props.note.title)
     },
     {
+        key: 'move',
         title: 'Move to',
         icon: 'ph-arrow-right',
         action: () => emit('move-note', props.note.id, currentFolderId.value)
     },
     {
+        key: 'delete',
         title: 'Delete',
         icon: 'ph-trash',
         class: 'delete-menu-action',

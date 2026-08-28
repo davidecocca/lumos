@@ -1,5 +1,6 @@
 const db = require('./db');
 const vectorStore = require('./vectorStore');
+const vectorIndexer = require('../services/vectorIndexer');
 const imageService = require('../services/imageService');
 
 /* ---------------------------------
@@ -112,6 +113,68 @@ function deleteNoteChatConversations(noteId) {
                 });
             });
         });
+    });
+}
+
+// Delete a note's row from the vector sync tracker
+function deleteNoteVectorSyncRow(noteId) {
+    return new Promise((resolve, reject) => {
+        db.run(`DELETE FROM vector_sync WHERE note_id = ?`, [noteId], (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+}
+
+// Mark a note as up to date in the vector index
+function setNoteVectorSynced(noteId, syncedAt, callback) {
+    db.run(`
+        INSERT INTO vector_sync (note_id, synced_at)
+        VALUES (?, ?)
+        ON CONFLICT(note_id) DO UPDATE SET synced_at = excluded.synced_at
+    `, [noteId, syncedAt || null], function (err) {
+        callback(err, this ? this.changes : 0);
+    });
+}
+
+// Notes missing or stale in the vector index
+function getNotesNeedingVectorSync(callback) {
+    db.all(`
+        SELECT n.id
+        FROM notes n
+        LEFT JOIN vector_sync vs ON vs.note_id = n.id
+        WHERE vs.note_id IS NULL OR COALESCE(vs.synced_at, '') < n.updated_at
+    `, [], (err, rows) => {
+        callback(err, rows);
+    });
+}
+
+// Raw note fields needed by the background indexer
+function getNoteRawForIndexing(noteId, callback) {
+    db.get(`
+        SELECT id, title, topic, content_text, updated_at
+        FROM notes
+        WHERE id = ?
+    `, [noteId], (err, row) => {
+        callback(err, row);
+    });
+}
+
+// Reset all vector sync markers (used after a full index rebuild)
+function clearVectorSync(callback) {
+    db.run(`DELETE FROM vector_sync`, [], function (err) {
+        callback(err, this ? this.changes : 0);
+    });
+}
+
+// Counts for the RAG index status UI
+function getVectorSyncStats(callback) {
+    db.get(`
+        SELECT
+            (SELECT COUNT(*) FROM vector_sync) AS indexedCount,
+            (SELECT COUNT(*) FROM notes) AS totalNotes
+    `, [], (err, row) => {
+        callback(err, row || { indexedCount: 0, totalNotes: 0 });
     });
 }
 
@@ -263,7 +326,7 @@ function listNotes(callback) {
 
 // Rename a note
 function renameNote(id, newTitle, callback) {
-    const sql = `UPDATE notes SET title = ? WHERE id = ?`;
+    const sql = `UPDATE notes SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
     db.run(sql, [newTitle, id], async function (err) {
         if (err) {
             callback(err, this.changes);
@@ -272,6 +335,8 @@ function renameNote(id, newTitle, callback) {
 
         try {
             await refreshNoteSearchIndex(id);
+            // The title is embedded with each chunk, so re-index after renames.
+            vectorIndexer.requestIndex(id);
             callback(null, this.changes);
         } catch (searchErr) {
             callback(searchErr, this.changes);
@@ -295,15 +360,15 @@ function updateNote(id, topic, contentJson, contentText, callback) {
             callback(err);
             return;
         }
-        
+
         try {
             await refreshNoteSearchIndex(id);
             await imageService.pruneNoteImages(id, referencedImages);
-            await vectorStore.deleteNote(id);
-            await vectorStore.addNote(id, searchableContentText);
+            // Indexing is asynchronous: saves never wait on embeddings.
+            vectorIndexer.requestIndex(id);
             callback(null);
-        } catch (vectorErr) {
-            callback(vectorErr);
+        } catch (searchErr) {
+            callback(searchErr);
         }
     });
 }
@@ -319,6 +384,7 @@ function deleteNote(id, callback) {
         try {
             await deleteNoteChatConversations(id);
             await deleteNoteSearchIndex(id);
+            await deleteNoteVectorSyncRow(id);
             await vectorStore.deleteNote(id);
             await imageService.deleteNoteImages(id);
             callback(null);
@@ -353,6 +419,7 @@ function deleteNotesInFolder(folderId, callback) {
 
                 for (const note of notes) {
                     await deleteNoteSearchIndex(note.id);
+                    await deleteNoteVectorSyncRow(note.id);
                 }
 
                 // Delete each note from vector store
@@ -650,6 +717,11 @@ module.exports = {
     getFavoriteNotes,
     getLastViewedNotes,
     searchNotes,
+    getNoteRawForIndexing,
+    setNoteVectorSynced,
+    getNotesNeedingVectorSync,
+    clearVectorSync,
+    getVectorSyncStats,
     createChatConversation,
     listChatConversations,
     getChatConversation,

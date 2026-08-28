@@ -64,7 +64,7 @@
   All notes are stored locally. No forced cloud. Your data, your choice.
 
 - **Local or Hosted AI Models**  
-  Run LLMs and embedding models locally via [Ollama](https://ollama.com/), or connect your own API key for hosted models if you wish.
+  Run LLms locally via [Ollama](https://ollama.com/), or connect your own API key for hosted models if you wish.
 
 - **Chat with Your Notes**  
   Search, explore, or chat directly with your notes via Lumos AI—powered by local vector search.
@@ -87,28 +87,31 @@ Notion and other modern note apps are great, but they often tie your data to the
 - **SQLite** for storing notes
 - **LanceDB** for fast local vector storage and search
 - **LangChain** for AI/LLM integrations
-- **Ollama** for local LLM/embeddings (plug-and-play local inference)
+- **Transformers.js + ONNX Runtime** with a bundled EmbeddingGemma model for offline embeddings (no Ollama needed)
+- **Ollama** for local chat LLMs (optional, plug-and-play local inference)
 - **Optional:** Connect your own OpenAI (or similar) API key for hosted models
 
 
 ## 🖥️ Prerequisites
 
-1. **Install [Ollama](https://ollama.com/download)**
-2. Pull the `embeddinggemma:300m` embeddings model with:  
+1. Fetch the bundled embedding model (one command, ~210 MB, only needed once per machine):
    ```bash
-   ollama pull embeddinggemma:300m
+   npm run fetch:model
    ```
-    > This is needed to locally generate embeddings for your notes.
+   > Lumos uses it to generate note embeddings fully offline. The exact model version is pinned in `scripts/embedding-model.lock.json`.
 
-3. Pull one or more LLMs. You will be able to choose in Lumos which to use!
+2. For local chat LLMs, install [Ollama](https://ollama.com/download) and pull the models you want to use. You will be able to choose in Lumos which to use!
 
 ## 💡 Getting Started
 
 1. **Clone this repo**
 2. Run `npm install`
-3. Start the app with `npm run dev`
-4. Add your LLM model via Ollama, or provide your API key for remote models.
-5. Take notes, organize, and let Lumos AI supercharge your workflow—privately.
+3. Run `npm run fetch:model`
+4. Start the app with `npm run dev`
+5. Add your LLM model via Ollama, or provide your API key for remote models.
+6. Take notes, organize, and let Lumos AI supercharge your workflow—privately.
+
+> Notes auto-save while you write, and are indexed for semantic search in the background.
 
 
 ## 🙋‍♂️ Who’s Behind Lumos?
