@@ -56,12 +56,20 @@
                         {{ codexError }}
                     </v-alert>
 
-                    <div v-if="aiStore.codexEnabled && codexStatus" class="d-flex align-center flex-wrap ga-2 mt-4 pt-4 border-t">
-                        <div class="d-flex align-center ga-2 text-body-2">
-                            <v-icon :icon="usageIcon" :color="usageColor" size="small" />
-                            <span :class="`text-${usageColor}`" class="font-weight-medium">{{ primaryUsage }} used</span>
-                            <span class="text-medium-emphasis">{{ primaryReset ? `· resets ${primaryReset}` : '' }}</span>
-                            <span v-if="creditBalance" class="text-medium-emphasis">· {{ creditBalance }} credits</span>
+                    <div v-if="aiStore.codexEnabled && codexStatus" class="d-flex align-center mt-4 pt-4 border-t">
+                        <div class="d-flex flex-column ga-1 text-body-2 codex-usage">
+                            <div class="codex-usage-row">
+                                <v-icon :icon="usageIcon" :color="usageColor" size="small" />
+                                <span>5h</span>
+                                <span class="font-weight-medium">{{ primaryUsage }}</span>
+                                <span class="text-medium-emphasis">{{ primaryReset }}</span>
+                            </div>
+                            <div class="codex-usage-row">
+                                <v-icon :icon="weeklyUsageIcon" :color="weeklyUsageColor" size="small" />
+                                <span>Weekly</span>
+                                <span class="font-weight-medium">{{ weeklyUsage }}</span>
+                                <span class="text-medium-emphasis">{{ weeklyReset }}</span>
+                            </div>
                         </div>
                         <v-spacer />
                         <v-btn variant="text" size="small" prepend-icon="ph-arrows-clockwise" :loading="isCheckingCodex" @click="refreshCodexStatus">
@@ -76,9 +84,16 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
+import TimeAgo from 'javascript-time-ago';
+import en from 'javascript-time-ago/locale/en';
+import { round } from 'javascript-time-ago/steps';
 import { aiPreferencesStore } from '../../stores/aiPreferencesStore';
 import { getGroqModels } from '../../services/providers/groqService';
 import ModelProviderMark from '../ai/ModelProviderMark.vue';
+
+TimeAgo.addDefaultLocale(en);
+const timeAgo = new TimeAgo('en-US');
+const relativeTimeStyle = { labels: 'narrow', steps: round };
 
 const aiStore = aiPreferencesStore();
 const apiKeyProviders = [
@@ -94,26 +109,30 @@ const codexError = ref('');
 const codexStatus = ref(null);
 
 const primaryRateLimit = computed(() => codexStatus.value?.rateLimits?.rateLimits?.primary || null);
-const primaryUsage = computed(() => primaryRateLimit.value ? `${primaryRateLimit.value.usedPercent}%` : 'Unavailable');
-const usageColor = computed(() => {
-    const usedPercent = primaryRateLimit.value?.usedPercent;
+const primaryUsage = computed(() => primaryRateLimit.value ? `${100 - primaryRateLimit.value.usedPercent}%` : 'Unavailable');
+const weeklyRateLimit = computed(() => codexStatus.value?.rateLimits?.rateLimits?.secondary || null);
+const weeklyUsage = computed(() => weeklyRateLimit.value ? `${100 - weeklyRateLimit.value.usedPercent}%` : 'Unavailable');
+const getUsageColor = (rateLimit) => {
+    const usedPercent = rateLimit?.usedPercent;
     if (typeof usedPercent !== 'number' || usedPercent < 50) return 'success';
     if (usedPercent < 80) return 'warning';
     return 'error';
-});
-const usageIcon = computed(() => {
-    if (usageColor.value === 'success') return 'ph-check-circle';
-    if (usageColor.value === 'warning') return 'ph-warning-circle';
+};
+const usageColor = computed(() => getUsageColor(primaryRateLimit.value));
+const weeklyUsageColor = computed(() => getUsageColor(weeklyRateLimit.value));
+const getUsageIcon = (color) => {
+    if (color === 'success') return 'ph-check-circle';
+    if (color === 'warning') return 'ph-warning-circle';
     return 'ph-warning';
-});
+};
+const usageIcon = computed(() => getUsageIcon(usageColor.value));
+const weeklyUsageIcon = computed(() => getUsageIcon(weeklyUsageColor.value));
 const primaryReset = computed(() => primaryRateLimit.value?.resetsAt
-    ? new Date(primaryRateLimit.value.resetsAt * 1000).toLocaleString()
+    ? new Date(primaryRateLimit.value.resetsAt * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
     : '');
-const creditBalance = computed(() => {
-    const credits = codexStatus.value?.rateLimits?.rateLimits?.credits;
-    return credits?.hasCredits ? credits.balance : '';
-});
-
+const weeklyReset = computed(() => weeklyRateLimit.value?.resetsAt
+    ? timeAgo.format(new Date(weeklyRateLimit.value.resetsAt * 1000), relativeTimeStyle)
+    : '');
 const refreshCodexStatus = async () => {
     isCheckingCodex.value = true;
     codexError.value = '';
@@ -175,3 +194,16 @@ onMounted(() => {
     }
 });
 </script>
+
+<style scoped>
+.codex-usage {
+    min-width: 220px;
+}
+
+.codex-usage-row {
+    display: grid;
+    grid-template-columns: 16px minmax(60px, 1fr) 40px 68px;
+    align-items: center;
+    column-gap: 8px;
+}
+</style>
