@@ -38,7 +38,7 @@
                 </div>
 
                 <v-progress-linear
-                    v-if="status?.indexing"
+                    v-if="status?.initializing || status?.indexing"
                     class="mt-4"
                     indeterminate
                     color="primary"
@@ -87,6 +87,7 @@ let unsubscribe = null;
 
 const errorMessage = computed(() => {
     if (!status.value) return null;
+    if (status.value.initializing) return null;
     if (!status.value.ready) {
         return (
             status.value.error || 'The local embedding model is unavailable.'
@@ -97,20 +98,23 @@ const errorMessage = computed(() => {
 
 const statusIcon = computed(() => {
     if (!status.value) return 'ph-circle-dashed';
+    if (status.value.initializing) return 'ph-circle-dashed';
     if (!status.value.ready) return 'ph-warning-circle';
     return status.value.indexing ? 'ph-arrows-clockwise' : 'ph-check-circle';
 });
 
 const statusColor = computed(() => {
     if (!status.value) return 'grey';
+    if (status.value.initializing) return 'primary';
     if (!status.value.ready) return 'error';
     return status.value.indexing ? 'primary' : 'success';
 });
 
 const statusTitle = computed(() => {
     if (!status.value) return 'Checking index status…';
-    const { ready, indexing } = status.value;
+    const { ready, initializing, indexing } = status.value;
 
+    if (initializing) return 'Preparing semantic search…';
     if (!ready) return 'Semantic search is unavailable.';
     if (indexing) return 'Indexing notes…';
     return 'Up to date';
@@ -118,8 +122,10 @@ const statusTitle = computed(() => {
 
 const statusDetail = computed(() => {
     if (!status.value) return null;
-    const { ready, indexing, pending, indexedCount, totalNotes } = status.value;
+    const { ready, initializing, indexing, pending, indexedCount, totalNotes } =
+        status.value;
 
+    if (initializing) return 'Loading the local index…';
     if (!ready) return null;
     if (indexing) {
         return pending > 0
@@ -137,7 +143,12 @@ async function refresh() {
     try {
         status.value = await window.api.getRagStatus();
     } catch {
-        status.value = { ready: false, indexing: false, pending: 0 };
+        status.value = {
+            ready: false,
+            initializing: false,
+            indexing: false,
+            pending: 0,
+        };
     }
 }
 

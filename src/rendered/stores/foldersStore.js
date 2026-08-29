@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia';
 
+let favoriteNotesRequest = null;
+
 export const useFoldersStore = defineStore('folders', {
     state: () => ({
         folders: [],
@@ -92,14 +94,23 @@ export const useFoldersStore = defineStore('folders', {
             }
         },
         async fetchFavoriteNotes() {
-            try {
-                const favNotes = await window.api.getFavoriteNotes();
-                this.favorites = favNotes.map((note) => ({
-                    ...note,
-                }));
-            } catch (err) {
-                console.error('Error fetching favorite notes:', err);
-            }
+            if (favoriteNotesRequest) return favoriteNotesRequest;
+
+            favoriteNotesRequest = window.api
+                .getFavoriteNotes()
+                .then((favNotes) => {
+                    this.favorites = favNotes.map((note) => ({
+                        ...note,
+                    }));
+                })
+                .catch((err) => {
+                    console.error('Error fetching favorite notes:', err);
+                })
+                .finally(() => {
+                    favoriteNotesRequest = null;
+                });
+
+            return favoriteNotesRequest;
         },
         async fetchLastViewedNotes() {
             try {

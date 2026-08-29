@@ -236,6 +236,7 @@ class VectorIndexer {
 
         return {
             ready: Boolean(vectorStore.ready),
+            initializing: Boolean(vectorStore.initializing),
             error: vectorStore.lastError
                 ? String(vectorStore.lastError.message || vectorStore.lastError)
                 : this.lastError

@@ -9,18 +9,21 @@
                 :key="$route.fullPath"
                 :theme="themePreference"
                 @update:theme="themePreference = $event"
+                @home-ready="hideSplash"
             />
         </v-container>
     </v-main>
 
     <SearchDialog v-model="isSearchOpen" />
     <AboutDialog v-model="isAboutOpen" />
+    <StartupSplash :visible="isSplashVisible" />
 </template>
 
 <script setup>
 import NavigationDrawer from '../components/navbar/NavDrawer.vue';
 import SearchDialog from '../components/navbar/dialogs/SearchDialog.vue';
 import AboutDialog from '../components/navbar/dialogs/AboutDialog.vue';
+import StartupSplash from '../components/splashscreen/StartupSplash.vue';
 
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';
 import { useFoldersStore } from '../stores/foldersStore';
@@ -37,6 +40,10 @@ const { api } = window;
 const isDrawerRail = ref(false);
 const isSearchOpen = ref(false);
 const isAboutOpen = ref(false);
+const isSplashVisible = ref(true);
+const minSplashDuration = 2_000;
+const splashOpenedAt = performance.now();
+let splashTimer = null;
 
 // State to manage fullscreen mode
 const isFullscreen = ref(false);
@@ -69,6 +76,16 @@ const toggleNavbar = () => {
 
 const openSearch = () => {
     isSearchOpen.value = true;
+};
+
+const hideSplash = () => {
+    const remaining = Math.max(
+        0,
+        minSplashDuration - (performance.now() - splashOpenedAt),
+    );
+    splashTimer = window.setTimeout(() => {
+        isSplashVisible.value = false;
+    }, remaining);
 };
 
 const handleMenuAction = (_, action) => {
@@ -190,6 +207,7 @@ onBeforeUnmount(() => {
     // Remove the IPC listener for fullscreen changes to prevent memory leaks
     api.removeListener('fullscreen-changed', updateFullscreen);
     api.removeListener('menu-action', handleMenuAction);
+    window.clearTimeout(splashTimer);
 });
 
 // Watch for manual changes to the theme preference and persist them

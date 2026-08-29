@@ -44,6 +44,7 @@ class VectorStore {
         this.table = null;
         this.dbPath = null;
         this.ready = false;
+        this.initializing = false;
         this.lastError = null;
     }
 
@@ -56,6 +57,7 @@ class VectorStore {
     async initialize(dbPath) {
         this.dbPath = dbPath;
         this.ready = false;
+        this.initializing = true;
         this.lastError = null;
 
         try {
@@ -93,6 +95,8 @@ class VectorStore {
         } catch (err) {
             this.lastError = err;
             throw err;
+        } finally {
+            this.initializing = false;
         }
     }
 

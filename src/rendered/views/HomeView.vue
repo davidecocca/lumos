@@ -15,7 +15,27 @@
         <v-tabs-window v-model="tab">
             <!-- Favorite notes -->
             <v-tabs-window-item :value="favoritesTab">
-                <template v-if="(favoriteNotes?.length ?? 0) === 0">
+                <v-row v-if="loading" density="comfortable">
+                    <v-col
+                        v-for="card in 3"
+                        :key="card"
+                        cols="12"
+                        md="6"
+                        lg="4"
+                    >
+                        <v-card
+                            class="border pa-4"
+                            elevation="0"
+                            height="220"
+                            rounded="lg"
+                        >
+                            <v-skeleton-loader
+                                type="heading, text, text, actions"
+                            />
+                        </v-card>
+                    </v-col>
+                </v-row>
+                <template v-else-if="(favoriteNotes?.length ?? 0) === 0">
                     <v-row class="justify-center">
                         <v-col cols="12" md="8" class="d-flex justify-center">
                             <EmptyState
@@ -47,7 +67,27 @@
 
             <!-- Recent notes -->
             <v-tabs-window-item :value="recentsTab">
-                <template v-if="(recentNotes?.length ?? 0) === 0">
+                <v-row v-if="loading" density="comfortable">
+                    <v-col
+                        v-for="card in 3"
+                        :key="card"
+                        cols="12"
+                        md="6"
+                        lg="4"
+                    >
+                        <v-card
+                            class="border pa-4"
+                            elevation="0"
+                            height="220"
+                            rounded="lg"
+                        >
+                            <v-skeleton-loader
+                                type="heading, text, text, actions"
+                            />
+                        </v-card>
+                    </v-col>
+                </v-row>
+                <template v-else-if="(recentNotes?.length ?? 0) === 0">
                     <v-row class="justify-center">
                         <v-col cols="12" md="8" class="d-flex justify-center">
                             <EmptyState
@@ -89,6 +129,8 @@ import { computed, onMounted, ref } from 'vue';
 
 import { useFoldersStore } from '../stores/foldersStore.js';
 
+const emit = defineEmits(['home-ready']);
+
 const store = useFoldersStore();
 
 // Map store state to local computed refs
@@ -99,6 +141,7 @@ const recentNotes = computed(() => store.recentNotes.slice(0, 9)); // Limit to 9
 const favoritesTab = 'favoritesTab';
 const recentsTab = 'recentsTab';
 const tab = ref(favoritesTab);
+const loading = ref(true);
 
 const subtitles = ref([
     'Your thoughts, all in one place.',
@@ -115,12 +158,15 @@ const subtitles = ref([
 const subtitle = ref('');
 
 onMounted(async () => {
-    // Fetch favorite notes
-    await store.fetchFavoriteNotes();
-    // Fetch recent notes
-    await store.fetchLastViewedNotes();
-    // Set a random subtitle
     subtitle.value =
         subtitles.value[Math.floor(Math.random() * subtitles.value.length)];
+
+    await Promise.all([
+        store.fetchFavoriteNotes(),
+        store.fetchLastViewedNotes(),
+    ]);
+
+    loading.value = false;
+    emit('home-ready');
 });
 </script>

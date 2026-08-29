@@ -253,6 +253,8 @@ function createWindow() {
     win.webContents.on('did-finish-load', () => {
         win.webContents.send('fullscreen-changed', win.isFullScreen());
     });
+
+    return win;
 }
 
 // Set up IPC handlers for folders and notes
@@ -550,7 +552,9 @@ function setupIPC() {
         async (event, { query, limit, filter }) => {
             if (!vectorStore.ready) {
                 throw new Error(
-                    'Semantic search is unavailable: the local embedding model could not be loaded.',
+                    vectorStore.initializing
+                        ? 'Semantic search is still initializing.'
+                        : 'Semantic search is unavailable: the local embedding model could not be loaded.',
                 );
             }
             return new Promise((resolve, reject) => {
@@ -638,6 +642,43 @@ vectorIndexer.onStatus((status) => {
     }
 });
 
+// Broadcast the current RAG status to all renderer windows
+function broadcastRagStatus() {
+    vectorIndexer.getStatus().then((status) => {
+        for (const win of BrowserWindow.getAllWindows()) {
+            win.webContents.send('rag-status', status);
+        }
+    });
+}
+
+// Initialize the RAG system after the first frame is rendered,
+// so that the app can start up quickly without waiting for the vector store
+function initializeRag() {
+    const lancePath = path.join(app.getPath('userData'), 'lancedb');
+    vectorStore
+        .initialize(lancePath)
+        .then(async ({ rebuilt }) => {
+            if (rebuilt) {
+                await clearVectorSync();
+            }
+
+            broadcastRagStatus();
+            localEmbeddings.warmup();
+            vectorIndexer.reconcile().catch((err) => {
+                console.error('Vector index reconciliation failed:', err);
+            });
+        })
+        .catch((err) => {
+            console.error(
+                'Failed to initialize vector store, continuing without RAG:',
+                err,
+            );
+            broadcastRagStatus();
+        });
+
+    broadcastRagStatus();
+}
+
 // App lifecycle
 app.whenReady().then(() => {
     Menu.setApplicationMenu(createApplicationMenu());
@@ -656,32 +697,10 @@ app.whenReady().then(() => {
         app.dock.setIcon(icon);
     }
 
-    // Initialize the vector store. RAG is a feature, not a launch requirement:
-    // if it fails, Lumos still opens and search/chat simply report it.
-    const lancePath = path.join(app.getPath('userData'), 'lancedb');
-    vectorStore
-        .initialize(lancePath)
-        .then(async ({ rebuilt }) => {
-            if (rebuilt) {
-                await clearVectorSync();
-            }
+    const mainWindow = createWindow();
+    setupIPC();
 
-            createWindow();
-            setupIPC();
-
-            localEmbeddings.warmup();
-            vectorIndexer.reconcile().catch((err) => {
-                console.error('Vector index reconciliation failed:', err);
-            });
-        })
-        .catch((err) => {
-            console.error(
-                'Failed to initialize vector store, continuing without RAG:',
-                err,
-            );
-            createWindow();
-            setupIPC();
-        });
+    mainWindow.once('ready-to-show', initializeRag);
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
