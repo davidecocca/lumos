@@ -128,14 +128,14 @@ Lumos started as a side project—built to offer a simple, local, and AI-powered
     - [✅] Embed YouTube videos
 - [✅] Implement drag-and-drop for notes organization
 - [ ] Add note categorization with tags/labels
-- [ ] Add function to export notes
+- [✅] Add function to export notes
 
 ### Technical Improvements
 
-- [ ] Refactor codebase:
-    - [ ] Modularize components
-    - [ ] Improve code organization
-    - [ ] Add documentation
+- [✅] Refactor codebase:
+    - [✅] Modularize components
+    - [✅] Improve code organization
+    - [🚧] Add documentation
 - [ ] Implement comprehensive test suite:
     - [ ] Unit tests
     - [ ] Integration tests

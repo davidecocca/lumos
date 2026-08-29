@@ -61,6 +61,7 @@
                 @delete-note="emit('delete-note', $event)"
                 @undo="handleUndo"
                 @redo="handleRedo"
+                @export-note="emit('export-note', $event)"
             />
         </div>
     </div>
@@ -102,6 +103,7 @@ const emit = defineEmits([
     'rename-note',
     'move-note',
     'delete-note',
+    'export-note',
 ]);
 
 const handleRenameNote = (noteId, title) => {

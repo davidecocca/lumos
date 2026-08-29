@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('api', {
     openDevTools: () => ipcRenderer.send('open-devtools'),
     updateMenuState: (state) => ipcRenderer.send('update-menu-state', state),
     getAppInfo: () => ipcRenderer.invoke('get-app-info'),
+    exportNote: (payload) => ipcRenderer.invoke('export-note', payload),
     getCodexStatus: () => ipcRenderer.invoke('get-codex-status'),
     runCodex: (payload) => ipcRenderer.invoke('run-codex', payload),
     startCodexStream: (payload) =>

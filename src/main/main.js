@@ -1,9 +1,17 @@
-const { app, BrowserWindow, ipcMain, nativeImage, Menu } = require('electron');
+const {
+    app,
+    BrowserWindow,
+    dialog,
+    ipcMain,
+    nativeImage,
+    Menu,
+} = require('electron');
 const path = require('path');
 const vectorStore = require('./database/vectorStore');
 const vectorIndexer = require('./services/vectorIndexer');
 const localEmbeddings = require('./services/localEmbeddings');
 const imageService = require('./services/imageService');
+const noteExportService = require('./services/noteExportService');
 const { checkCodex, runCodex } = require('./services/codexService');
 const { randomUUID } = require('crypto');
 
@@ -297,6 +305,33 @@ function setupIPC() {
         chromeVersion: process.versions.chrome,
         platform: process.platform,
     }));
+    ipcMain.handle('export-note', async (event, payload) => {
+        const format = payload?.format;
+        const title = payload?.title || 'Untitled note';
+        const content = payload?.content;
+
+        if (
+            !['pdf', 'markdown', 'html'].includes(format) ||
+            typeof content !== 'string'
+        ) {
+            throw new Error('Invalid note export request');
+        }
+
+        const { canceled, filePath } = await dialog.showSaveDialog(
+            BrowserWindow.fromWebContents(event.sender),
+            noteExportService.getSaveDialogOptions(title, format),
+        );
+
+        if (canceled || !filePath) return { canceled: true };
+
+        await noteExportService.writeExport({
+            filePath,
+            format,
+            title,
+            content,
+        });
+        return { canceled: false, filePath };
+    });
     ipcMain.handle('get-codex-status', () => checkCodex());
     ipcMain.handle('run-codex', async (_, payload) => runCodex(payload || {}));
     ipcMain.handle('start-codex-stream', (event, payload) => {

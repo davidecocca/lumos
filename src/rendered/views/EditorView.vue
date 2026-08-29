@@ -17,6 +17,7 @@
                 @rename-note="openRenameNoteDialog"
                 @move-note="openMoveNoteDialog"
                 @delete-note="store.openDeleteNoteConfirmationDialog"
+                @export-note="exportNote"
             />
 
             <EditorBubbleMenu
@@ -137,6 +138,7 @@ import {
 import FileHandler from '@tiptap/extension-file-handler';
 import EmbeddedYoutube from '../components/editor/custom-node-views/embedded-youtube/embeddedYoutube';
 import ResizableImage from '../components/editor/custom-node-views/resizable-image/resizableImage';
+import { serializeMarkdown } from '../services/noteExport';
 
 // Code block highlighting: load all languages with "all" and common languages with "common"
 import { all, createLowlight } from 'lowlight';
@@ -580,6 +582,30 @@ const saveNoteManually = async () => {
         console.error(errorMsg, error);
         isDirty.value = true;
         isLoading.value = false;
+    }
+};
+
+const exportNote = async (format) => {
+    if (!editor.value || !note.value) {
+        return;
+    }
+
+    await flushPendingSave();
+
+    try {
+        await window.api.exportNote({
+            format,
+            title: note.value.title,
+            content:
+                format === 'markdown'
+                    ? serializeMarkdown(
+                          editor.value.state.doc,
+                          note.value.title,
+                      )
+                    : editor.value.getHTML(),
+        });
+    } catch (error) {
+        console.error('Failed to export note:', error);
     }
 };
 
