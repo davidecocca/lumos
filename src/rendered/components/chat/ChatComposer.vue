@@ -32,7 +32,7 @@
                 style="min-width: 0"
             >
                 <div class="model-trigger-wrap">
-                    <v-menu location="top end">
+                    <v-menu location="top end" max-height="400">
                         <template v-slot:activator="{ props: menuProps }">
                             <v-tooltip text="Pick model" location="top">
                                 <template

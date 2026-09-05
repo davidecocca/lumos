@@ -1,7 +1,7 @@
 <template>
     <v-card
         elevation="0"
-        rounded="lg"
+        rounded="xl"
         width="calc(100vw - 48px)"
         max-width="600"
         color="surface-dark"
@@ -158,12 +158,3 @@ defineExpose({
     focus,
 });
 </script>
-
-<style scoped>
-.inline-edit-ai-status {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-</style>

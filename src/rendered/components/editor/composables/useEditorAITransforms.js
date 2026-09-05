@@ -12,6 +12,7 @@ import {
     clearInlineEditAIPreview,
     setInlineEditAIPreview,
 } from '../inline-ai/inlineEditAIDecorations';
+import InlineAIPreviewActions from '../inline-ai/InlineAIPreviewActions.vue';
 import InlineEditAIInput from '../inline-ai/InlineEditAIInput.vue';
 import {
     autoUpdate,
@@ -61,7 +62,11 @@ const markdownToEditorHtml = (markdown) =>
         renderer: markdownRenderer,
     });
 
-export function useEditorAITransforms({ editor, isLoading }) {
+export function useEditorAITransforms({
+    editor,
+    isLoading,
+    bubbleMenuPluginKey = 'editorBubbleMenu',
+}) {
     let fixGrammarLLMService = null;
     let formatTextLLMService = null;
     let improveWritingLLMService = null;
@@ -73,12 +78,16 @@ export function useEditorAITransforms({ editor, isLoading }) {
     let inlineEditPopup = null;
     let cleanupInlineEditAutoUpdate = null;
     let removeInlineEditOutsidePointerListener = null;
+    let removeInlineEditKeydownListener = null;
 
     const inlineAIEdit = reactive({
         active: false,
         isLoading: false,
+        mode: 'prompt',
+        actionLabel: '',
         prompt: '',
         editedText: '',
+        previewMode: 'diff',
         from: null,
         to: null,
         originalText: '',
@@ -114,7 +123,9 @@ export function useEditorAITransforms({ editor, isLoading }) {
 
     const createInlineEditVirtualElement = () => ({
         getBoundingClientRect: () =>
-            getInlineEditSelectionRect() || {
+            (inlineAIEdit.mode === 'preview'
+                ? getInlineEditRenderedPreviewRect()
+                : getInlineEditSelectionRect()) || {
                 width: 1,
                 height: 1,
                 top: 0,
@@ -126,6 +137,39 @@ export function useEditorAITransforms({ editor, isLoading }) {
             },
     });
 
+    const getInlineEditRenderedPreviewRect = () => {
+        if (!editor.value || editor.value.isDestroyed) {
+            return null;
+        }
+
+        const previewElements = editor.value.view.dom.querySelectorAll(
+            '.lumos-inline-edit-ai-addition, .lumos-inline-edit-ai-deletion, .lumos-inline-edit-ai-markdown-preview',
+        );
+        const rects = Array.from(previewElements)
+            .flatMap((element) => Array.from(element.getClientRects()))
+            .filter((rect) => rect.width > 0 && rect.height > 0);
+
+        if (!rects.length) {
+            return getInlineEditSelectionRect();
+        }
+
+        const top = Math.min(...rects.map((rect) => rect.top));
+        const right = Math.max(...rects.map((rect) => rect.right));
+        const bottom = Math.max(...rects.map((rect) => rect.bottom));
+        const left = Math.min(...rects.map((rect) => rect.left));
+
+        return {
+            width: Math.max(1, right - left),
+            height: Math.max(1, bottom - top),
+            top,
+            right,
+            bottom,
+            left,
+            x: left,
+            y: top,
+        };
+    };
+
     const updateInlineEditPopupPosition = async () => {
         if (!inlineEditPopup || !editor.value || editor.value.isDestroyed) {
             return;
@@ -135,9 +179,16 @@ export function useEditorAITransforms({ editor, isLoading }) {
             createInlineEditVirtualElement(),
             inlineEditPopup,
             {
-                placement: 'bottom-start',
+                placement:
+                    inlineAIEdit.mode === 'preview'
+                        ? 'bottom-end'
+                        : 'bottom-start',
                 strategy: 'fixed',
-                middleware: [offset(10), flip(), shift({ padding: 12 })],
+                middleware: [
+                    offset(inlineAIEdit.mode === 'preview' ? 4 : 10),
+                    flip(),
+                    shift({ padding: 12 }),
+                ],
             },
         );
 
@@ -147,21 +198,13 @@ export function useEditorAITransforms({ editor, isLoading }) {
         });
     };
 
-    const updateInlineEditPopupProps = () => {
-        inlineEditComponent?.updateProps({
-            loading: inlineAIEdit.isLoading,
-            editedText: inlineAIEdit.editedText,
-            onSubmit: submitInlineAIEdit,
-            onApply: applyInlineAIEdit,
-            onReject: rejectInlineAIEdit,
-        });
-    };
-
     const destroyInlineEditPopup = () => {
         cleanupInlineEditAutoUpdate?.();
         cleanupInlineEditAutoUpdate = null;
         removeInlineEditOutsidePointerListener?.();
         removeInlineEditOutsidePointerListener = null;
+        removeInlineEditKeydownListener?.();
+        removeInlineEditKeydownListener = null;
 
         if (inlineEditPopup?.parentNode) {
             inlineEditPopup.parentNode.removeChild(inlineEditPopup);
@@ -194,22 +237,61 @@ export function useEditorAITransforms({ editor, isLoading }) {
         };
     };
 
+    const bindInlineEditKeydownListener = () => {
+        removeInlineEditKeydownListener?.();
+
+        const onKeydown = (event) => {
+            if (event.key !== 'Escape' || !inlineAIEdit.active) {
+                return;
+            }
+
+            event.preventDefault();
+            rejectInlineAIEdit();
+        };
+
+        document.addEventListener('keydown', onKeydown, true);
+        removeInlineEditKeydownListener = () => {
+            document.removeEventListener('keydown', onKeydown, true);
+        };
+    };
+
+    const getInlineEditPopupProps = () => {
+        if (inlineAIEdit.mode === 'preview') {
+            return {
+                loading: inlineAIEdit.isLoading,
+                editedText: inlineAIEdit.editedText,
+                onApply: applyInlineAIEdit,
+                onReject: rejectInlineAIEdit,
+            };
+        }
+
+        return {
+            loading: inlineAIEdit.isLoading,
+            editedText: inlineAIEdit.editedText,
+            onSubmit: submitInlineAIEdit,
+            onApply: applyInlineAIEdit,
+            onReject: rejectInlineAIEdit,
+        };
+    };
+
+    const updateInlineEditPopupProps = () => {
+        inlineEditComponent?.updateProps(getInlineEditPopupProps());
+    };
+
     const openInlineEditPopup = () => {
         if (!editor.value || editor.value.isDestroyed) {
             return;
         }
 
         destroyInlineEditPopup();
+        const InlineEditPopupComponent =
+            inlineAIEdit.mode === 'preview'
+                ? InlineAIPreviewActions
+                : InlineEditAIInput;
 
-        inlineEditComponent = new VueRenderer(InlineEditAIInput, {
+        inlineEditComponent = new VueRenderer(InlineEditPopupComponent, {
             editor: editor.value,
-            props: {
-                loading: inlineAIEdit.isLoading,
-                editedText: inlineAIEdit.editedText,
-                onSubmit: submitInlineAIEdit,
-                onApply: applyInlineAIEdit,
-                onReject: rejectInlineAIEdit,
-            },
+            props: getInlineEditPopupProps(),
         });
 
         inlineEditPopup = document.createElement('div');
@@ -231,6 +313,7 @@ export function useEditorAITransforms({ editor, isLoading }) {
         );
 
         bindInlineEditOutsidePointerListener();
+        bindInlineEditKeydownListener();
         void updateInlineEditPopupPosition();
         void inlineEditComponent.ref?.focus?.();
     };
@@ -270,68 +353,6 @@ export function useEditorAITransforms({ editor, isLoading }) {
         };
     };
 
-    const replaceSelection = ({ state, from, to, isTextSelected }, content) => {
-        const range = isTextSelected
-            ? { from, to }
-            : { from: 0, to: state.doc.content.size };
-
-        editor.value
-            .chain()
-            .focus()
-            .deleteRange(range)
-            .insertContent(content)
-            .run();
-    };
-
-    const streamSelectionReplacement = async (serviceFactory) => {
-        const context = getSelectionContext();
-        if (!context) return;
-
-        rejectInlineAIEdit();
-        editor.value.commands.blur();
-        isLoading.value = true;
-
-        try {
-            const service = serviceFactory();
-            const stream = await service.stream(context.text);
-            let streamedText = '';
-            let firstChunk = true;
-
-            for await (const chunk of stream) {
-                streamedText += chunk;
-                if (firstChunk) {
-                    replaceSelection(context, streamedText);
-                    firstChunk = false;
-                } else {
-                    editor.value.chain().focus().insertContent(chunk).run();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to get response:', error);
-        } finally {
-            isLoading.value = false;
-        }
-    };
-
-    const generateSelectionReplacement = async (service) => {
-        const context = getSelectionContext();
-        if (!context) return;
-
-        rejectInlineAIEdit();
-        editor.value.commands.blur();
-        isLoading.value = true;
-
-        try {
-            const response = await service.generate(context.text);
-            await new Promise((resolve) => setTimeout(resolve, 100));
-            replaceSelection(context, response);
-        } catch (error) {
-            console.error('Failed to get response:', error);
-        } finally {
-            isLoading.value = false;
-        }
-    };
-
     const startInlineAIEdit = () => {
         const context = getSelectionContext('\n');
         if (!context || !context.isTextSelected) return;
@@ -341,8 +362,11 @@ export function useEditorAITransforms({ editor, isLoading }) {
 
         inlineAIEdit.active = true;
         inlineAIEdit.isLoading = false;
+        inlineAIEdit.mode = 'prompt';
+        inlineAIEdit.actionLabel = '';
         inlineAIEdit.prompt = '';
         inlineAIEdit.editedText = '';
+        inlineAIEdit.previewMode = 'diff';
         inlineAIEdit.from = context.from;
         inlineAIEdit.to = context.to;
         inlineAIEdit.originalText = context.text;
@@ -365,6 +389,7 @@ export function useEditorAITransforms({ editor, isLoading }) {
             from: inlineAIEdit.from,
             to: inlineAIEdit.to,
             editedText: inlineAIEdit.editedText,
+            previewMode: inlineAIEdit.previewMode,
         });
     };
 
@@ -389,10 +414,13 @@ export function useEditorAITransforms({ editor, isLoading }) {
             for await (const chunk of stream) {
                 if (
                     requestId !== inlineEditRequestId ||
-                    !chunk ||
                     !editor.value ||
                     editor.value.isDestroyed
                 ) {
+                    break;
+                }
+
+                if (!chunk) {
                     continue;
                 }
 
@@ -423,8 +451,11 @@ export function useEditorAITransforms({ editor, isLoading }) {
 
         inlineAIEdit.active = false;
         inlineAIEdit.isLoading = false;
+        inlineAIEdit.mode = 'prompt';
+        inlineAIEdit.actionLabel = '';
         inlineAIEdit.prompt = '';
         inlineAIEdit.editedText = '';
+        inlineAIEdit.previewMode = 'diff';
         inlineAIEdit.from = null;
         inlineAIEdit.to = null;
         inlineAIEdit.originalText = '';
@@ -459,6 +490,94 @@ export function useEditorAITransforms({ editor, isLoading }) {
             .run();
 
         rejectInlineAIEdit();
+    };
+
+    const startAIPreviewTransform = async ({
+        actionLabel,
+        serviceFactory,
+        generate = false,
+        previewMode = 'diff',
+    }) => {
+        const context = getSelectionContext('\n');
+        if (!context || !context.isTextSelected) return;
+
+        rejectInlineAIEdit();
+
+        const requestId = ++inlineEditRequestId;
+        clearInlineEditAIPreview(editor.value);
+
+        inlineAIEdit.active = true;
+        inlineAIEdit.isLoading = true;
+        inlineAIEdit.mode = 'preview';
+        inlineAIEdit.actionLabel = actionLabel;
+        inlineAIEdit.prompt = '';
+        inlineAIEdit.editedText = '';
+        inlineAIEdit.previewMode = previewMode;
+        inlineAIEdit.from = context.from;
+        inlineAIEdit.to = context.to;
+        inlineAIEdit.originalText = context.text;
+
+        editor.value.view.dispatch(
+            editor.value.state.tr.setMeta(bubbleMenuPluginKey, 'hide'),
+        );
+        editor.value.commands.blur();
+        isLoading.value = true;
+        openInlineEditPopup();
+
+        try {
+            const service = serviceFactory();
+            if (!service) {
+                throw new Error(
+                    `AI service is not available for ${actionLabel}`,
+                );
+            }
+
+            if (generate) {
+                const response = await service.generate(context.text);
+                if (
+                    requestId === inlineEditRequestId &&
+                    editor.value &&
+                    !editor.value.isDestroyed
+                ) {
+                    inlineAIEdit.editedText = response;
+                    updateInlineEditPopupProps();
+                    updateInlineEditPreview();
+                    void updateInlineEditPopupPosition();
+                }
+                return;
+            }
+
+            const stream = await service.stream(context.text);
+
+            for await (const chunk of stream) {
+                if (
+                    requestId !== inlineEditRequestId ||
+                    !editor.value ||
+                    editor.value.isDestroyed
+                ) {
+                    break;
+                }
+
+                if (!chunk) {
+                    continue;
+                }
+
+                inlineAIEdit.editedText += chunk;
+                updateInlineEditPopupProps();
+                updateInlineEditPreview();
+                void updateInlineEditPopupPosition();
+            }
+        } catch (error) {
+            console.error(`Failed to run ${actionLabel}:`, error);
+        } finally {
+            if (requestId === inlineEditRequestId) {
+                inlineAIEdit.isLoading = false;
+                isLoading.value = false;
+                updateInlineEditPopupProps();
+                updateInlineEditPreview();
+                void updateInlineEditPopupPosition();
+            }
+        }
     };
 
     watch(
@@ -503,23 +622,48 @@ export function useEditorAITransforms({ editor, isLoading }) {
         applyInlineAIEdit,
         rejectInlineAIEdit,
         aiFixGrammar: () =>
-            streamSelectionReplacement(() => fixGrammarLLMService),
-        aiFormatText: () => generateSelectionReplacement(formatTextLLMService),
+            startAIPreviewTransform({
+                actionLabel: 'Fix grammar',
+                serviceFactory: () => fixGrammarLLMService,
+            }),
+        aiFormatText: () =>
+            startAIPreviewTransform({
+                actionLabel: 'Format text',
+                serviceFactory: () => formatTextLLMService,
+                generate: true,
+                previewMode: 'markdown',
+            }),
         aiImproveWriting: () =>
-            streamSelectionReplacement(() => improveWritingLLMService),
+            startAIPreviewTransform({
+                actionLabel: 'Improve writing',
+                serviceFactory: () => improveWritingLLMService,
+            }),
         aiMakeShorter: () =>
-            streamSelectionReplacement(() => makeShorterLLMService),
+            startAIPreviewTransform({
+                actionLabel: 'Summarize',
+                serviceFactory: () => makeShorterLLMService,
+            }),
         aiMakeLonger: () =>
-            streamSelectionReplacement(() => makeLongerLLMService),
+            startAIPreviewTransform({
+                actionLabel: 'Expand',
+                serviceFactory: () => makeLongerLLMService,
+            }),
         aiSimplify: () =>
-            streamSelectionReplacement(() => simplifyLanguageLLMService),
+            startAIPreviewTransform({
+                actionLabel: 'Simplify language',
+                serviceFactory: () => simplifyLanguageLLMService,
+            }),
         aiChangeTone: (tone) =>
-            streamSelectionReplacement(() =>
-                createEditorLlmService(changeTonePrompt(tone)),
-            ),
+            startAIPreviewTransform({
+                actionLabel: 'Change tone',
+                serviceFactory: () =>
+                    createEditorLlmService(changeTonePrompt(tone)),
+            }),
         aiTranslateTo: (language) =>
-            streamSelectionReplacement(() =>
-                createEditorLlmService(translateToPrompt(language)),
-            ),
+            startAIPreviewTransform({
+                actionLabel: 'Translate',
+                serviceFactory: () =>
+                    createEditorLlmService(translateToPrompt(language)),
+            }),
     };
 }

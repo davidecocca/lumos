@@ -340,3 +340,22 @@
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
 }
+
+.ProseMirror .lumos-inline-edit-ai-replaced-source {
+    display: none;
+}
+
+.ProseMirror .lumos-inline-edit-ai-markdown-preview {
+    border-radius: 6px;
+    padding: 0.2rem 0.35rem;
+    background: rgba(var(--v-theme-primary), 0.14);
+    color: rgb(var(--v-theme-on-surface));
+}
+
+.ProseMirror .lumos-inline-edit-ai-markdown-preview > :first-child {
+    margin-top: 0;
+}
+
+.ProseMirror .lumos-inline-edit-ai-markdown-preview > :last-child {
+    margin-bottom: 0;
+}

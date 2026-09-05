@@ -2,9 +2,11 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { diffWordsWithSpace } from 'diff';
+import { marked, Renderer } from 'marked';
 
 export const inlineEditAIPluginKey = new PluginKey('inlineEditAI');
 
+const markdownRenderer = new Renderer();
 const escapeHtml = (value) =>
     String(value)
         .replace(/&/g, '&amp;')
@@ -12,6 +14,15 @@ const escapeHtml = (value) =>
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+
+markdownRenderer.html = ({ text }) => escapeHtml(text);
+
+const markdownToSafeHtml = (markdown) =>
+    marked.parse(markdown, {
+        async: false,
+        breaks: true,
+        renderer: markdownRenderer,
+    });
 
 const getOriginalTextMap = ({ doc, from, to }) => {
     const segments = [];
@@ -123,6 +134,26 @@ const groupedDecorations = ({ doc, from, to, editedText }) => {
     return decorations;
 };
 
+const markdownReplacementDecorations = ({ from, to, editedText }) => {
+    if (!editedText) {
+        return [];
+    }
+
+    const widget = document.createElement('div');
+    widget.className = 'lumos-inline-edit-ai-markdown-preview';
+    widget.innerHTML = markdownToSafeHtml(editedText);
+
+    return [
+        Decoration.inline(from, to, {
+            class: 'lumos-inline-edit-ai-replaced-source',
+        }),
+        Decoration.widget(from, widget, {
+            side: -1,
+            key: `inline-edit-ai-markdown-preview-${from}-${to}`,
+        }),
+    ];
+};
+
 export const setInlineEditAIPreview = (editor, payload) => {
     if (!editor || editor.isDestroyed) {
         return;
@@ -165,14 +196,23 @@ export default Extension.create({
                         }
 
                         if (meta?.type === 'setPreview') {
+                            const decorations =
+                                meta.previewMode === 'markdown'
+                                    ? markdownReplacementDecorations({
+                                          from: meta.from,
+                                          to: meta.to,
+                                          editedText: meta.editedText,
+                                      })
+                                    : groupedDecorations({
+                                          doc: newState.doc,
+                                          from: meta.from,
+                                          to: meta.to,
+                                          editedText: meta.editedText,
+                                      });
+
                             return DecorationSet.create(
                                 newState.doc,
-                                groupedDecorations({
-                                    doc: newState.doc,
-                                    from: meta.from,
-                                    to: meta.to,
-                                    editedText: meta.editedText,
-                                }),
+                                decorations,
                             );
                         }
 

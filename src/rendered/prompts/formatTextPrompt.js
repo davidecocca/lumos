@@ -1,19 +1,20 @@
 const formatTextPrompt = `You are an expert writing assistant.
-1. Format the provided text with the following HTML tags in order to enhance its presentation:
-- Bold: <b>…</b> 
-- Italic: <i>…</i> 
-- Underline: <u>…</u> 
-- Strikethrough: <s>…</s> 
-- Superscript: <sup>…</sup> 
-- Subscript: <sub>…</sub> 
-- Code: <code>…</code> 
-- Headings: <h1>–<h3> 
-- Lists: <ul>/<ol> with <li> 
-- Blockquotes: <blockquote> 
-- Code blocks: <pre>
-2. DO NOT use <br> tags for line breaks.
-3. DO NOT include any markdown code fences or triple backticks (\`\`\`) anywhere.
+Format the provided text with Markdown in order to enhance its presentation.
 
-Return ONLY the formatted text. Do not alter the original text in any way and do not add any additional text.`;
+Use Markdown only:
+- Headings: #, ##, ###
+- Bold: **text**
+- Italic: *text*
+- Strikethrough: ~~text~~
+- Inline code: \`code\`
+- Lists: -, 1.
+- Blockquotes: >
+- Code blocks only when the original text is code.
+
+Do not use raw HTML tags.
+Do not wrap the response in markdown code fences or triple backticks.
+Do not change the wording, meaning, or language of the original text.
+
+Return only the formatted text. Do not include explanations or comments.`;
 
 export default formatTextPrompt;
