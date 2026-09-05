@@ -63,14 +63,15 @@ const parseShortcut = (shortcut) => {
 // for the current platform: '⌘⇧L' on macOS, 'Ctrl+Shift+L' elsewhere.
 export const formatShortcut = (shortcut) => {
     const { cmd, shift, option, ctrl, main } = parseShortcut(shortcut);
+    const displayMain = main === 'plus' ? '+' : main.toUpperCase();
 
     if (isMac()) {
-        let label = main;
-        if (ctrl) label = '⌃' + label;
-        if (option) label = '⌥' + label;
-        if (shift) label = '⇧' + label;
-        if (cmd) label = '⌘' + label;
-        return label;
+        let modifiers = '';
+        if (ctrl) modifiers += '⌃';
+        if (option) modifiers += '⌥';
+        if (shift) modifiers += '⇧';
+        if (cmd) modifiers += '⌘';
+        return modifiers + displayMain;
     }
 
     const parts = [];
@@ -78,7 +79,7 @@ export const formatShortcut = (shortcut) => {
     if (option) parts.push('Alt');
     if (shift) parts.push('Shift');
     if (cmd) parts.push('Ctrl');
-    parts.push(main);
+    parts.push(displayMain);
     return parts.join('+');
 };
 

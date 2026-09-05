@@ -5,13 +5,13 @@
         width="350"
         permanent
         color="nav-background"
+        class="border-0"
     >
         <div class="d-flex flex-column h-100">
             <div class="flex-shrink-0">
                 <PageRouter
                     :rail="railModel"
                     @open-search="emit('open-search')"
-                    @toggle-sidebar="toggleRail"
                 />
             </div>
 
@@ -51,10 +51,6 @@ const railModel = computed({
     get: () => props.rail,
     set: (value) => emit('update:rail', value),
 });
-
-const toggleRail = () => {
-    railModel.value = !railModel.value;
-};
 </script>
 
 <style scoped>

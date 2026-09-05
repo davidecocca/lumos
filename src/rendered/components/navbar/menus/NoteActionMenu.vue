@@ -14,7 +14,7 @@
                         :size="buttonSize"
                         variant="text"
                         :density="buttonDensity"
-                        rounded="sm"
+                        rounded="lg"
                     ></v-btn>
                 </template>
             </v-tooltip>

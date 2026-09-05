@@ -8,27 +8,20 @@
     >
         <v-tooltip
             v-for="item in items"
-            :key="item.value || item.action"
+            :key="item.value"
             :text="item.hint"
             location="right"
-            :disabled="!rail || !!item.action"
+            :disabled="!rail"
         >
             <template v-slot:activator="{ props: tooltipProps }">
                 <v-list-item
                     v-bind="tooltipProps"
                     class="page-router-item"
-                    :value="item.value || item.action"
+                    :value="item.value"
                     :active="currentRoute.name === item.value"
-                    :style="item.action ? { height: '44px' } : undefined"
-                    :link="!item.action || rail"
-                    :ripple="!item.action || rail"
-                    @click.stop="
-                        item.action && rail
-                            ? emit('toggle-sidebar')
-                            : !item.action && openRoute(item.value)
-                    "
+                    @click="openRoute(item.value)"
                 >
-                    <template v-slot:prepend v-if="!item.action || rail">
+                    <template v-slot:prepend>
                         <v-icon
                             :icon="
                                 currentRoute.name === item.value
@@ -42,24 +35,12 @@
                             v-show="!rail"
                             :class="{
                                 'font-weight-bold':
-                                    item.action ||
                                     currentRoute.name === item.value,
-                                'text-title-medium': item.action,
                             }"
                             >{{ item.title }}</span
                         >
                     </template>
-                    <template v-slot:append v-if="item.action && !rail">
-                        <v-btn
-                            :icon="item.icon"
-                            variant="text"
-                            density="comfortable"
-                            rounded
-                            color="surface-variant"
-                            @click.stop="emit('toggle-sidebar')"
-                        />
-                    </template>
-                    <template v-slot:append v-else>
+                    <template v-slot:append>
                         <span v-show="!rail" class="page-router-hotkey">
                             <v-hotkey
                                 v-if="item.hotkey"
@@ -87,7 +68,7 @@ defineProps({
     },
 });
 
-const emit = defineEmits(['open-search', 'toggle-sidebar']);
+const emit = defineEmits(['open-search']);
 
 const createHint = (item) =>
     item.hintShortcut
@@ -95,12 +76,6 @@ const createHint = (item) =>
         : item.title;
 
 const items = [
-    {
-        icon: 'ph-sidebar-simple',
-        title: 'Lumos',
-        action: 'toggle-sidebar',
-        hintShortcut: 'cmd+\\',
-    },
     {
         icon: 'ph-magnifying-glass',
         title: 'Search',

@@ -79,12 +79,6 @@ function createApplicationMenu() {
                     enabled: menuState.hasOpenNote,
                     click: (_, window) => sendMenuAction(window, 'save-note'),
                 },
-                { type: 'separator' },
-                {
-                    label: 'Close App',
-                    accelerator: 'CommandOrControl+Q',
-                    click: () => app.quit(),
-                },
             ],
         },
         {
@@ -97,9 +91,6 @@ function createApplicationMenu() {
                 { role: 'copy' },
                 { role: 'paste' },
                 { role: 'selectAll' },
-                ...(process.platform === 'darwin'
-                    ? [{ type: 'separator' }, { role: 'emoji' }]
-                    : []),
                 { type: 'separator' },
                 {
                     label: 'Find in Notes',
@@ -141,6 +132,14 @@ function createApplicationMenu() {
                           { role: 'reload' },
                           { role: 'forceReload' },
                           {
+                              label: 'Toggle App Menu',
+                              click: (_, window) =>
+                                  sendMenuAction(
+                                      window,
+                                      'toggle-app-menu-preview',
+                                  ),
+                          },
+                          {
                               label: 'Toggle Developer Tools',
                               accelerator: 'CommandOrControl+Shift+I',
                               click: (_, window) =>
@@ -160,21 +159,17 @@ function createApplicationMenu() {
                     : []),
             ],
         },
-        {
-            label: 'Help',
-            submenu: [
-                {
-                    label: 'About Lumos',
-                    click: (_, window) => sendMenuAction(window, 'about'),
-                },
-            ],
-        },
     ];
 
     if (process.platform === 'darwin') {
         template.unshift({
             label: app.name,
             submenu: [
+                {
+                    label: 'About Lumos',
+                    click: (_, window) => sendMenuAction(window, 'about'),
+                },
+                { type: 'separator' },
                 { role: 'hide' },
                 { role: 'hideOthers' },
                 { role: 'unhide' },
@@ -218,6 +213,13 @@ function createWindow() {
         width: 800,
         height: 600,
         icon: iconPath,
+        ...(process.platform === 'darwin'
+            ? {
+                  // Keep native traffic lights while rendering the title bar in-app.
+                  titleBarStyle: 'hidden',
+                  trafficLightPosition: { x: 14, y: 12 },
+              }
+            : { frame: false }),
         webPreferences: {
             // Use a preload script for secure IPC access from renderer
             preload: path.join(__dirname, 'preload.js'),
@@ -244,24 +246,6 @@ function createWindow() {
         // Adjust the path above to match where Vite outputs your build
     }
 
-    // Setup the events to manage window fullscreen state
-    win.on('enter-full-screen', () => {
-        console.log('Main process: Entered full screen');
-        // Send message to the renderer process
-        win.webContents.send('fullscreen-changed', true);
-    });
-
-    win.on('leave-full-screen', () => {
-        console.log('Main process: Left full screen');
-        // Send message to the renderer process
-        win.webContents.send('fullscreen-changed', false);
-    });
-
-    // Initial check in case the window starts fullscreen
-    win.webContents.on('did-finish-load', () => {
-        win.webContents.send('fullscreen-changed', win.isFullScreen());
-    });
-
     return win;
 }
 
@@ -283,8 +267,25 @@ function setupIPC() {
     ipcMain.on('window-close', () => {
         BrowserWindow.getFocusedWindow()?.close();
     });
+    ipcMain.on('quit-app', () => {
+        app.quit();
+    });
     ipcMain.on('open-devtools', () => {
-        BrowserWindow.getFocusedWindow()?.webContents.openDevTools();
+        BrowserWindow.getFocusedWindow()?.webContents.toggleDevTools();
+    });
+    ipcMain.on('window-reset-zoom', () => {
+        BrowserWindow.getFocusedWindow()?.webContents.setZoomLevel(0);
+    });
+    ipcMain.on('window-zoom-in', () => {
+        const contents = BrowserWindow.getFocusedWindow()?.webContents;
+        if (contents) contents.setZoomLevel(contents.getZoomLevel() + 0.5);
+    });
+    ipcMain.on('window-zoom-out', () => {
+        const contents = BrowserWindow.getFocusedWindow()?.webContents;
+        if (contents) contents.setZoomLevel(contents.getZoomLevel() - 0.5);
+    });
+    ipcMain.on('force-reload', () => {
+        BrowserWindow.getFocusedWindow()?.webContents.reloadIgnoringCache();
     });
     ipcMain.on('window-toggle-fullscreen', () => {
         const win = BrowserWindow.getFocusedWindow();
@@ -296,7 +297,9 @@ function setupIPC() {
             canCreateNote: Boolean(state?.canCreateNote),
             hasOpenNote: Boolean(state?.hasOpenNote),
         };
-        Menu.setApplicationMenu(createApplicationMenu());
+        if (process.platform === 'darwin') {
+            Menu.setApplicationMenu(createApplicationMenu());
+        }
     });
     ipcMain.handle('get-app-info', () => ({
         name: app.getName(),
@@ -716,7 +719,9 @@ function initializeRag() {
 
 // App lifecycle
 app.whenReady().then(() => {
-    Menu.setApplicationMenu(createApplicationMenu());
+    Menu.setApplicationMenu(
+        process.platform === 'darwin' ? createApplicationMenu() : null,
+    );
 
     // Only on macOS
     if (process.platform === 'darwin') {

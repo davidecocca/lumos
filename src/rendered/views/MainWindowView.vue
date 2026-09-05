@@ -1,4 +1,53 @@
 <template>
+    <!-- App bar -->
+    <v-app-bar class="app-chrome drag" :height="40" color="nav-background" flat>
+        <div
+            class="app-chrome__leading no-drag"
+            :class="{ 'app-chrome__leading--mac': isMacOS }"
+        >
+            <v-btn
+                icon="ph-sidebar-simple"
+                variant="text"
+                density="comfortable"
+                size="small"
+                rounded="lg"
+                @click="toggleNavbar"
+            />
+        </div>
+
+        <AppMenuBar
+            v-if="showAppChrome"
+            @open-search="openSearch"
+            @toggle-sidebar="toggleNavbar"
+        />
+
+        <v-spacer />
+
+        <div v-if="showAppChrome" class="app-chrome__window-controls no-drag">
+            <v-btn
+                icon="ph-minus"
+                variant="text"
+                density="comfortable"
+                size="small"
+                @click="api.windowMinimize()"
+            />
+            <v-btn
+                icon="ph-square"
+                variant="text"
+                density="comfortable"
+                size="small"
+                @click="api.windowMaximize()"
+            />
+            <v-btn
+                icon="ph-x"
+                variant="text"
+                density="comfortable"
+                size="small"
+                @click="api.windowClose()"
+            />
+        </div>
+    </v-app-bar>
+
     <!-- Navigation drawer -->
     <NavigationDrawer v-model:rail="isDrawerRail" @open-search="openSearch" />
 
@@ -21,6 +70,7 @@
 
 <script setup>
 import NavigationDrawer from '../components/navbar/NavDrawer.vue';
+import AppMenuBar from '../components/navbar/AppMenuBar.vue';
 import SearchDialog from '../components/navbar/dialogs/SearchDialog.vue';
 import AboutDialog from '../components/navbar/dialogs/AboutDialog.vue';
 import StartupSplash from '../components/splashscreen/StartupSplash.vue';
@@ -30,12 +80,15 @@ import { useFoldersStore } from '../stores/foldersStore';
 import LlmService from '../services/llmService';
 import { getGroqModels } from '../services/providers/groqService';
 
-import { watch, ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, watch, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useTheme } from 'vuetify';
 import { useRoute, useRouter } from 'vue-router';
 
 // Import the API from the Electron context
 const { api } = window;
+const isMacOS = api.platform === 'darwin';
+const isAppChromePreview = ref(false);
+const showAppChrome = computed(() => !isMacOS || isAppChromePreview.value);
 
 const isDrawerRail = ref(false);
 const isSearchOpen = ref(false);
@@ -44,9 +97,6 @@ const isSplashVisible = ref(true);
 const minSplashDuration = 2_000;
 const splashOpenedAt = performance.now();
 let splashTimer = null;
-
-// State to manage fullscreen mode
-const isFullscreen = ref(false);
 
 // Theme management
 const theme = useTheme();
@@ -65,13 +115,12 @@ const router = useRouter();
 const TOGGLE_NOTE_CHAT_EVENT = 'lumos-toggle-note-chat';
 const SAVE_NOTE_EVENT = 'lumos-save-note';
 
-// Handler to update fullscreen state based on IPC messages
-const updateFullscreen = (event, isFs) => {
-    isFullscreen.value = isFs;
-};
-
 const toggleNavbar = () => {
     isDrawerRail.value = !isDrawerRail.value;
+};
+
+const toggleAppChromePreview = () => {
+    isAppChromePreview.value = !isAppChromePreview.value;
 };
 
 const openSearch = () => {
@@ -116,6 +165,11 @@ const handleMenuAction = (_, action) => {
 
     if (action === 'toggle-sidebar') {
         toggleNavbar();
+        return;
+    }
+
+    if (action === 'toggle-app-menu-preview' && import.meta.env.DEV) {
+        toggleAppChromePreview();
         return;
     }
 
@@ -186,8 +240,6 @@ onMounted(() => {
     mediaQuery.addEventListener('change', handleOSChange);
     updateTheme();
 
-    // Register the IPC listener for fullscreen changes
-    api.on('fullscreen-changed', updateFullscreen);
     api.on('menu-action', handleMenuAction);
 
     // Load AI preferences once at app startup
@@ -204,8 +256,6 @@ onBeforeUnmount(() => {
     // Clean up the media query event listener
     mediaQuery.removeEventListener('change', handleOSChange);
 
-    // Remove the IPC listener for fullscreen changes to prevent memory leaks
-    api.removeListener('fullscreen-changed', updateFullscreen);
     api.removeListener('menu-action', handleMenuAction);
     window.clearTimeout(splashTimer);
 });
@@ -246,55 +296,33 @@ watch(
 </script>
 
 <style>
-/* Styles for the mac OS-like draggable area */
 .drag {
     -webkit-app-region: drag;
-}
-
-.app-bar-controls {
-    display: flex;
-    align-items: center;
-    height: 100%;
 }
 
 .no-drag {
     -webkit-app-region: no-drag;
 }
 
-.detail-chrome {
-    position: fixed;
-    top: 0;
-    left: 350px;
-    right: 0;
+.app-chrome {
     z-index: 1010;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 12px;
 }
 
-.detail-chrome--rail {
-    left: 72px;
-}
-
-.detail-chrome__left,
-.detail-chrome__right {
-    min-width: 48px;
+.app-chrome__leading,
+.app-chrome__window-controls {
     display: flex;
     align-items: center;
 }
 
-.detail-chrome__right {
-    justify-content: flex-end;
+.app-chrome__leading--mac {
+    padding-left: 80px;
+}
+
+.app-chrome__window-controls {
+    margin-right: 8px;
 }
 
 .detail-pane {
     min-height: 100vh;
-}
-
-.detail-content {
-    min-height: 100vh;
-    padding-top: 56px;
 }
 </style>
