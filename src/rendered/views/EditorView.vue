@@ -8,7 +8,7 @@
                 :editor="editor"
                 :auto-save="{
                     dirty: isDirty,
-                    saving: isAutoSaving || isLoading,
+                    saving: isAutoSaving,
                     savedAt: lastSavedAt,
                 }"
                 @chat="toggleSidebarChat"
@@ -251,6 +251,7 @@ const MIN_AUTOSAVE_INDICATOR_MS = 500;
 const isDirty = ref(false);
 const isAutoSaving = ref(false);
 const lastSavedAt = ref(null);
+const isInlineAIGenerationActive = ref(false);
 let autosaveTimer = null;
 let safetySaveInterval = null;
 let saveInFlight = null;
@@ -272,6 +273,10 @@ const {
     editor,
     isLoading,
 });
+
+const isInlineAIPreviewActive = computed(
+    () => inlineAIEdit.active || isInlineAIGenerationActive.value,
+);
 
 const highlightColors = computed(() => {
     const isDark = props.theme === 'dark';
@@ -527,7 +532,12 @@ const flushPendingSave = async () => {
     clearTimeout(autosaveTimer);
     autosaveTimer = null;
 
-    if (!isDirty.value || !editor.value || !note.value) {
+    if (
+        !isDirty.value ||
+        !editor.value ||
+        !note.value ||
+        isInlineAIPreviewActive.value
+    ) {
         return;
     }
 
@@ -554,6 +564,12 @@ const flushPendingSave = async () => {
 
 const scheduleAutosave = () => {
     clearTimeout(autosaveTimer);
+
+    if (isInlineAIPreviewActive.value) {
+        autosaveTimer = null;
+        return;
+    }
+
     autosaveTimer = setTimeout(() => {
         void flushPendingSave();
     }, AUTOSAVE_DEBOUNCE_MS);
@@ -864,7 +880,11 @@ onMounted(async () => {
             TableHeader,
             TableCell,
             InlineEditAIDecorations,
-            InlineGenerateAICommand,
+            InlineGenerateAICommand.configure({
+                onPreviewStateChange: (isActive) => {
+                    isInlineAIGenerationActive.value = isActive;
+                },
+            }),
             TableSlashCommand,
             FileHandler.configure({
                 allowedMimeTypes: [
@@ -933,6 +953,12 @@ watch(
 
 watch(chatWidth, (newWidth) => {
     localStorage.setItem('chatWidth', newWidth);
+});
+
+watch(isInlineAIPreviewActive, (isActive) => {
+    if (!isActive && isDirty.value) {
+        scheduleAutosave();
+    }
 });
 
 watch(

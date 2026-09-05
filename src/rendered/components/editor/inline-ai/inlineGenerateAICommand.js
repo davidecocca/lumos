@@ -87,8 +87,15 @@ const isEmptyParagraphSpace = ({ editor, event, state }) => {
 export default Extension.create({
     name: 'inlineGenerateAI',
 
+    addOptions() {
+        return {
+            onPreviewStateChange: () => {},
+        };
+    },
+
     addProseMirrorPlugins() {
         const editor = this.editor;
+        const onPreviewStateChange = this.options.onPreviewStateChange;
         let component = null;
         let popup = null;
         let cleanupAutoUpdate = null;
@@ -124,6 +131,7 @@ export default Extension.create({
             insertPosition = null;
             isGenerating = false;
             generatedText = '';
+            onPreviewStateChange(false);
 
             if (focusEditor && !editor.isDestroyed) {
                 editor.chain().focus().run();
@@ -252,6 +260,7 @@ export default Extension.create({
             destroyPopup();
 
             insertPosition = position;
+            onPreviewStateChange(true);
             component = new VueRenderer(InlineGenerateAIInput, {
                 editor,
                 props: {
