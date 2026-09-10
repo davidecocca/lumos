@@ -1,6 +1,6 @@
 <template>
     <v-card
-        class="rounded-md border mt-4"
+        class="border rounded-md mt-4"
         rounded="lg"
         elevation="0"
         title="Providers"
@@ -83,8 +83,9 @@
                             :loading="isCheckingCodex"
                             :disabled="isCheckingCodex"
                             color="primary"
+                            size="small"
                             hide-details
-                            inset
+                            inset="material"
                             @update:model-value="toggleCodex"
                         />
                     </div>

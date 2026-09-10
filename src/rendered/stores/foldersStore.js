@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { useTabsStore } from './tabsStore';
 
 let favoriteNotesRequest = null;
 
@@ -19,10 +20,14 @@ export const useFoldersStore = defineStore('folders', {
         // Active folder state
         activeFolderId: null,
         activeFolderName: '',
-        // Active note state
+        // Note currently displayed in the editor
         activeNoteId: null,
         activeNoteTitle: '',
         activeNoteCurrentFolderId: null,
+        // Note targeted by a pending rename, move, or delete dialog
+        actionNoteId: null,
+        actionNoteTitle: '',
+        actionNoteCurrentFolderId: null,
         editorNoteId: null,
         editorNoteTitle: '',
         editorNoteCurrentFolderId: null,
@@ -201,6 +206,14 @@ export const useFoldersStore = defineStore('folders', {
                 this.recents = this.recents.filter(
                     (note) => !noteIds.includes(note.id),
                 );
+                if (noteIds.includes(this.editorNoteId)) {
+                    this.editorNoteDeletedId = this.editorNoteId;
+                    this.editorNoteId = null;
+                    this.editorNoteTitle = '';
+                    this.editorNoteCurrentFolderId = null;
+                    this.editorNoteFavorite = null;
+                }
+                useTabsStore().closeNotes(noteIds);
                 this.deleteFolderDialog = false;
             } catch (err) {
                 console.error('Error deleting folder:', err);
@@ -278,8 +291,8 @@ export const useFoldersStore = defineStore('folders', {
             }
         },
         openRenameNoteDialog(noteId, noteTitle) {
-            this.activeNoteId = noteId;
-            this.activeNoteTitle = noteTitle;
+            this.actionNoteId = noteId;
+            this.actionNoteTitle = noteTitle;
             this.renameNoteDialog = true;
         },
         async renameNote(noteId, newNoteTitle) {
@@ -315,6 +328,9 @@ export const useFoldersStore = defineStore('folders', {
                     if (this.editorNoteId === noteId) {
                         this.editorNoteTitle = newNoteTitle;
                     }
+                    useTabsStore().updateNote(noteId, {
+                        title: newNoteTitle,
+                    });
                     this.renameNoteDialog = false;
                 } catch (err) {
                     console.error('Error renaming note:', err);
@@ -327,14 +343,14 @@ export const useFoldersStore = defineStore('folders', {
             }
         },
         openMoveNoteDialog(noteId, noteFolderId) {
-            this.activeNoteId = noteId;
-            this.activeNoteCurrentFolderId = noteFolderId;
+            this.actionNoteId = noteId;
+            this.actionNoteCurrentFolderId = noteFolderId;
             this.moveToFolderDialog = true;
         },
         async moveNote(
             noteId,
             newFolderId,
-            currentFolderId = this.activeNoteCurrentFolderId,
+            currentFolderId = this.actionNoteCurrentFolderId,
             options = {},
         ) {
             if (!newFolderId) return;
@@ -406,7 +422,7 @@ export const useFoldersStore = defineStore('folders', {
             }
         },
         openDeleteNoteConfirmationDialog(noteId) {
-            this.activeNoteId = noteId;
+            this.actionNoteId = noteId;
             this.confirmationDialogTitle = 'Delete note';
             this.confirmationDialogText =
                 'This note will be permanently deleted. This action cannot be undone.';
@@ -439,6 +455,7 @@ export const useFoldersStore = defineStore('folders', {
                     this.editorNoteFavorite = null;
                     this.editorNoteDeletedId = noteId;
                 }
+                useTabsStore().closeNote(noteId);
                 this.deleteNoteDialog = false;
             } catch (err) {
                 console.error('Error deleting note:', err);
@@ -518,14 +535,14 @@ export const useFoldersStore = defineStore('folders', {
         },
         async openNote(noteId, router) {
             try {
+                const note = await window.api.getNote(noteId);
+                useTabsStore().openNote(note);
+
                 // Navigate to the note
                 await router.push({ name: 'notes', params: { noteId } });
 
                 // Update last viewed time in the backend
                 await window.api.updateNoteLastViewed(noteId);
-
-                // Fetch the note to get the updated timestamp from backend
-                const note = await window.api.getNote(noteId);
 
                 // Update recents array
                 const existingIndex = this.recents.findIndex(

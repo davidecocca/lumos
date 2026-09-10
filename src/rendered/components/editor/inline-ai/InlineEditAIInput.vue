@@ -1,13 +1,13 @@
 <template>
     <v-card
+        class="border"
         elevation="0"
         rounded="xl"
         width="calc(100vw - 48px)"
         max-width="600"
         color="surface-dark"
-        border
     >
-        <v-card-text class="pt-0 pb-0 pr-2">
+        <v-card-text class="px-3 py-1">
             <v-text-field
                 ref="inputRef"
                 v-model="prompt"
@@ -18,12 +18,12 @@
                 autofocus
                 single-line
                 placeholder="Tell AI how to edit..."
-                prepend-icon="ph-sparkle"
+                prepend-inner-icon="ph-sparkle"
                 :disabled="loading"
                 @keydown="onKeydown"
             >
                 <template #append-inner>
-                    <div class="d-flex ga-1">
+                    <div class="d-flex align-center ga-1 ms-2">
                         <v-tooltip
                             :text="hasPreview ? 'Regenerate' : 'Submit'"
                             location="bottom"
@@ -37,6 +37,7 @@
                                             : 'ph-arrow-up'
                                     "
                                     size="small"
+                                    rounded="xl"
                                     :color="hasPreview ? '' : 'primary'"
                                     :variant="hasPreview ? 'text' : 'tonal'"
                                     :loading="loading"
@@ -46,8 +47,8 @@
                             </template>
                         </v-tooltip>
 
-                        <div v-if="hasPreview" class="d-flex ga-1">
-                            <v-divider vertical class="mx-1" />
+                        <div v-if="hasPreview" class="d-flex align-center ga-1">
+                            <v-divider vertical class="mx-1 my-2" />
 
                             <v-tooltip text="Discard" location="bottom">
                                 <template #activator="{ props: tooltipProps }">

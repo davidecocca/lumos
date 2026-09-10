@@ -5,7 +5,6 @@
         width="350"
         permanent
         color="nav-background"
-        class="border-0"
     >
         <div class="d-flex flex-column h-100">
             <div class="flex-shrink-0">
@@ -36,7 +35,8 @@ import FoldersTree from './tree/FoldersTree.vue';
 import CompactFoldersTree from './tree/CompactFoldersTree.vue';
 import FolderTreeDialogs from './tree/FolderTreeDialogs.vue';
 
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
+import { useFoldersStore } from '../../stores/foldersStore';
 
 const props = defineProps({
     rail: {
@@ -46,16 +46,15 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:rail', 'open-search']);
+const store = useFoldersStore();
+
+onMounted(async () => {
+    await store.fetchFolders();
+    await store.fetchFavoriteNotes();
+});
 
 const railModel = computed({
     get: () => props.rail,
     set: (value) => emit('update:rail', value),
 });
 </script>
-
-<style scoped>
-/* Remove default avatar circle and make it square for the app logo */
-.app-logo-list-item :deep(.v-avatar) {
-    border-radius: 0;
-}
-</style>

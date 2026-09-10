@@ -1,6 +1,11 @@
 <template>
     <!-- App bar -->
-    <v-app-bar class="app-chrome drag" :height="40" color="nav-background" flat>
+    <v-app-bar
+        class="border app-chrome drag"
+        :height="40"
+        color="nav-background"
+        flat
+    >
         <div
             class="app-chrome__leading no-drag"
             :class="{ 'app-chrome__leading--mac': isMacOS }"
@@ -19,9 +24,12 @@
             v-if="showAppChrome"
             @open-search="openSearch"
             @toggle-sidebar="toggleNavbar"
+            @close-tab="closeActiveTab"
         />
 
-        <v-spacer />
+        <AppNoteTabs />
+
+        <v-spacer v-if="!tabsStore.tabs.length" />
 
         <div v-if="showAppChrome" class="app-chrome__window-controls no-drag">
             <v-btn
@@ -52,10 +60,16 @@
     <NavigationDrawer v-model:rail="isDrawerRail" @open-search="openSearch" />
 
     <!-- Main content area -->
-    <v-main class="detail-pane">
-        <v-container fluid>
+    <v-main
+        class="detail-pane"
+        :class="{ 'detail-pane--editor': route.name === 'notes' }"
+    >
+        <v-container
+            fluid
+            :class="{ 'detail-container--editor': route.name === 'notes' }"
+        >
             <router-view
-                :key="$route.fullPath"
+                v-if="isSessionReady"
                 :theme="themePreference"
                 @update:theme="themePreference = $event"
                 @home-ready="hideSplash"
@@ -71,12 +85,14 @@
 <script setup>
 import NavigationDrawer from '../components/navbar/NavDrawer.vue';
 import AppMenuBar from '../components/navbar/AppMenuBar.vue';
+import AppNoteTabs from '../components/navbar/AppNoteTabs.vue';
 import SearchDialog from '../components/navbar/dialogs/SearchDialog.vue';
 import AboutDialog from '../components/navbar/dialogs/AboutDialog.vue';
 import StartupSplash from '../components/splashscreen/StartupSplash.vue';
 
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';
 import { useFoldersStore } from '../stores/foldersStore';
+import { useTabsStore } from '../stores/tabsStore';
 import LlmService from '../services/llmService';
 import { getGroqModels } from '../services/providers/groqService';
 
@@ -94,6 +110,7 @@ const isDrawerRail = ref(false);
 const isSearchOpen = ref(false);
 const isAboutOpen = ref(false);
 const isSplashVisible = ref(true);
+const isSessionReady = ref(false);
 const minSplashDuration = 2_000;
 const splashOpenedAt = performance.now();
 let splashTimer = null;
@@ -106,6 +123,7 @@ const aiStore = aiPreferencesStore();
 
 // Store for folders and notes
 const foldersStore = useFoldersStore();
+const tabsStore = useTabsStore();
 
 const llmService = new LlmService();
 
@@ -127,7 +145,15 @@ const openSearch = () => {
     isSearchOpen.value = true;
 };
 
+const closeActiveTab = () => {
+    if (!tabsStore.activeNoteId) return;
+
+    tabsStore.closeNote(tabsStore.activeNoteId);
+};
+
 const hideSplash = () => {
+    if (!isSplashVisible.value) return;
+    window.clearTimeout(splashTimer);
     const remaining = Math.max(
         0,
         minSplashDuration - (performance.now() - splashOpenedAt),
@@ -138,6 +164,7 @@ const hideSplash = () => {
 };
 
 const handleMenuAction = (_, action) => {
+    if (!isSessionReady.value) return;
     if (action === 'new-note') {
         if (foldersStore.folders.length) {
             foldersStore.openCreateNoteDialog(
@@ -155,6 +182,11 @@ const handleMenuAction = (_, action) => {
 
     if (action === 'save-note') {
         window.dispatchEvent(new Event(SAVE_NOTE_EVENT));
+        return;
+    }
+
+    if (action === 'close-tab') {
+        closeActiveTab();
         return;
     }
 
@@ -252,6 +284,26 @@ onMounted(() => {
     }
 });
 
+onMounted(async () => {
+    try {
+        await router.isReady();
+        await tabsStore.restoreSession();
+        await router.replace(
+            tabsStore.activeNoteId === null
+                ? { name: 'home' }
+                : {
+                      name: 'notes',
+                      params: { noteId: tabsStore.activeNoteId },
+                  },
+        );
+    } catch (error) {
+        console.warn('Could not open the restored tab:', error);
+    } finally {
+        isSessionReady.value = true;
+        hideSplash();
+    }
+});
+
 onBeforeUnmount(() => {
     // Clean up the media query event listener
     mediaQuery.removeEventListener('change', handleOSChange);
@@ -266,19 +318,47 @@ watch(themePreference, (newVal) => {
     updateTheme();
 });
 
-// Watch for route changes and reset activeNoteId if not on notes page
+watch(
+    () => ({
+        noteIds: tabsStore.tabs.map((tab) => tab.id),
+        activeNoteId: tabsStore.activeNoteId,
+    }),
+    () => {
+        // Wait for hydration; never replace a recoverable session on startup.
+        if (isSessionReady.value) tabsStore.saveSession();
+    },
+);
+
 watch(
     () => route.name,
-    (newRouteName) => {
-        if (newRouteName !== 'notes') {
-            foldersStore.activeNoteId = null;
-            foldersStore.activeNoteTitle = '';
-            foldersStore.activeNoteCurrentFolderId = null;
-            foldersStore.editorNoteId = null;
-            foldersStore.editorNoteTitle = '';
-            foldersStore.editorNoteCurrentFolderId = null;
-            foldersStore.editorNoteFavorite = null;
-            foldersStore.editorNoteDeletedId = null;
+    (routeName) => {
+        if (!isSessionReady.value) return;
+        if (routeName === 'notes') return;
+
+        tabsStore.activeNoteId = null;
+        foldersStore.activeNoteId = null;
+        foldersStore.activeNoteTitle = '';
+        foldersStore.activeNoteCurrentFolderId = null;
+        foldersStore.editorNoteId = null;
+        foldersStore.editorNoteTitle = '';
+        foldersStore.editorNoteCurrentFolderId = null;
+        foldersStore.editorNoteFavorite = null;
+        foldersStore.editorNoteDeletedId = null;
+    },
+);
+
+watch(
+    () => tabsStore.activeNoteId,
+    (noteId) => {
+        if (!isSessionReady.value) return;
+        if (route.name !== 'notes') return;
+
+        if (noteId) {
+            if (Number(route.params.noteId) !== noteId) {
+                router.push({ name: 'notes', params: { noteId } });
+            }
+        } else {
+            router.push({ name: 'home' });
         }
     },
 );
@@ -324,5 +404,15 @@ watch(
 
 .detail-pane {
     min-height: 100vh;
+}
+
+.detail-pane--editor {
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.detail-container--editor {
+    height: 100%;
 }
 </style>

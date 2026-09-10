@@ -79,6 +79,12 @@ function createApplicationMenu() {
                     enabled: menuState.hasOpenNote,
                     click: (_, window) => sendMenuAction(window, 'save-note'),
                 },
+                {
+                    label: 'Close Tab',
+                    accelerator: 'CommandOrControl+W',
+                    enabled: menuState.hasOpenNote,
+                    click: (_, window) => sendMenuAction(window, 'close-tab'),
+                },
             ],
         },
         {

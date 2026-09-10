@@ -6,12 +6,13 @@
                 :note="note"
                 :breadcrumbs-items="breadcrumbsItems"
                 :editor="editor"
+                :is-chat-open="isChatOpen"
                 :auto-save="{
                     dirty: isDirty,
-                    saving: isAutoSaving,
+                    saving: isSaving,
                     savedAt: lastSavedAt,
                 }"
-                @chat="toggleSidebarChat"
+                @chat="openSidebarChat"
                 @save="saveNoteManually"
                 @toggle-favorite="toggleFavorite"
                 @rename-note="openRenameNoteDialog"
@@ -78,7 +79,11 @@
             ]"
         >
             <div class="editor-chat-resizer" @mousedown="startResize"></div>
-            <LumosChat class="h-100" :is-visible="isChatOpen" />
+            <LumosChat
+                class="h-100"
+                :is-visible="isChatOpen"
+                @close="closeSidebarChat"
+            />
         </v-navigation-drawer>
     </v-layout>
 </template>
@@ -103,8 +108,8 @@ import InlineEditAIDecorations from '../components/editor/inline-ai/inlineEditAI
 import { createLlmService } from '../services/llmService';
 import getTopicPrompt from '../prompts/getTopicPrompt';
 
-import { useRouter } from 'vue-router';
 import { useFoldersStore } from '../stores/foldersStore';
+import { useTabsStore } from '../stores/tabsStore';
 import {
     ref,
     onMounted,
@@ -169,10 +174,9 @@ const props = defineProps({
     },
 });
 
-const router = useRouter();
-
 // Central store for folders
 const store = useFoldersStore();
+const tabsStore = useTabsStore();
 
 // Init LLM service for topic generation
 var getTopicService = null;
@@ -250,6 +254,7 @@ const SAFETY_SAVE_INTERVAL_MS = 30000;
 const MIN_AUTOSAVE_INDICATOR_MS = 500;
 const isDirty = ref(false);
 const isAutoSaving = ref(false);
+const isManualSaving = ref(false);
 const lastSavedAt = ref(null);
 const isInlineAIGenerationActive = ref(false);
 let autosaveTimer = null;
@@ -277,6 +282,7 @@ const {
 const isInlineAIPreviewActive = computed(
     () => inlineAIEdit.active || isInlineAIGenerationActive.value,
 );
+const isSaving = computed(() => isAutoSaving.value || isManualSaving.value);
 
 const highlightColors = computed(() => {
     const isDark = props.theme === 'dark';
@@ -476,6 +482,7 @@ const getNote = async (id) => {
 
     note.value = noteInfo;
     note.value.folderName = folderInfo.name;
+    lastSavedAt.value = noteInfo.updated_at;
 
     // Set active note in the store
     store.activeNoteId = noteInfo.id;
@@ -485,6 +492,7 @@ const getNote = async (id) => {
     store.editorNoteTitle = noteInfo.title;
     store.editorNoteCurrentFolderId = noteInfo.folder_id;
     store.editorNoteFavorite = noteInfo.favorite;
+    tabsStore.openNote(noteInfo);
 
     setEditorDocument(note.value?.content_json);
 };
@@ -584,6 +592,7 @@ const saveNoteManually = async () => {
     try {
         // Enable loading state
         isLoading.value = true;
+        isManualSaving.value = true;
 
         await doPersist(true);
         clearTimeout(autosaveTimer);
@@ -598,6 +607,8 @@ const saveNoteManually = async () => {
         console.error(errorMsg, error);
         isDirty.value = true;
         isLoading.value = false;
+    } finally {
+        isManualSaving.value = false;
     }
 };
 
@@ -805,9 +816,7 @@ const handleMoveNote = async (noteId, newFolderId) => {
 };
 
 const handleDeleteNote = (noteId) => {
-    store.deleteNote(noteId);
-    // Go back to home page using router
-    router.push({ name: 'home' });
+    void store.deleteNote(noteId);
 };
 
 const handleyoutube = ({ src }) => {
@@ -1009,7 +1018,11 @@ watch(
             return;
         }
 
-        router.push({ name: 'home' });
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+        isDirty.value = false;
+        note.value = null;
+        store.editorNoteDeletedId = null;
     },
 );
 
@@ -1037,12 +1050,17 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .editor-view-layout {
+    height: 100%;
     min-height: 0;
 }
 
 .editor-view-main {
+    display: flex;
+    flex-direction: column;
     flex: 1 1 auto;
     min-width: 0;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .editor-chat-resizer {

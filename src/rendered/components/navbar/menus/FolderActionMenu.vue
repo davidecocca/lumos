@@ -1,19 +1,5 @@
 <template>
-    <div v-show="visible" class="d-flex align-center ga-1 mr-1">
-        <v-tooltip text="New note" location="top">
-            <template v-slot:activator="{ props }">
-                <v-btn
-                    v-bind="props"
-                    icon="ph-plus"
-                    variant="text"
-                    size="small"
-                    title="New note"
-                    density="compact"
-                    rounded
-                    @click.stop="store.openCreateNoteDialog(folder.id)"
-                />
-            </template>
-        </v-tooltip>
+    <div v-show="visible" class="d-flex align-center ga-1">
         <v-menu
             :model-value="modelValue"
             @update:model-value="emit('update:modelValue', $event)"
@@ -27,6 +13,7 @@
                             size="small"
                             variant="text"
                             density="compact"
+                            class="text-medium-emphasis"
                             rounded
                         />
                     </template>
@@ -48,6 +35,22 @@
                 </v-list-item>
             </v-list>
         </v-menu>
+        <v-tooltip text="New note" location="top">
+            <template v-slot:activator="{ props }">
+                <v-btn
+                    v-bind="props"
+                    icon="ph-plus"
+                    variant="text"
+                    size="small"
+                    title="New note"
+                    aria-label="New note"
+                    density="compact"
+                    class="text-medium-emphasis"
+                    rounded
+                    @click.stop="store.openCreateNoteDialog(folder.id)"
+                />
+            </template>
+        </v-tooltip>
     </div>
 </template>
 

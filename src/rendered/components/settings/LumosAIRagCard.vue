@@ -1,6 +1,6 @@
 <template>
     <v-card
-        class="rounded-md border mt-4"
+        class="border rounded-md mt-4"
         title="Indexing"
         subtitle="Index your notes to enable semantic search."
         rounded="lg"

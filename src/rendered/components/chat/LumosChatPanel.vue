@@ -1,7 +1,10 @@
 <template>
     <v-container fluid class="chat-panel pa-0">
         <div class="d-flex align-center ga-3 mb-4">
-            <v-card class="w-100" variant="text" transparent>
+            <v-card-item class="w-100 py-1">
+                <template v-if="$slots['header-prepend']" v-slot:prepend>
+                    <slot name="header-prepend" />
+                </template>
                 <template v-slot:append>
                     <div class="d-flex align-center justify-end ga-2 ms-auto">
                         <ChatHistoryMenu
@@ -27,7 +30,7 @@
                         </v-tooltip>
                     </div>
                 </template>
-            </v-card>
+            </v-card-item>
         </div>
 
         <ChatMessageList

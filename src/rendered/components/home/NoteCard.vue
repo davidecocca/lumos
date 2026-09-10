@@ -17,7 +17,7 @@
                     variant="tonal"
                     size="small"
                     rounded="lg"
-                    prepend-icon="ph-folder"
+                    prepend-icon="ph-folder-simple"
                 >
                     {{ props.note.folder_name }}
                 </v-chip>
@@ -52,6 +52,7 @@
 
 <script setup>
 import { useFoldersStore } from '../../stores/foldersStore';
+import { parseTimestamp } from '../../utils/date';
 
 import { useRouter } from 'vue-router';
 import { computed } from 'vue';
@@ -94,28 +95,8 @@ const props = defineProps({
     },
 });
 
-const parseNoteTimestamp = (value) => {
-    if (!value) {
-        return null;
-    }
-
-    const normalizedValue =
-        typeof value === 'string' &&
-        /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)
-            ? `${value.replace(' ', 'T')}Z`
-            : value;
-
-    const date = new Date(normalizedValue);
-
-    if (Number.isNaN(date.getTime())) {
-        return null;
-    }
-
-    return date;
-};
-
 const formatRelativeTime = (value) => {
-    const date = parseNoteTimestamp(value);
+    const date = parseTimestamp(value);
 
     if (!date) {
         return '';

@@ -47,6 +47,13 @@ export const useFolderTreeDrag = (moveNote) => {
         }
     };
 
+    const handleFolderDragLeave = (folderId, event) => {
+        if (event.currentTarget.contains(event.relatedTarget)) return;
+        if (dropTargetFolderId.value === folderId) {
+            dropTargetFolderId.value = null;
+        }
+    };
+
     const handleFolderDrop = async (folderId) => {
         if (!isValidDropTarget(folderId)) {
             resetDragState();
@@ -67,6 +74,7 @@ export const useFolderTreeDrag = (moveNote) => {
         handleNoteDragEnd,
         handleFolderDragEnter,
         handleFolderDragOver,
+        handleFolderDragLeave,
         handleFolderDrop,
     };
 };

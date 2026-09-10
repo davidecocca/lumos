@@ -26,15 +26,15 @@
     />
     <RenameNoteDialog
         v-model="renameNoteDialog"
-        :noteId="activeNoteId"
-        :currentNoteTitle="activeNoteTitle"
+        :noteId="actionNoteId"
+        :currentNoteTitle="actionNoteTitle"
         @rename-note="store.renameNote"
     />
     <MoveToFolderDialog
         v-model="moveToFolderDialog"
         :folders="folders"
-        :noteId="activeNoteId"
-        :currentFolderId="activeNoteCurrentFolderId"
+        :noteId="actionNoteId"
+        :currentFolderId="actionNoteCurrentFolderId"
         @move-note="store.moveNote"
     />
     <ConfirmDeleteNoteDialog
@@ -42,7 +42,7 @@
         :confirmationDialogTitle="confirmationDialogTitle"
         :confirmationDialogText="confirmationDialogText"
         :confirmationDialogButtonColor="confirmationDialogButtonColor"
-        :noteId="activeNoteId"
+        :noteId="actionNoteId"
         @delete-note="store.deleteNote"
     />
     <ErrorDialog
@@ -102,10 +102,10 @@ const deleteNoteDialog = computed({
 });
 const activeFolderId = computed(() => store.activeFolderId);
 const activeFolderName = computed(() => store.activeFolderName);
-const activeNoteId = computed(() => store.activeNoteId);
-const activeNoteTitle = computed(() => store.activeNoteTitle);
-const activeNoteCurrentFolderId = computed(
-    () => store.activeNoteCurrentFolderId,
+const actionNoteId = computed(() => store.actionNoteId);
+const actionNoteTitle = computed(() => store.actionNoteTitle);
+const actionNoteCurrentFolderId = computed(
+    () => store.actionNoteCurrentFolderId,
 );
 const confirmationDialogTitle = computed(() => store.confirmationDialogTitle);
 const confirmationDialogText = computed(() => store.confirmationDialogText);

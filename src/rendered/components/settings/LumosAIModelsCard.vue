@@ -1,6 +1,6 @@
 <template>
     <v-card
-        class="rounded-md border"
+        class="border rounded-md"
         title="Models"
         subtitle="Your notes, your LLM: stay local or go hosted."
         rounded="lg"

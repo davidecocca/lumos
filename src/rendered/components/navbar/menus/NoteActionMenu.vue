@@ -14,7 +14,7 @@
                         :size="buttonSize"
                         variant="text"
                         :density="buttonDensity"
-                        rounded="lg"
+                        rounded
                     ></v-btn>
                 </template>
             </v-tooltip>
@@ -73,6 +73,26 @@
             </template>
         </v-list>
     </v-menu>
+    <v-tooltip
+        v-if="quickFavorite"
+        :text="note.favorite == 1 ? 'Unfavorite' : 'Favorite'"
+        :location="tooltipLocation"
+    >
+        <template v-slot:activator="{ props }">
+            <v-btn
+                v-show="visible"
+                v-bind="props"
+                :icon="note.favorite == 1 ? 'ph-heart-break' : 'ph-heart'"
+                :aria-label="note.favorite == 1 ? 'Unfavorite' : 'Favorite'"
+                :size="buttonSize"
+                :density="buttonDensity"
+                variant="text"
+                rounded
+                class="ms-1 text-medium-emphasis"
+                @click.stop="emit('toggle-favorite', note.id)"
+            />
+        </template>
+    </v-tooltip>
 </template>
 
 <script setup>
@@ -92,6 +112,10 @@ const props = defineProps({
         default: false,
     },
     editorActions: {
+        type: Boolean,
+        default: false,
+    },
+    quickFavorite: {
         type: Boolean,
         default: false,
     },
@@ -119,6 +143,7 @@ const emit = defineEmits([
     'rename-note',
     'move-note',
     'delete-note',
+    'save',
     'undo',
     'redo',
     'export-note',
@@ -144,6 +169,12 @@ const menuItems = computed(() => {
                   title: 'Redo',
                   icon: 'ph-arrow-clockwise',
                   action: () => emit('redo'),
+              },
+            {
+                  key: 'save',
+                  title: 'Save',
+                  icon: 'ph-floppy-disk',
+                  action: () => emit('save'),
               },
               {
                   key: 'export',
@@ -203,6 +234,6 @@ const menuItems = computed(() => {
             baseColor: 'error',
             action: () => emit('delete-note', props.note.id),
         },
-    ];
+    ].filter((item) => !props.quickFavorite || item.key !== 'favorite');
 });
 </script>

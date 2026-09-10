@@ -1,18 +1,14 @@
 <template>
     <div class="editor-layout">
         <div class="editor-content">
-            <v-card elevation="0" class="rounded-md border ma-3" rounded="lg">
-                <v-card-text>
-                    <div ref="editorShellRef" class="editor-shell">
-                        <TableOverlayControls
-                            v-if="editor"
-                            :editor="editor"
-                            :container-ref="editorShellRef"
-                        />
-                        <editor-content :editor="editor" />
-                    </div>
-                </v-card-text>
-            </v-card>
+            <div ref="editorShellRef" class="editor-shell">
+                <TableOverlayControls
+                    v-if="editor"
+                    :editor="editor"
+                    :container-ref="editorShellRef"
+                />
+                <editor-content :editor="editor" />
+            </div>
         </div>
     </div>
 </template>
@@ -36,17 +32,33 @@ const editorShellRef = ref(null);
 <style scoped>
 .editor-layout {
     display: flex;
-    height: calc(100vh - 120px);
+    flex: 1 1 auto;
+    min-height: 0;
     position: relative;
 }
 
 .editor-content {
-    flex: 1;
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
     transition: width 0.3s ease;
     overflow: hidden;
 }
 
 .editor-shell {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
     position: relative;
+    justify-content: center;
+    overflow-y: auto;
+}
+
+.editor-shell :deep(.tiptap) {
+    flex: 0 1 900px;
+    width: min(100%, 900px);
+    max-width: 900px;
+    height: auto;
+    min-height: 100%;
 }
 </style>

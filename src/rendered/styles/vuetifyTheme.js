@@ -4,8 +4,10 @@ export const vuetifyTheme = {
         light: {
             dark: false,
             colors: {
-                background: '#FFFFFF',
+                background: '#FAFAF8',
+                'on-background': '#292824',
                 surface: '#FFFFFF',
+                'on-surface': '#292824',
                 'surface-bright': '#FFFFFF',
                 'surface-light': '#EEEEEE',
                 'surface-dark': '#E0E0E0',
@@ -19,7 +21,12 @@ export const vuetifyTheme = {
                 info: '#2196F3',
                 success: '#4CAF50',
                 warning: '#FB8C00',
-                'nav-background': '#FAFAFA',
+                'nav-background': '#F1F1EE',
+                'on-nav-background': '#292824',
+            },
+            variables: {
+                'border-opacity': 0.08,
+                'activated-opacity': 0.06,
             },
         },
         dark: {

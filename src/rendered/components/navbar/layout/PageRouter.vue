@@ -1,6 +1,8 @@
 <template>
     <v-list
         density="compact"
+        :class="rail ? '' : 'pb-2'"
+        prepend-gap="8"
         nav
         mandatory
         select-strategy="single-independent"
@@ -17,6 +19,7 @@
                 <v-list-item
                     v-bind="tooltipProps"
                     class="page-router-item"
+                    rounded="lg"
                     :value="item.value"
                     :active="currentRoute.name === item.value"
                     @click="openRoute(item.value)"
@@ -30,18 +33,17 @@
                             "
                         ></v-icon>
                     </template>
-                    <template v-slot:title>
+                    <template v-if="!rail" v-slot:title>
                         <span
-                            v-show="!rail"
                             :class="{
-                                'font-weight-bold':
+                                'font-weight-medium':
                                     currentRoute.name === item.value,
                             }"
                             >{{ item.title }}</span
                         >
                     </template>
-                    <template v-slot:append>
-                        <span v-show="!rail" class="page-router-hotkey">
+                    <template v-if="!rail" v-slot:append>
+                        <span class="page-router-hotkey">
                             <v-hotkey
                                 v-if="item.hotkey"
                                 :keys="item.hotkey"

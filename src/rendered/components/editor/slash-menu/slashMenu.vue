@@ -1,5 +1,10 @@
 <template>
-    <v-card min-width="260" rounded="xl" border color="surface-dark">
+    <v-card
+        class="border"
+        min-width="260"
+        rounded="xl"
+        color="surface-dark"
+    >
         <v-list density="comfortable" nav>
             <v-list-subheader>Insert</v-list-subheader>
             <v-list-item

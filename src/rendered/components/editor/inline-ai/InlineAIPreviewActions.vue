@@ -1,6 +1,11 @@
 <template>
-    <v-card elevation="0" rounded="xl" color="surface-dark" border>
-        <v-card-text class="d-flex align-center ga-1 pa-1">
+    <v-card
+        class="border"
+        elevation="0"
+        rounded="xl"
+        color="surface-dark"
+    >
+        <v-card-text class="d-flex align-center ga-1 pa-2">
             <v-tooltip text="Discard" location="bottom">
                 <template #activator="{ props: tooltipProps }">
                     <v-btn

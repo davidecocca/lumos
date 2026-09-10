@@ -1,6 +1,6 @@
 <template>
     <v-card
-        class="rounded-md border"
+        class="border rounded-md"
         title="Theme"
         subtitle="Customize how Lumos looks on your device."
         rounded="lg"

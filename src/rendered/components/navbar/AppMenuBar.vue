@@ -58,7 +58,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { formatShortcut, isMac } from '../../utils/shortcuts';
 
-const emit = defineEmits(['open-search', 'toggle-sidebar']);
+const emit = defineEmits(['open-search', 'toggle-sidebar', 'close-tab']);
 
 const { api } = window;
 
@@ -118,6 +118,7 @@ const menuActions = {
     },
     'new-folder': () => foldersStore.openCreateFolderDialog(),
     'save-note': () => window.dispatchEvent(new Event(SAVE_NOTE_EVENT)),
+    'close-tab': () => emit('close-tab'),
     'quit-app': () => api.quitApp(),
     undo: () => runEditorCommand('undo'),
     redo: () => runEditorCommand('redo'),
@@ -160,6 +161,12 @@ const menus = [
                 title: 'Save Current Note',
                 shortcut: 'cmd+s',
                 action: 'save-note',
+                requiresNote: true,
+            },
+            {
+                title: 'Close Tab',
+                shortcut: 'cmd+w',
+                action: 'close-tab',
                 requiresNote: true,
             },
             { type: 'separator' },
@@ -329,6 +336,12 @@ const handleKeyDown = (event) => {
     if (hasModifier && key === 's') {
         event.preventDefault();
         if (isNotesPage.value) menuActions['save-note']();
+        return;
+    }
+
+    if (hasModifier && key === 'w') {
+        event.preventDefault();
+        if (isNotesPage.value) menuActions['close-tab']();
         return;
     }
 

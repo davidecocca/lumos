@@ -362,8 +362,8 @@ function getNotesByIds(ids, callback) {
            notes.updated_at, notes.last_viewed_at, folders.name AS folder_name
     FROM notes 
     LEFT JOIN folders ON notes.folder_id = folders.id 
-    WHERE notes.id IN (${ids.join(',')})`;
-    db.all(sql, [], (err, rows) => {
+    WHERE notes.id IN (${ids.map(() => '?').join(',')})`;
+    db.all(sql, ids, (err, rows) => {
         callback(err, rows);
     });
 }
