@@ -1,7 +1,10 @@
 <template>
     <div v-if="note" class="d-flex align-center py-1 pr-4">
         <div class="d-flex align-center">
-            <v-breadcrumbs :items="breadcrumbsItems" class="ma-0 py-0" >
+            <v-breadcrumbs
+                :items="breadcrumbsItems"
+                class="editor-breadcrumbs ma-0 py-0"
+            >
                 <template v-slot:prepend>
                     <v-icon
                         icon="ph-folder-simple"
@@ -120,4 +123,8 @@ const handleRedo = () => {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.v-theme--light .editor-breadcrumbs {
+    --v-disabled-opacity: 0.65;
+}
+</style>

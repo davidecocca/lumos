@@ -7,25 +7,31 @@
         flat
     >
         <div
-            class="app-chrome__leading no-drag"
-            :class="{ 'app-chrome__leading--mac': isMacOS }"
+            class="app-chrome__sidebar"
+            :class="{ 'pe-3': showAppChrome || isDrawerRail }"
+            :style="{ width: `${Math.max(0, mainRect.left - 2)}px` }"
         >
-            <v-btn
-                icon="ph-sidebar-simple"
-                variant="text"
-                density="comfortable"
-                size="small"
-                rounded="lg"
-                @click="toggleNavbar"
+            <div
+                class="app-chrome__leading no-drag"
+                :class="{ 'app-chrome__leading--mac': isMacOS }"
+            >
+                <v-btn
+                    icon="ph-sidebar-simple"
+                    variant="text"
+                    density="comfortable"
+                    size="small"
+                    rounded="lg"
+                    @click="toggleNavbar"
+                />
+            </div>
+
+            <AppMenuBar
+                v-if="showAppChrome"
+                @open-search="openSearch"
+                @toggle-sidebar="toggleNavbar"
+                @close-tab="closeActiveTab"
             />
         </div>
-
-        <AppMenuBar
-            v-if="showAppChrome"
-            @open-search="openSearch"
-            @toggle-sidebar="toggleNavbar"
-            @close-tab="closeActiveTab"
-        />
 
         <AppNoteTabs />
 
@@ -97,7 +103,7 @@ import LlmService from '../services/llmService';
 import { getGroqModels } from '../services/providers/groqService';
 
 import { computed, watch, ref, onMounted, onBeforeUnmount } from 'vue';
-import { useTheme } from 'vuetify';
+import { useLayout, useTheme } from 'vuetify';
 import { useRoute, useRouter } from 'vue-router';
 
 // Import the API from the Electron context
@@ -107,6 +113,7 @@ const isAppChromePreview = ref(false);
 const showAppChrome = computed(() => !isMacOS || isAppChromePreview.value);
 
 const isDrawerRail = ref(false);
+const { mainRect } = useLayout();
 const isSearchOpen = ref(false);
 const isAboutOpen = ref(false);
 const isSplashVisible = ref(true);
@@ -388,6 +395,22 @@ watch(
     z-index: 1010;
 }
 
+.app-chrome__sidebar {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    min-width: max-content;
+    height: 100%;
+    /* Align with the drawer's inner border, accounting for the app bar's left border. */
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-chrome__sidebar {
+        transition: none;
+    }
+}
+
 .app-chrome__leading,
 .app-chrome__window-controls {
     display: flex;
@@ -399,6 +422,7 @@ watch(
 }
 
 .app-chrome__window-controls {
+    flex-shrink: 0;
     margin-right: 8px;
 }
 

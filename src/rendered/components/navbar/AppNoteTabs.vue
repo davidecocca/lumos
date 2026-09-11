@@ -23,19 +23,13 @@
                 :key="tab.id"
                 :value="tab.id"
             >
-                <v-chip
-                    closable
-                    close-icon="ph-x"
-                    :close-label="`Close ${tab.title}`"
-                    :variant="
-                        tab.id === tabsStore.activeNoteId ? 'tonal' : 'text'
-                    "
-                    density="comfortable"
-                    rounded="lg"
-                    class="app-note-tabs__chip text-none flex-shrink-0 mr-1"
+                <div
+                    class="app-note-tabs__tab"
                     :class="{
-                        'app-note-tabs__chip--moving': draggedTabId !== null,
-                        'app-note-tabs__chip--dragging cursor-grabbing':
+                        'app-note-tabs__tab--active':
+                            tab.id === tabsStore.activeNoteId,
+                        'app-note-tabs__tab--moving': draggedTabId !== null,
+                        'app-note-tabs__tab--dragging cursor-grabbing':
                             draggedTabId === tab.id && !settling,
                         'position-relative bg-surface elevation-2':
                             draggedTabId === tab.id,
@@ -44,20 +38,35 @@
                     @pointerdown="startDrag($event, index)"
                     @lostpointercapture="cancelDrag"
                     @dragstart.prevent
-                    @click="activateTab(tab.id)"
-                    @click:close.stop="closeTab(tab.id)"
                     @contextmenu.prevent.stop="openTabMenu($event, tab.id)"
                 >
-                    <span class="text-truncate">{{ tab.title }}</span>
-                    <template #close>
+                    <button
+                        type="button"
+                        role="tab"
+                        :aria-selected="tab.id === tabsStore.activeNoteId"
+                        :title="tab.title"
+                        class="app-note-tabs__label text-truncate"
+                        @click="activateTab(tab.id)"
+                    >
+                        {{ tab.title }}
+                    </button>
+                    <v-btn
+                        icon
+                        variant="text"
+                        size="24"
+                        rounded="sm"
+                        class="app-note-tabs__close"
+                        :aria-label="`Close ${tab.title}`"
+                        @click.stop="closeTab(tab.id)"
+                    >
                         <v-icon icon="ph-x" size="14" />
-                    </template>
-                </v-chip>
+                    </v-btn>
+                </div>
                 <v-divider
                     v-if="index < tabsStore.tabs.length - 1"
                     vertical
                     length="14"
-                    class="align-self-center mr-1"
+                    class="align-self-center"
                     :opacity="
                         draggedTabId !== null ||
                         tab.id === tabsStore.activeNoteId ||
@@ -73,7 +82,6 @@
             :target="tabMenuPosition"
             location="bottom start"
             scroll-strategy="close"
-            min-width="200"
         >
             <v-list density="compact" rounded="lg" class="px-1 py-2">
                 <v-list-item
@@ -83,7 +91,19 @@
                     rounded="lg"
                     :disabled="action.disabled"
                     @click="closeFromMenu(action.value)"
-                />
+                >
+                    <template #append>
+                        <span
+                            class="app-note-tabs__shortcut text-medium-emphasis text-caption"
+                        >
+                            {{
+                                action.value === 'current'
+                                    ? formatShortcut('cmd+w')
+                                    : ''
+                            }}
+                        </span>
+                    </template>
+                </v-list-item>
             </v-list>
         </v-menu>
     </div>
@@ -93,6 +113,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTabsStore } from '../../stores/tabsStore';
+import { formatShortcut } from '../../utils/shortcuts';
 
 const router = useRouter();
 const route = useRoute();
@@ -207,7 +228,10 @@ const scrollWhileDragging = (time) => {
 const startDrag = (event, index) => {
     if (drag || !event.isPrimary || event.button !== 0) return;
     suppressClick = false;
-    if (event.target.closest('.v-chip__close') || tabsStore.tabs.length < 2)
+    if (
+        event.target.closest('.app-note-tabs__close') ||
+        tabsStore.tabs.length < 2
+    )
         return;
     const root = scroller.value.$el;
     const container = root.querySelector('.v-slide-group__container');
@@ -224,7 +248,7 @@ const startDrag = (event, index) => {
         grabOffset: event.clientX - tabBounds.left,
         width: tabBounds.width,
         positions: Array.from(
-            root.querySelectorAll('.app-note-tabs__chip'),
+            root.querySelectorAll('.app-note-tabs__tab'),
             (element) =>
                 element.getBoundingClientRect().left -
                 bounds.left +
@@ -357,40 +381,127 @@ const closeTab = async (noteId) => {
 </script>
 
 <style scoped>
+/* Keep horizontal clipping in the slide group, but allow the tab to cover the toolbar border. */
+:global(.v-toolbar__content:has(.app-note-tabs)) {
+    overflow: visible;
+}
+
 .app-note-tabs {
     flex: 1 1 auto;
     min-width: 0;
-    height: 100%;
-    margin-left: 12px;
+    /* Extend over the app bar's bottom border so the active tab opens onto the note. */
+    height: calc(100% + 2px);
+    margin-bottom: -2px;
 }
 
 .app-note-tabs__scroller {
     min-width: 0;
+    height: 100%;
 }
 
-.app-note-tabs__chip {
-    width: 180px;
-    min-width: 180px;
-    max-width: 180px;
-    justify-content: space-between;
-    touch-action: pan-y;
+.app-note-tabs__shortcut {
+    width: 56px;
+    text-align: end;
 }
 
-.app-note-tabs__chip :deep(.v-chip__content) {
+.app-note-tabs__tab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 0 0 190px;
     min-width: 0;
-    overflow: hidden;
+    height: 100%;
+    padding: 0 10px 2px 14px;
+    gap: 8px;
+    touch-action: pan-y;
+    user-select: none;
+    color: rgba(var(--v-theme-on-nav-background), 0.65);
 }
 
-.app-note-tabs__chip--moving {
+.app-note-tabs__tab::before {
+    content: '';
+    position: absolute;
+    inset: 3px 0 0;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: 3px 3px 0 0;
+    pointer-events: none;
+}
+
+.app-note-tabs__tab:hover::before {
+    background: rgba(var(--v-theme-on-nav-background), 0.04);
+}
+
+.app-note-tabs__tab--active {
+    color: rgb(var(--v-theme-on-background));
+}
+
+.app-note-tabs__tab--active::before {
+    background: rgb(var(--v-theme-background));
+    border-color: rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.v-theme--light .app-note-tabs__tab--active::before {
+    border-color: rgba(var(--v-border-color), 0.14);
+}
+
+.app-note-tabs__tab--active:hover::before {
+    background: rgb(var(--v-theme-background));
+}
+
+.app-note-tabs__label {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    font: inherit;
+    font-size: 14px;
+    color: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.app-note-tabs__label:focus-visible {
+    outline: 2px solid rgb(var(--v-theme-primary));
+    outline-offset: -4px;
+    border-radius: 3px;
+}
+
+.app-note-tabs__close {
+    flex: 0 0 auto;
+    opacity: 0;
+}
+
+.app-note-tabs__tab--active .app-note-tabs__close {
+    opacity: 0.55;
+}
+
+.app-note-tabs__tab:hover .app-note-tabs__close,
+.app-note-tabs__tab:focus-within .app-note-tabs__close {
+    opacity: 1;
+}
+
+@media (hover: none) {
+    .app-note-tabs__close {
+        opacity: 1;
+    }
+}
+
+.app-note-tabs__tab--moving {
     transition: transform 160ms ease;
 }
 
-.app-note-tabs__chip--dragging {
+.app-note-tabs__tab--dragging {
     transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .app-note-tabs__chip--moving {
+    .app-note-tabs__tab--moving {
         transition: none;
     }
 }

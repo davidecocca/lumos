@@ -21,7 +21,7 @@ export const vuetifyTheme = {
                 info: '#2196F3',
                 success: '#4CAF50',
                 warning: '#FB8C00',
-                'nav-background': '#F1F1EE',
+                'nav-background': '#EBEBE7',
                 'on-nav-background': '#292824',
             },
             variables: {
