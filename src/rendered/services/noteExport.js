@@ -17,7 +17,9 @@ const serializer = new MarkdownSerializer(
         orderedList: defaultMarkdownSerializer.nodes.ordered_list,
         noteImage(state, node) {
             const alt = state.esc(node.attrs.alt || '');
-            const src = state.esc(node.attrs.src || '');
+            const src = state.esc(
+                node.attrs.storageSrc || node.attrs.src || '',
+            );
             state.write(`![${alt}](${src})`);
         },
         taskList(state, node) {

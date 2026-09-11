@@ -1,5 +1,10 @@
-const { BrowserWindow } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const fs = require('fs/promises');
+const path = require('path');
+
+const IMAGE_ROOT_DIR = 'note-images';
+const MANAGED_MARKDOWN_IMAGE_PATTERN =
+    /(!\[[^\]]*\]\()(note-images\/[^)\s]+)(\))/g;
 
 // Normalizes a note title for filenames, replacing OS-invalid characters and limiting length.
 const exportFileName = (title) =>
@@ -22,6 +27,109 @@ const escapeHtml = (value) =>
             })[character],
     );
 
+// Converts a YouTube embed URL to a watch URL
+const getYoutubeWatchUrl = (source) => {
+    const url = new URL(source.replace(/&amp;/g, '&'));
+    const pathSegments = url.pathname.split('/').filter(Boolean);
+    const videoId =
+        url.searchParams.get('v') ||
+        (url.hostname === 'youtu.be' ? pathSegments[0] : null) ||
+        (['embed', 'shorts'].includes(pathSegments[0])
+            ? pathSegments[1]
+            : null);
+
+    return videoId && /^[\w-]{11}$/.test(videoId)
+        ? `https://www.youtube.com/watch?v=${videoId}`
+        : null;
+};
+
+// Replaces YouTube iframe embeds with a link to the video
+const replaceYoutubeEmbeds = (content) =>
+    content.replace(
+        /<iframe\b[^>]*\bsrc=(["'])(.*?)\1[^>]*>(?:\s*<\/iframe>)?/gi,
+        (iframe, _, source) => {
+            try {
+                const url = new URL(source);
+                const isYoutube =
+                    url.hostname === 'youtube.com' ||
+                    url.hostname.endsWith('.youtube.com') ||
+                    url.hostname === 'youtube-nocookie.com' ||
+                    url.hostname.endsWith('.youtube-nocookie.com');
+
+                const watchUrl = isYoutube && getYoutubeWatchUrl(source);
+
+                if (!watchUrl) return iframe;
+
+                return `<p class="video-export-link"><a href="${watchUrl}">${watchUrl}</a></p>`;
+            } catch {
+                return iframe;
+            }
+        },
+    );
+
+// Ensures that all links in the exported content open in a new window
+const makeLinksOpenInNewWindow = (content) =>
+    content.replace(/<a\b([^>]*)>/gi, (_, attributes) => {
+        const safeAttributes = attributes
+            .replace(/\s(?:target|rel)=(['"])[\s\S]*?\1/gi, '')
+            .trimEnd();
+
+        return `<a${safeAttributes} target="_blank" rel="noopener noreferrer">`;
+    });
+
+// Returns the absolute path to a managed image if it is within the note-images directory, otherwise returns null
+const getManagedImageSourcePath = (storagePath) => {
+    const userDataPath = app.getPath('userData');
+    const imageRoot = path.resolve(userDataPath, IMAGE_ROOT_DIR);
+    const sourcePath = path.resolve(userDataPath, storagePath);
+    const relativePath = path.relative(imageRoot, sourcePath);
+
+    return relativePath &&
+        !relativePath.startsWith('..') &&
+        !path.isAbsolute(relativePath)
+        ? sourcePath
+        : null;
+};
+
+// Writes the exported Markdown content to disk, copying any managed images to an assets directory alongside the Markdown file
+async function writeMarkdownExport(filePath, content) {
+    const assetsDirectoryName = `${path.basename(
+        filePath,
+        path.extname(filePath),
+    )}.assets`;
+    const assetsDirectoryPath = path.join(
+        path.dirname(filePath),
+        assetsDirectoryName,
+    );
+    const imageSources = new Map();
+    const markdown = content.replace(
+        MANAGED_MARKDOWN_IMAGE_PATTERN,
+        (match, prefix, storagePath, suffix) => {
+            const sourcePath = getManagedImageSourcePath(storagePath);
+
+            if (!sourcePath) return match;
+
+            const fileName = path.basename(sourcePath);
+            imageSources.set(sourcePath, fileName);
+            return `${prefix}${encodeURI(`${assetsDirectoryName}/${fileName}`)}${suffix}`;
+        },
+    );
+
+    if (imageSources.size) {
+        await fs.mkdir(assetsDirectoryPath, { recursive: true });
+        await Promise.all(
+            [...imageSources].map(([sourcePath, fileName]) =>
+                fs.copyFile(
+                    sourcePath,
+                    path.join(assetsDirectoryPath, fileName),
+                ),
+            ),
+        );
+    }
+
+    await fs.writeFile(filePath, markdown);
+}
+
 // Wraps Tiptap’s HTML in a standalone HTML page, adds the title, and provides styles used by both HTML and PDF export
 const createExportDocument = (title, content) => `<!doctype html>
 <html>
@@ -43,11 +151,12 @@ const createExportDocument = (title, content) => `<!doctype html>
         th { background: #f5f5f5; }
         details { margin: 12px 0; }
         a { color: #345995; }
+        .video-export-link { margin: 16px 0; }
     </style>
 </head>
 <body>
     <h1>${escapeHtml(title)}</h1>
-    ${content}
+    ${makeLinksOpenInNewWindow(replaceYoutubeEmbeds(content))}
 </body>
 </html>`;
 
@@ -91,6 +200,11 @@ async function createPdf(title, content) {
 
 // Selexts the final content to write to disk based on the selected format, then writes it to the specified file path.
 async function writeExport({ filePath, format, title, content }) {
+    if (format === 'markdown') {
+        await writeMarkdownExport(filePath, content);
+        return;
+    }
+
     const output =
         format === 'pdf'
             ? await createPdf(title, content)
