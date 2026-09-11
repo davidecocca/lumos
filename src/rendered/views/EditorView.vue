@@ -70,6 +70,7 @@
 
         <v-navigation-drawer
             v-model="isChatOpen"
+            disable-resize-watcher
             location="right"
             :width="chatWidth"
             :class="[
