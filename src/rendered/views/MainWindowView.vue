@@ -9,7 +9,10 @@
         <div
             class="app-chrome__sidebar"
             :class="{ 'pe-3': showAppChrome || isDrawerRail }"
-            :style="{ width: `${Math.max(0, mainRect.left - 2)}px` }"
+            :style="{
+                '--sidebar-width': `${Math.max(0, mainRect.left - 1)}px`,
+                width: 'max(0px, calc(var(--sidebar-width) - 1px))',
+            }"
         >
             <div
                 class="app-chrome__leading no-drag"
@@ -395,7 +398,12 @@ watch(
     z-index: 1010;
 }
 
+.app-chrome .v-toolbar__content {
+    overflow: visible;
+}
+
 .app-chrome__sidebar {
+    position: relative;
     display: flex;
     align-items: center;
     flex: 0 0 auto;
@@ -405,8 +413,20 @@ watch(
     transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.app-chrome__sidebar::before {
+    content: '';
+    position: absolute;
+    inset: auto auto -1px 0;
+    width: var(--sidebar-width);
+    height: 1px;
+    background: rgb(var(--v-theme-nav-background));
+    pointer-events: none;
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .app-chrome__sidebar {
+    .app-chrome__sidebar,
+    .app-chrome__sidebar::before {
         transition: none;
     }
 }

@@ -1,7 +1,7 @@
 <template>
     <div
         v-if="tabsStore.tabs.length"
-        class="app-note-tabs no-drag d-flex align-center"
+        class="app-note-tabs d-flex align-center"
         @click.capture="suppressDragClick"
     >
         <v-slide-group
@@ -18,13 +18,24 @@
             <template #next>
                 <v-icon icon="ph-caret-right" size="x-small" />
             </template>
+            <v-divider
+                vertical
+                length="14"
+                class="app-note-tabs__leading-divider align-self-center ml-0"
+                :opacity="
+                    draggedTabId !== null ||
+                    tabsStore.tabs[0].id === tabsStore.activeNoteId
+                        ? 0
+                        : 0.16
+                "
+            />
             <v-slide-group-item
                 v-for="(tab, index) in tabsStore.tabs"
                 :key="tab.id"
                 :value="tab.id"
             >
                 <div
-                    class="app-note-tabs__tab"
+                    class="app-note-tabs__tab no-drag"
                     :class="{
                         'app-note-tabs__tab--active':
                             tab.id === tabsStore.activeNoteId,
@@ -63,14 +74,13 @@
                     </v-btn>
                 </div>
                 <v-divider
-                    v-if="index < tabsStore.tabs.length - 1"
                     vertical
                     length="14"
                     class="align-self-center"
                     :opacity="
                         draggedTabId !== null ||
                         tab.id === tabsStore.activeNoteId ||
-                        tabsStore.tabs[index + 1].id === tabsStore.activeNoteId
+                        tabsStore.tabs[index + 1]?.id === tabsStore.activeNoteId
                             ? 0
                             : 0.16
                     "
@@ -397,6 +407,17 @@ const closeTab = async (noteId) => {
 .app-note-tabs__scroller {
     min-width: 0;
     height: 100%;
+}
+
+.app-note-tabs__leading-divider {
+    /* Keep the separator inside the scroller without shifting the first tab. */
+    flex: 0 0 auto;
+    margin-right: -1px;
+}
+
+.app-note-tabs__scroller :deep(.v-slide-group__prev),
+.app-note-tabs__scroller :deep(.v-slide-group__next) {
+    -webkit-app-region: no-drag;
 }
 
 .app-note-tabs__shortcut {
