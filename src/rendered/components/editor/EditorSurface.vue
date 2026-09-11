@@ -7,7 +7,7 @@
                     :editor="editor"
                     :container-ref="editorShellRef"
                 />
-                <editor-content :editor="editor" />
+                <editor-content :editor="editor" class="editor-document" />
             </div>
         </div>
     </div>
@@ -54,10 +54,15 @@ const editorShellRef = ref(null);
     overflow-y: auto;
 }
 
-.editor-shell :deep(.tiptap) {
+.editor-document {
     flex: 0 1 900px;
-    width: min(100%, 900px);
+    width: 100%;
+    min-width: 0;
     max-width: 900px;
+}
+
+.editor-document :deep(.tiptap) {
+    width: 100%;
     height: auto;
     min-height: 100%;
 }
