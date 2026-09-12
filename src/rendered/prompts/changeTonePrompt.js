@@ -6,5 +6,4 @@ Reply in original language.
 
 Return only the rewritten text. Do not include explanations or comments.`;
 
-
 export default changeTonePrompt;

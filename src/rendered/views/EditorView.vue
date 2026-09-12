@@ -1,1180 +1,881 @@
 <template>
-    <!-- Flex container to place button toggle and text field on the same line -->
-    <div v-if="note" class="d-flex align-center">
-        <div class="d-flex flex-column ml-4">
-            <p class="text-h4 font-weight-medium">{{ note.title }}</p>
-            <div class="d-inline-flex mt-2">
-                <v-chip
-                color="primary"
-                variant="tonal"
-                >
-                {{ currentFolderName }}
-            </v-chip>
-        </div>
-    </div>
-    
-    <v-spacer></v-spacer>
-    
-    <div class="d-flex align-center">
-        <v-btn-toggle divided class="ms-2" :max="0" multiple variant="text">
-            <v-tooltip text="Undo" location="bottom">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="editor.chain().focus().undo().run()">
-                        <v-icon>mdi-undo</v-icon>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-            
-            <v-tooltip text="Redo" location="bottom">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="editor.chain().focus().redo().run()">
-                        <v-icon>mdi-redo</v-icon>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-            
-            <v-tooltip text="Save" location="bottom">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="saveNoteManually">
-                        <v-icon>mdi-content-save</v-icon>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-            
-            <v-tooltip text="More" location="bottom">
-                <template v-slot:activator="{ props: tooltipProps }">
-                    <v-menu>
-                        <template v-slot:activator="{ props: menuProps }">
-                            <v-btn v-bind="{ ...tooltipProps, ...menuProps }">
-                                <v-icon>mdi-dots-horizontal</v-icon>
-                            </v-btn>
-                        </template>
-                        <v-list density="compact">
-                            <v-list-item @click="toggleFavorite(note.id)">
-                                <template v-slot:prepend>
-                                    <v-icon :icon="note.favorite === 1 ? 'mdi-heart-broken' : 'mdi-heart'"></v-icon>
-                                </template>
-                                <v-list-item-title>{{ note.favorite === 1 ? 'Unfavorite' : 'Favorite' }}</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item @click="renameNoteDialog = true">
-                                <template v-slot:prepend>
-                                    <v-icon>mdi-rename</v-icon>
-                                </template>
-                                <v-list-item-title>Rename</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item @click="moveToFolderDialog = true">
-                                <template v-slot:prepend>
-                                    <v-icon>mdi-file-move</v-icon>
-                                </template>
-                                <v-list-item-title>Move</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item @click="store.openDeleteNoteConfirmationDialog(note.id)">
-                                <template v-slot:prepend>
-                                    <v-icon>mdi-delete</v-icon>
-                                </template>
-                                <v-list-item-title>Delete</v-list-item-title>
-                            </v-list-item>
-                        </v-list>
-                    </v-menu>
-                </template>
-            </v-tooltip>
-        </v-btn-toggle>
-        
-    </div>
-</div>
+    <v-layout class="editor-view-layout">
+        <v-main class="editor-view-main">
+            <EditorHeader
+                v-model:note-action-menu="editorNoteActionMenu"
+                :note="note"
+                :breadcrumbs-items="breadcrumbsItems"
+                :editor="editor"
+                :is-chat-open="isChatOpen"
+                :auto-save="{
+                    dirty: isDirty,
+                    saving: isSaving,
+                    savedAt: lastSavedAt,
+                }"
+                @chat="openSidebarChat"
+                @save="saveNoteManually"
+                @toggle-favorite="toggleFavorite"
+                @rename-note="openRenameNoteDialog"
+                @move-note="openMoveNoteDialog"
+                @delete-note="store.openDeleteNoteConfirmationDialog"
+                @export-note="exportNote"
+            />
 
-<!-- AI quick functions -->
-<div class="d-flex justify-left align-center pa-2 mt-2 ai-actions">
-    <v-tooltip text="Generate with AI" location="bottom">
-        <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="generateWithAIDialog = !generateWithAIDialog" class="ma-2" variant="outlined" prepend-icon="mdi-lightbulb" rounded="lg" :color="theme === 'dark' ? 'amber' : 'orange-darken-4'">Generate</v-btn>
-        </template>
-    </v-tooltip>
-    <v-tooltip text="Edit with AI" location="bottom">
-        <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiEdit" class="ma-2" variant="outlined" prepend-icon="mdi-pencil" rounded="lg" color="primary">Edit</v-btn>
-        </template>
-    </v-tooltip>
-    <v-tooltip text="Fix spelling & grammar" location="bottom">
-        <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiFixGrammar()" class="ma-2" variant="outlined" prepend-icon="mdi-spellcheck" rounded="lg" :color="theme === 'dark' ? 'teal-lighten-1' : 'teal-darken-4'">Fix</v-btn>
-        </template>
-    </v-tooltip>
-    <v-tooltip text="Format text with AI" location="bottom">
-        <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" @click="aiFormatText()" class="ma-2" variant="outlined" prepend-icon="mdi-format-letter-case-lower" rounded="lg" :color="theme === 'dark' ? 'blue-grey-lighten-3' : 'blue-grey-darken-4'">Format</v-btn>
-        </template>
-    </v-tooltip>
-    <v-menu>
-        <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" class="ma-2" variant="outlined" prepend-icon="mdi-chevron-down" rounded="lg">Other</v-btn>
-        </template>
-        <v-list density="compact">
-            <!-- Edit submenu (no Format here) -->
-            <v-list-subheader>Edit</v-list-subheader>
-            <v-list-item @click="aiImproveWriting()">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-pencil"></v-icon>
-                </template>
-                <v-list-item-title>Improve writing</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="aiMakeShorter()">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-text-short"></v-icon>
-                </template>
-                <v-list-item-title>Summarize</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="aiMakeLonger()">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-text-long"></v-icon>
-                </template>
-                <v-list-item-title>Expand</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="aiSimplify()">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-alphabetical-variant"></v-icon>
-                </template>
-                <v-list-item-title>Simplify language</v-list-item-title>
-            </v-list-item>
-            <!-- Tone submenu -->
-            <v-list-subheader>Tone</v-list-subheader>
-            <v-menu open-on-hover location="end" offset="-10">
-                <template v-slot:activator="{ props }">
-                    <v-list-item v-bind="props">
-                        <template v-slot:prepend>
-                            <v-icon icon="mdi-tune-variant"></v-icon>
-                        </template>
-                        <template v-slot:append>
-                            <v-icon icon="mdi-chevron-right"></v-icon>
-                        </template>
-                        <v-list-item-title>Change tone to</v-list-item-title>
-                    </v-list-item>
-                </template>
-                <v-list density="compact" style="min-width: 180px;">
-                    <v-list-item v-for="tone in supportedTones" :key="tone.key" @click="aiChangeTone(tone.key)">
-                        <template v-slot:prepend>
-                            <v-icon :icon="tone.icon"></v-icon>
-                        </template>
-                        <v-list-item-title>{{ tone.label }}</v-list-item-title>
-                    </v-list-item>
-                </v-list>
-            </v-menu>
-            <!-- Translate submenu -->
-            <v-list-subheader>Translate</v-list-subheader>
-            <v-menu open-on-hover location="end" offset="-10">
-                <template v-slot:activator="{ props }">
-                    <v-list-item v-bind="props">
-                        <template v-slot:prepend>
-                            <v-icon icon="mdi-translate"></v-icon>
-                        </template>
-                        <template v-slot:append>
-                            <v-icon icon="mdi-chevron-right"></v-icon>
-                        </template>
-                        <v-list-item-title>Translate to</v-list-item-title>
-                    </v-list-item>
-                </template>
-                <v-list density="compact" style="min-width: 160px;">
-                    <v-list-item v-for="lang in supportedLanguages" :key="lang.key" @click="aiTranslateTo(lang.key)">
-                        <v-list-item-title>
-                            <span style="margin-right: 32px;">{{ lang.icon }}</span>{{ lang.label }}
-                        </v-list-item-title>
-                    </v-list-item>
-                </v-list>
-            </v-menu>
-        </v-list>
-    </v-menu>
-</div>
+            <EditorBubbleMenu
+                v-if="!inlineAIEdit.active"
+                :editor="editor"
+                :plugin-key="EDITOR_BUBBLE_MENU_PLUGIN_KEY"
+                :should-show="shouldShowBubbleMenu"
+                :append-to="getBubbleMenuAppendTarget"
+                :can-remove-details="canRemoveDetails"
+                :highlight-colors="highlightColors"
+                :text-colors="textColors"
+                :supported-tones="supportedTones"
+                :supported-languages="supportedLanguages"
+                @insert-details="insertDetails"
+                @remove-details="removeDetails"
+                @highlight="handleHighlight"
+                @text-color="handleTextColor"
+                @ai-edit="startInlineAIEdit"
+                @ai-fix-grammar="aiFixGrammar"
+                @ai-format-text="aiFormatText"
+                @ai-improve-writing="aiImproveWriting"
+                @ai-make-shorter="aiMakeShorter"
+                @ai-make-longer="aiMakeLonger"
+                @ai-simplify="aiSimplify"
+                @ai-change-tone="aiChangeTone"
+                @ai-translate-to="aiTranslateTo"
+            />
 
-<div v-if="editor">
-    <bubble-menu
-    class="bubble-menu"
-    :tippy-options="{
-        duration: 100,
-        position: fixed,
-        zIndex: 1500,
-    }"
-    :editor="editor"
-    >
-    
-    <div class="d-flex flex-column rounded-lg pa-2 elevation-4" :style="{ width: '465px', backgroundColor: backgroundColor }">
-        <!-- First row with text formatting buttons -->
-        <div class="d-flex flex-row align-center justify-center mb-2">
-            <v-btn-toggle
-            color="primary"
-            multiple
-            divided
-            variant="text"
-            :max="0"
-            >
-            <!-- Bold -->
-            <v-tooltip text="Bold (⌘B)" location="top">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="editor.chain().focus().toggleBold().run()">
-                        <v-icon>mdi-format-bold</v-icon>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-            <!-- Italic -->
-            <v-tooltip text="Italic (⌘I)" location="top">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="editor.chain().focus().toggleItalic().run()">
-                        <v-icon>mdi-format-italic</v-icon>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-            <!-- Underline -->
-            <v-tooltip text="Underline (⌘U)" location="top">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="editor.chain().focus().toggleUnderline().run()">
-                        <v-icon>mdi-format-underline</v-icon>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-            <!-- Strike -->
-            <v-tooltip text="Strike (⌘⇧S)" location="top">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="editor.chain().focus().toggleStrike().run()">
-                        <v-icon>mdi-format-strikethrough</v-icon>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-            <!-- Superscript -->
-            <v-tooltip text="Superscript (⌘.)" location="top">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="editor.chain().focus().toggleSuperscript().run()">
-                        <v-icon>mdi-format-superscript</v-icon>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-            <!-- Subscript -->
-            <v-tooltip text="Subscript (⌘,)" location="top">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="editor.chain().focus().toggleSubscript().run()">
-                        <v-icon>mdi-format-subscript</v-icon>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-            <!-- Inline code -->
-            <v-tooltip text="Inline code (⌘E)" location="top">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" @click="editor.chain().focus().toggleCode().run()">
-                        <v-icon>mdi-code-tags</v-icon>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-        </v-btn-toggle>
-    </div>
-    
-    <!-- Divider between the two rows -->
-    <v-divider class="ma-1"></v-divider>
-    
-    <!-- Second row with style and highlight dropdowns -->
-    <div class="d-flex flex-row align-center justify-center mt-2">
-        <v-menu>
-            <template v-slot:activator="{ props }">
-                <v-btn
-                height="40px"
-                width="135px"
-                v-bind="props"
-                variant="text"
-                prepend-icon="mdi-chevron-down"
-                >
-                Style
-            </v-btn>
-        </template>
-        <v-list density="compact">
-            <v-list-subheader>Turn into</v-list-subheader>
-            <!-- Paragraph -->
-            <v-list-item @click="editor.commands.setParagraph()">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-format-paragraph"></v-icon>
-                </template>
-                <v-list-item-title>Paragraph</v-list-item-title>
-            </v-list-item>
-            <!-- Heading 1 -->
-            <v-list-item @click="editor.commands.toggleHeading({ level: 1 })">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-format-header-1"></v-icon>
-                </template>
-                <v-list-item-title>Heading 1</v-list-item-title>
-            </v-list-item>
-            <!-- Heading 2 -->
-            <v-list-item @click="editor.commands.toggleHeading({ level: 2 })">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-format-header-2"></v-icon>
-                </template>
-                <v-list-item-title>Heading 2</v-list-item-title>
-            </v-list-item>
-            <!-- Heading 3 -->
-            <v-list-item @click="editor.commands.toggleHeading({ level: 3 })">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-format-header-3"></v-icon>
-                </template>
-                <v-list-item-title>Heading 3</v-list-item-title>
-            </v-list-item>
-            <!-- Bullet list -->
-            <v-list-item @click="editor.commands.toggleBulletList()">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-format-list-bulleted"></v-icon>
-                </template>
-                <v-list-item-title>Bullet list</v-list-item-title>
-            </v-list-item>
-            <!-- Numbered list -->
-            <v-list-item @click="editor.commands.toggleOrderedList()">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-format-list-numbered"></v-icon>
-                </template>
-                <v-list-item-title>Numbered list</v-list-item-title>
-            </v-list-item>
-            <!-- Task list -->
-            <v-list-item @click="editor.commands.toggleTaskList()">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-format-list-checkbox"></v-icon>
-                </template>
-                <v-list-item-title>Task list</v-list-item-title>
-            </v-list-item>
-            <!-- Blockquote -->
-            <v-list-item @click="editor.commands.toggleBlockquote()">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-format-quote-open"></v-icon>
-                </template>
-                <v-list-item-title>Quote</v-list-item-title>
-            </v-list-item>
-            <!-- Code block -->
-            <v-list-item @click="editor.commands.toggleCodeBlock()">
-                <template v-slot:prepend>
-                    <v-icon icon="mdi-code-tags"></v-icon>
-                </template>
-                <v-list-item-title>Code block</v-list-item-title>
-            </v-list-item>
-        </v-list>
-    </v-menu>
-    
-    <v-divider vertical class="mx-2"></v-divider>
-    
-    <v-menu>
-        <template v-slot:activator="{ props }">
-            <v-btn
-            height="40px"
-            width="135px"
-            v-bind="props"
-            variant="text"
-            prepend-icon="mdi-marker"
-            >
-            Highlight
-        </v-btn>
-    </template>
-    <!-- Card with all color to highlight -->
-    <v-card class="pa-2 rounded-lg elevation-4" max-width="340" :style="{ backgroundColor: backgroundColor }">
-        <v-row dense>
-            <v-col v-for="(color, index) in highlightColors" :key="index" cols="3">
-                <v-btn
-                :style="{ backgroundColor: color.displayedColor }"
-                class="color-btn ma-1"
-                variant="flat"
-                width="20px" 
-                height="40px"
-                @click="handleHighlight(color.value)"
-                >
-            </v-btn>
-        </v-col>
-    </v-row>
-</v-card>
-</v-menu>
+            <EditorSurface :editor="editor" />
 
-<v-divider vertical class="mx-2"></v-divider>
+            <EditorDialogs
+                v-model:rename-note-dialog="renameNoteDialog"
+                v-model:move-to-folder-dialog="moveToFolderDialog"
+                v-model:delete-note-dialog="deleteNoteDialog"
+                v-model:embed-youtube-dialog="embedYoutubeDialog"
+                :note="note"
+                :rename-note-id="actionNoteId"
+                :rename-note-title="actionNoteTitle"
+                :folders="store.folders"
+                :confirmation-dialog-title="confirmationDialogTitle"
+                :confirmation-dialog-text="confirmationDialogText"
+                :confirmation-dialog-button-color="
+                    confirmationDialogButtonColor
+                "
+                @rename-note="handleRenameNote"
+                @move-note="handleMoveNote"
+                @delete-note="handleDeleteNote"
+                @embed-youtube="handleyoutube"
+            />
+        </v-main>
 
-<v-menu>
-    <template v-slot:activator="{ props }">
-        <v-btn
-        height="40px"
-        width="135px"
-        v-bind="props"
-        variant="text"
-        prepend-icon="mdi-palette"
+        <v-navigation-drawer
+            v-model="isChatOpen"
+            disable-resize-watcher
+            location="right"
+            :width="chatWidth"
+            :class="[
+                'editor-chat-drawer',
+                { 'no-transition': isResizing },
+                'bg-background',
+            ]"
         >
-        Color
-    </v-btn>
-</template>
-<!-- Card with all color for the text -->
-<v-card class="pa-2 rounded-lg elevation-4" max-width="340" :style="{ backgroundColor: backgroundColor }">
-    <v-row dense>
-        <v-col v-for="(color, index) in textColors" :key="index" cols="3">
-            <v-btn
-            :style="{ backgroundColor: color.displayedColor }"
-            class="text-color-btn ma-1"
-            variant="flat"
-            width="20px" 
-            height="40px"
-            @click="handleTextColor(color.value)"
-            >
-        </v-btn>
-    </v-col>
-</v-row>
-</v-card>
-</v-menu>
-</div>
-</div>
-</bubble-menu>
-</div>
-
-<!-- Main content area with resizable layout -->
-<div class="editor-layout">
-    <!-- Left side - Editor content -->
-    <div class="editor-content">
-        <v-card 
-        elevation="0"
-        class="rounded-md border ma-3"
-        rounded="lg"
-        :loading="isLoading"
-        >
-        <v-card-text>
-            <editor-content :editor="editor" v-model="content"/>
-        </v-card-text>
-    </v-card>
-</div>
-
-</div>
-
-<div v-if="note">
-    <RenameNoteDialog
-    v-model="renameNoteDialog"
-    :noteId="note.id"
-    :currentNoteTitle="note.title"
-    @rename-note="handleRenameNote"
-    />
-    
-    <MoveToFolderDialog
-    v-model="moveToFolderDialog"
-    :noteId="note.id"
-    :currentFolderId="note.folder_id"
-    :currentFolderName="note.folderName"
-    :folders="store.folders"
-    @move-note="handleMoveNote"
-    />
-    
-    <ConfirmDeleteNoteDialog
-    v-model="deleteNoteDialog"
-    :confirmationDialogTitle="confirmationDialogTitle"
-    :confirmationDialogText="confirmationDialogText"
-    :confirmationDialogButtonColor="confirmationDialogButtonColor"
-    :noteId="note.id"
-    @delete-note="handleDeleteNote"
-    />
-    
-    <GenerateAIDialog
-    v-model="generateWithAIDialog"
-    />
-    
-    <EditAIDialog
-    v-model="editWithAIDialog"
-    :selectedText="selectedText"
-    @apply="handleApply"
-    />
-</div>
+            <div class="editor-chat-resizer" @mousedown="startResize"></div>
+            <LumosChat
+                class="h-100"
+                :is-visible="isChatOpen"
+                @close="closeSidebarChat"
+            />
+        </v-navigation-drawer>
+    </v-layout>
 </template>
 
 <script setup>
-    import RenameNoteDialog from '../components/navbar/RenameNoteDialog.vue'
-    import MoveToFolderDialog from '../components/navbar/MoveToFolderDialog.vue'
-    import ConfirmDeleteNoteDialog from '../components/commons/ConfirmDeleteNoteDialog.vue'
-    import GenerateAIDialog from '../components/editor/GenerateAIDialog.vue'
-    import EditAIDialog from '../components/editor/EditAIDialog.vue'
-    
-    import { createLlmService } from '../services/llmService';
-    import fixGrammarPrompt from '../prompts/fixGrammarPrompt'
-    import formatTextPrompt from '../prompts/formatTextPrompt';
-    import improveWritingPrompt from '../prompts/improveWritingPrompt'
-    import makeShorterPrompt from '../prompts/makeShorterPrompt'
-    import makeLongerPrompt from '../prompts/makeLongerPrompt'
-    import simplifyLanguagePrompt from '../prompts/simplifyLanguagePrompt';
-    import changeTonePrompt from '../prompts/changeTonePrompt';
-    import translateToPrompt from '../prompts/translateToPrompt';
-    import getTopicPrompt from '../prompts/getTopicPrompt';
-    
-    import { useRouter } from 'vue-router'
-    import { useFoldersStore } from '../stores/foldersStore'
-    import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
-    import StarterKit from '@tiptap/starter-kit'
-    import {
-        BubbleMenu,
-        Editor,
-        EditorContent,
-        FloatingMenu,
-    } from '@tiptap/vue-3'
-    import Underline from '@tiptap/extension-underline'
-    import Placeholder from '@tiptap/extension-placeholder'
-    import Subscript from '@tiptap/extension-subscript'
-    import Superscript from '@tiptap/extension-superscript'
-    import Highlight from '@tiptap/extension-highlight'
-    import Blockquote from '@tiptap/extension-blockquote'
-    import BulletList from '@tiptap/extension-bullet-list'
-    import OrderedList from '@tiptap/extension-ordered-list'
-    import ListItem from '@tiptap/extension-list-item'
-    import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-    import TaskList from '@tiptap/extension-task-list'
-    import TaskItem from '@tiptap/extension-task-item'
-    import HorizontalRule from '@tiptap/extension-horizontal-rule'
-    import { Color } from '@tiptap/extension-color'
-    import TextStyle from '@tiptap/extension-text-style'
-    import Table from '@tiptap/extension-table'
-    import TableCell from '@tiptap/extension-table-cell'
-    import TableHeader from '@tiptap/extension-table-header'
-    import TableRow from '@tiptap/extension-table-row'
-    
-    // Code block highlighting: load all languages with "all" and common languages with "common"
-    import { all, createLowlight } from 'lowlight'
-    
-    const props = defineProps({
-        theme: {
-            type: String,
-            default: 'light',
+import EditorBubbleMenu from '../components/editor/EditorBubbleMenu.vue';
+import EditorDialogs from '../components/editor/EditorDialogs.vue';
+import EditorHeader from '../components/editor/EditorHeader.vue';
+import EditorSurface from '../components/editor/EditorSurface.vue';
+import LumosChat from '../components/chat/LumosChat.vue';
+import {
+    useEditorAITransforms,
+    supportedLanguages,
+    supportedTones,
+} from '../components/editor/composables/useEditorAITransforms';
+import TableSlashCommand, {
+    OPEN_YOUTUBE_DIALOG_EVENT,
+} from '../components/editor/slash-menu/slashCommand';
+import InlineGenerateAICommand from '../components/editor/inline-ai/inlineGenerateAICommand';
+import InlineEditAIDecorations from '../components/editor/inline-ai/inlineEditAIDecorations';
+
+import { createLlmService } from '../services/llmService';
+import getTopicPrompt from '../prompts/getTopicPrompt';
+
+import { useFoldersStore } from '../stores/foldersStore';
+import { useTabsStore } from '../stores/tabsStore';
+import {
+    ref,
+    onMounted,
+    onBeforeUnmount,
+    computed,
+    watch,
+    nextTick,
+} from 'vue';
+import { isTextSelection } from '@tiptap/core';
+import StarterKit from '@tiptap/starter-kit';
+import { Editor } from '@tiptap/vue-3';
+import { Placeholder } from '@tiptap/extensions';
+import Subscript from '@tiptap/extension-subscript';
+import Superscript from '@tiptap/extension-superscript';
+import Highlight from '@tiptap/extension-highlight';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import {
+    Details,
+    DetailsContent,
+    DetailsSummary,
+} from '@tiptap/extension-details';
+import { TaskList, TaskItem } from '@tiptap/extension-list';
+import { Color } from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
+import {
+    Table,
+    TableCell,
+    TableHeader,
+    TableRow,
+} from '@tiptap/extension-table';
+import FileHandler from '@tiptap/extension-file-handler';
+import EmbeddedYoutube from '../components/editor/custom-node-views/embedded-youtube/embeddedYoutube';
+import ResizableImage from '../components/editor/custom-node-views/resizable-image/resizableImage';
+import { serializeMarkdown } from '../services/noteExport';
+
+// Code block highlighting: load all languages with "all" and common languages with "common"
+import { all, createLowlight } from 'lowlight';
+
+const IMAGE_MUTATION_EVENT = 'lumos-note-image-mutation';
+const VIDEO_MUTATION_EVENT = 'lumos-note-video-mutation';
+const TOGGLE_NOTE_CHAT_EVENT = 'lumos-toggle-note-chat';
+const SAVE_NOTE_EVENT = 'lumos-save-note';
+const DETAILS_OPEN_CLASS_NAME = 'is-open';
+const EDITOR_BUBBLE_MENU_PLUGIN_KEY = 'editorBubbleMenu';
+const EMPTY_EDITOR_DOCUMENT = {
+    type: 'doc',
+    content: [
+        {
+            type: 'paragraph',
         },
-        noteId: {
-            type: Number,
-            mandatory: true,
-        }
-    })
-    
-    const router = useRouter()
-    
-    // Central store for folders
-    const store = useFoldersStore()
-    
-    // Init LLM services for AI features
-    var fixGrammarLLMService = null
-    var formatTextLLMService = null
-    var improveWritingLLMService = null
-    var makeShorterLLMService = null
-    var makeLongerLLMService = null
-    var simplifyLanguageLLMService = null
-    var getTopicService = null
+    ],
+};
+
+const props = defineProps({
+    theme: {
+        type: String,
+        default: 'light',
+    },
+    noteId: {
+        type: Number,
+        mandatory: true,
+    },
+});
+
+// Central store for folders
+const store = useFoldersStore();
+const tabsStore = useTabsStore();
+
+// Init LLM service for topic generation
+var getTopicService = null;
+try {
+    getTopicService = createLlmService(getTopicPrompt, 'editor');
+} catch (error) {
+    console.error('Error initializing topic LLM service:', error);
+}
+
+// Reactive variables for dialogs
+const renameNoteDialog = computed({
+    get: () => store.renameNoteDialog,
+    set: (val) => (store.renameNoteDialog = val),
+});
+const actionNoteId = computed(() => store.actionNoteId);
+const actionNoteTitle = computed(() => store.actionNoteTitle);
+const moveToFolderDialog = computed({
+    get: () => store.moveToFolderDialog,
+    set: (val) => (store.moveToFolderDialog = val),
+});
+const deleteNoteDialog = computed({
+    get: () => store.deleteNoteDialog,
+    set: (val) => (store.deleteNoteDialog = val),
+});
+
+const confirmationDialogTitle = computed(() => store.confirmationDialogTitle);
+const confirmationDialogText = computed(() => store.confirmationDialogText);
+const confirmationDialogButtonColor = computed(
+    () => store.confirmationDialogButtonColor,
+);
+
+const embedYoutubeDialog = ref(false);
+const editorNoteActionMenu = ref(false);
+
+const note = ref(null);
+
+const isAllSelection = (selection) => selection.toJSON?.().type === 'all';
+
+const shouldShowBubbleMenu = ({ state, from, to }) => {
+    if (isTextSelection(state.selection)) {
+        return !state.selection.empty && from !== to;
+    }
+
+    if (isAllSelection(state.selection)) {
+        return Boolean(state.doc.textBetween(from, to).trim());
+    }
+
+    return false;
+};
+
+const shouldDismissBubbleMenu = (event) =>
+    event.key === 'Escape' &&
+    editor.value &&
+    !editor.value.state.selection.empty &&
+    editor.value.isFocused;
+
+const currentFolderName = computed(() => {
+    if (!note.value) return '';
+    const folder = store.folders.find((f) => f.id === note.value.folder_id);
+    return folder ? folder.name : note.value.folder_name || '';
+});
+
+// Create a lowlight instance
+const lowlight = createLowlight(all);
+
+const editor = ref(null);
+let noteRequestId = 0;
+
+const isLoading = ref(false);
+const isChatOpen = ref(false);
+const chatWidth = ref(450);
+const isResizing = ref(false);
+
+// Auto-save state
+const AUTOSAVE_DEBOUNCE_MS = 2000;
+const SAFETY_SAVE_INTERVAL_MS = 30000;
+const MIN_AUTOSAVE_INDICATOR_MS = 500;
+const isDirty = ref(false);
+const isAutoSaving = ref(false);
+const isManualSaving = ref(false);
+const lastSavedAt = ref(null);
+const isInlineAIGenerationActive = ref(false);
+let autosaveTimer = null;
+let safetySaveInterval = null;
+let saveInFlight = null;
+let unsubscribeFlushSaves = null;
+
+const {
+    inlineAIEdit,
+    startInlineAIEdit,
+    rejectInlineAIEdit,
+    aiFixGrammar,
+    aiFormatText,
+    aiImproveWriting,
+    aiMakeShorter,
+    aiMakeLonger,
+    aiSimplify,
+    aiChangeTone,
+    aiTranslateTo,
+} = useEditorAITransforms({
+    editor,
+    isLoading,
+});
+
+const isInlineAIPreviewActive = computed(
+    () => inlineAIEdit.active || isInlineAIGenerationActive.value,
+);
+const isSaving = computed(() => isAutoSaving.value || isManualSaving.value);
+
+const highlightColors = computed(() => {
+    const isDark = props.theme === 'dark';
+
+    return [
+        {
+            name: 'Default',
+            value: 'default',
+            displayedColor: isDark ? '#212121' : '#FFFFFF',
+        },
+        {
+            name: 'Blue',
+            value: 'var(--lumos-editor-highlight-blue)',
+            displayedColor: isDark ? '#039BE5' : '#C5CAE9',
+        },
+        {
+            name: 'Red',
+            value: 'var(--lumos-editor-highlight-red)',
+            displayedColor: isDark ? '#E53935' : '#F8BBD0',
+        },
+        {
+            name: 'Green',
+            value: 'var(--lumos-editor-highlight-green)',
+            displayedColor: isDark ? '#43A047' : '#B2DFDB',
+        },
+        {
+            name: 'Yellow',
+            value: 'var(--lumos-editor-highlight-yellow)',
+            displayedColor: isDark ? '#FFC107' : '#FFECB3',
+        },
+    ];
+});
+
+const textColors = computed(() => {
+    const isDark = props.theme === 'dark';
+
+    return [
+        {
+            name: 'Default',
+            value: 'default',
+            displayedColor: isDark ? '#E0E0E0' : '#212121',
+        },
+        {
+            name: 'Blue',
+            value: 'var(--lumos-editor-text-blue)',
+            displayedColor: isDark ? '#9FA8DA' : '#0D47A1',
+        },
+        {
+            name: 'Red',
+            value: 'var(--lumos-editor-text-red)',
+            displayedColor: isDark ? '#F48FB1' : '#B71C1C',
+        },
+        {
+            name: 'Green',
+            value: 'var(--lumos-editor-text-green)',
+            displayedColor: isDark ? '#80CBC4' : '#1B5E20',
+        },
+        {
+            name: 'Yellow',
+            value: 'var(--lumos-editor-text-yellow)',
+            displayedColor: isDark ? '#FFCC80' : '#E65100',
+        },
+    ];
+});
+
+const breadcrumbsItems = computed(() => [
+    {
+        title: currentFolderName.value,
+        disabled: true,
+    },
+    {
+        title: note.value ? note.value.title : '',
+        disabled: false,
+    },
+]);
+
+const handleHighlight = (colorValue) => {
+    if (!editor.value) return;
+
+    if (colorValue === 'default') {
+        editor.value.chain().focus().unsetHighlight().run();
+    } else {
+        editor.value.chain().focus().setHighlight({ color: colorValue }).run();
+    }
+};
+
+const handleTextColor = (colorValue) => {
+    if (!editor.value) return;
+
+    if (colorValue === 'default') {
+        editor.value.chain().focus().unsetColor().run();
+    } else {
+        editor.value.chain().focus().setColor(colorValue).run();
+    }
+};
+
+const getBubbleMenuAppendTarget = () => document.body;
+
+const renderDetailsToggleButton = ({ element, isOpen, node }) => {
+    const label = node.textContent?.trim() || 'details';
+
+    element.textContent = isOpen ? '▾' : '▸';
+    element.setAttribute(
+        'aria-label',
+        isOpen ? `Collapse details: ${label}` : `Expand details: ${label}`,
+    );
+    element.classList.add('tiptap-details__toggle');
+
+    if (!element.dataset.lumosDetailsBound) {
+        element.dataset.lumosDetailsBound = 'true';
+        element.addEventListener('click', () => {
+            window.setTimeout(() => {
+                if (!editor.value?.isEditable) {
+                    return;
+                }
+
+                const detailsElement = element.closest('[data-type="details"]');
+
+                if (!detailsElement || !editor.value.isActive('details')) {
+                    return;
+                }
+
+                editor.value.commands.updateAttributes('details', {
+                    open: detailsElement.classList.contains(
+                        DETAILS_OPEN_CLASS_NAME,
+                    ),
+                });
+            }, 0);
+        });
+    }
+};
+
+const canRemoveDetails = () => {
+    if (!editor.value) {
+        return false;
+    }
+
+    return editor.value.can().chain().focus().unsetDetails().run();
+};
+
+const insertDetails = () => {
+    if (!editor.value) {
+        return;
+    }
+
+    editor.value
+        .chain()
+        .focus()
+        .setDetails()
+        .updateAttributes('details', {
+            open: true,
+        })
+        .run();
+};
+
+const removeDetails = () => {
+    if (!editor.value || !canRemoveDetails()) {
+        return;
+    }
+
+    editor.value.chain().focus().unsetDetails().run();
+};
+
+const setEditorDocument = (contentJson) => {
+    if (!editor.value) {
+        return;
+    }
+
+    rejectInlineAIEdit();
+
+    const nextContent =
+        contentJson && contentJson !== '{}'
+            ? contentJson
+            : EMPTY_EDITOR_DOCUMENT;
+
+    editor.value.commands.setContent(nextContent, {
+        emitUpdate: false,
+    });
+};
+
+const getNote = async (id) => {
+    const requestId = ++noteRequestId;
+
+    // Get note from the database
+    const noteInfo = await window.api.getNote(id);
+
+    if (requestId !== noteRequestId) {
+        return;
+    }
+
+    // Get note folder from the database
+    const folderInfo = await window.api.getFolder(noteInfo.folder_id);
+
+    if (requestId !== noteRequestId) {
+        return;
+    }
+
+    note.value = noteInfo;
+    note.value.folderName = folderInfo.name;
+    lastSavedAt.value = noteInfo.updated_at;
+
+    // Set active note in the store
+    store.activeNoteId = noteInfo.id;
+    store.activeNoteTitle = noteInfo.title;
+    store.activeNoteCurrentFolderId = noteInfo.folder_id;
+    store.editorNoteId = noteInfo.id;
+    store.editorNoteTitle = noteInfo.title;
+    store.editorNoteCurrentFolderId = noteInfo.folder_id;
+    store.editorNoteFavorite = noteInfo.favorite;
+    tabsStore.openNote(noteInfo);
+
+    setEditorDocument(note.value?.content_json);
+};
+
+const persistEditorContent = async ({ refreshTopic = false } = {}) => {
+    if (!editor.value || !note.value) {
+        return;
+    }
+
+    let topic = note.value.topic || '';
+
+    if (refreshTopic && getTopicService) {
+        topic = await getTopicService.generate(editor.value.getText());
+    }
+
+    const payload = {
+        id: note.value.id,
+        contentJson: editor.value.getJSON(),
+        contentText: editor.value.getText(),
+        topic,
+    };
+
+    await window.api.updateNote(payload);
+    note.value.topic = topic;
+};
+
+// refreshTopic: true to regenarate the topic; false to skip
+// auto-save does not regenerate the topic
+// manual save regenerates the topic
+const doPersist = async (refreshTopic) => {
+    // Serialize overlapping saves (manual + auto): wait for any in-flight one.
+    while (saveInFlight) {
+        await saveInFlight;
+    }
     try {
-        fixGrammarLLMService = createLlmService(fixGrammarPrompt, 'editor');
-        formatTextLLMService = createLlmService(formatTextPrompt, 'editor');
-        improveWritingLLMService = createLlmService(improveWritingPrompt, 'editor');
-        makeShorterLLMService = createLlmService(makeShorterPrompt, 'editor');
-        makeLongerLLMService = createLlmService(makeLongerPrompt, 'editor');
-        simplifyLanguageLLMService = createLlmService(simplifyLanguagePrompt, 'editor');
-        getTopicService = createLlmService(getTopicPrompt, 'editor');
+        saveInFlight = persistEditorContent({ refreshTopic });
+        await saveInFlight;
+    } finally {
+        saveInFlight = null;
+    }
+};
+
+// Persist unsaved edits without waiting on AI topic generation.
+const flushPendingSave = async () => {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = null;
+
+    if (
+        !isDirty.value ||
+        !editor.value ||
+        !note.value ||
+        isInlineAIPreviewActive.value
+    ) {
+        return;
+    }
+
+    // Optimistically clear; keystrokes during the save re-mark it dirty and
+    // reschedule via handleEditorUpdate.
+    isDirty.value = false;
+    isAutoSaving.value = true;
+    const startedAt = Date.now();
+    try {
+        await doPersist(false);
+        lastSavedAt.value = Date.now();
     } catch (error) {
-        console.error('Error initializing LLM services:', error);
+        isDirty.value = true;
+        console.error('Auto-save failed:', error);
+    } finally {
+        const remainingMs =
+            MIN_AUTOSAVE_INDICATOR_MS - (Date.now() - startedAt);
+        if (remainingMs > 0) {
+            await new Promise((resolve) => setTimeout(resolve, remainingMs));
+        }
+        isAutoSaving.value = false;
     }
-    
-    // Init list with supported tones for change tone tool
-    const supportedTones = [
-    { key: 'professional', icon: 'mdi-briefcase', label: 'Professional' },
-    { key: 'friendly', icon: 'mdi-emoticon-happy', label: 'Friendly' },
-    { key: 'empathetic', icon: 'mdi-handshake', label: 'Empathetic' },
-    { key: 'persuasive', icon: 'mdi-creation', label: 'Persuasive' },
-    { key: 'casual', icon: 'mdi-emoticon-cool', label: 'Casual' }
-    ]
-    
-    // Init list with supported languages for translation tool
-    const supportedLanguages = [
-    { key: 'english', icon: '🇺🇸', label: 'English' },
-    { key: 'italian', icon: '🇮🇹', label: 'Italian' },
-    { key: 'spanish', icon: '🇪🇸', label: 'Spanish' },
-    { key: 'french', icon: '🇫🇷', label: 'French' },
-    { key: 'german', icon: '🇩🇪', label: 'German' },
-    { key: 'portuguese', icon: '🇧🇷', label: 'Portuguese' },
-    ]
-    
-    // Reactive variables for dialogs
-    const renameNoteDialog = computed({
-        get: () => store.renameNoteDialog,
-        set: (val) => store.renameNoteDialog = val
-    })
-    const moveToFolderDialog = computed({
-        get: () => store.moveToFolderDialog,
-        set: (val) => store.moveToFolderDialog = val
-    })
-    const deleteNoteDialog = computed({
-        get: () => store.deleteNoteDialog,
-        set: (val) => store.deleteNoteDialog = val
-    })
-    
-    const confirmationDialogTitle = computed(() => store.confirmationDialogTitle)
-    const confirmationDialogText = computed(() => store.confirmationDialogText)
-    const confirmationDialogButtonColor = computed(() => store.confirmationDialogButtonColor)
-    
-    const generateWithAIDialog = ref(false)
-    const editWithAIDialog = ref(false)
-    
-    const note = ref(null)
-    const selectedText = ref('')
-    const selectionFrom = ref(0)
-    const selectionTo = ref(0)
-    
-    const backgroundColor = computed(() => {
-        // Softer surfaces for menus consistent with app theme
-        return props.theme === 'dark' ? '#212121' : '#ffffff'
-    })
-    
-    const currentFolderName = computed(() => {
-        if (!note.value) return ''
-        const folder = store.folders.find(f => f.id === note.value.folder_id)
-        return folder ? folder.name : note.value.folder_name || ''
-    })
-    
-    // Create a lowlight instance
-    const lowlight = createLowlight(all)
-    
-    const editor = ref(null)
-    const content = ref('')
-    
-    const isLoading = ref(false)
-    
-    const highlightColors = [
-    { name: 'Default', value: 'default', displayedColor: 'default'},
-    { name: 'Cyan', value: '#4477bb', displayedColor: '#4477bb' },
-    { name: 'Yellow', value: '#aa6600', displayedColor: '#aa6600' },
-    { name: 'Green', value: '#008811', displayedColor: '#008811' },
-    { name: 'Red', value: '#dd3311', displayedColor: '#dd3311' },
-    { name: 'Magenta', value: '#8866bb', displayedColor: '#8866bb' },
-    { name: 'Blue', value: '#5566ee', displayedColor: '#5566ee' },
-    { name: 'Purple', value: '#cc22bb', displayedColor: '#cc22bb' },
-    ]
-    
-    const textColors = [
-    { name: 'Default', value: '#212121', displayedColor: props.theme === 'dark' ? '#E0E0E0' : '#212121' },
-    { name: 'Red', value: '#F44336', displayedColor: '#F44336' },
-    { name: 'Blue', value: '#3F51B5', displayedColor: '#3F51B5' },
-    { name: 'Green', value: '#009688', displayedColor: '#009688' },
-    { name: 'Orange', value: '#FF9800', displayedColor: '#FF9800' },
-    { name: 'Yellow', value: '#FFC107', displayedColor: '#FFC107' },
-    { name: 'Purple', value: '#673AB7', displayedColor: '#673AB7' },
-    { name: 'Pink', value: '#E91E63', displayedColor: '#E91E63' },
-    ]
-    
-    const handleHighlight = (colorValue) => {
-        if (!editor.value) return;
-        
-        if (colorValue === 'default') {
-            editor.value.chain().focus().unsetHighlight().run();
+};
+
+const scheduleAutosave = () => {
+    clearTimeout(autosaveTimer);
+
+    if (isInlineAIPreviewActive.value) {
+        autosaveTimer = null;
+        return;
+    }
+
+    autosaveTimer = setTimeout(() => {
+        void flushPendingSave();
+    }, AUTOSAVE_DEBOUNCE_MS);
+};
+
+const handleEditorUpdate = () => {
+    isDirty.value = true;
+    scheduleAutosave();
+};
+
+const saveNoteManually = async () => {
+    try {
+        // Enable loading state
+        isLoading.value = true;
+        isManualSaving.value = true;
+
+        await doPersist(true);
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+        isDirty.value = false;
+        lastSavedAt.value = Date.now();
+
+        // Stop loading state
+        isLoading.value = false;
+    } catch (error) {
+        const errorMsg = 'Failed to save note';
+        console.error(errorMsg, error);
+        isDirty.value = true;
+        isLoading.value = false;
+    } finally {
+        isManualSaving.value = false;
+    }
+};
+
+const exportNote = async (format) => {
+    if (!editor.value || !note.value) {
+        return;
+    }
+
+    await flushPendingSave();
+
+    try {
+        await window.api.exportNote({
+            format,
+            title: note.value.title,
+            content:
+                format === 'markdown'
+                    ? serializeMarkdown(
+                          editor.value.state.doc,
+                          note.value.title,
+                      )
+                    : editor.value.getHTML(),
+        });
+    } catch (error) {
+        console.error('Failed to export note:', error);
+    }
+};
+
+const createImageNode = (source, altText = '', storageSrc = null) => ({
+    type: 'noteImage',
+    attrs: {
+        src: source,
+        storageSrc,
+        alt: altText,
+        title: altText,
+        align: 'center',
+    },
+});
+
+const isImageFile = (file) =>
+    file.type?.startsWith('image/') ||
+    /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
+
+const insertImportedImages = async (files, insertPosition = null) => {
+    if (!note.value?.id || !editor.value) {
+        return false;
+    }
+
+    const imageFiles = files.filter(isImageFile);
+
+    if (!imageFiles.length) {
+        return false;
+    }
+
+    try {
+        if (typeof insertPosition === 'number') {
+            editor.value.chain().focus().setTextSelection(insertPosition).run();
         } else {
-            editor.value.chain().focus().setHighlight({ color: colorValue }).run();
+            editor.value.chain().focus().run();
         }
+
+        for (const file of imageFiles) {
+            const imageData = new Uint8Array(await file.arrayBuffer());
+            const importedImage = await window.api.importNoteImage({
+                noteId: note.value.id,
+                fileName: file.name,
+                mimeType: file.type,
+                data: imageData,
+            });
+
+            editor.value.commands.setImage(
+                createImageNode(
+                    importedImage.src,
+                    file.name,
+                    importedImage.storedSrc,
+                ).attrs,
+            );
+        }
+
+        await persistEditorContent();
+        return true;
+    } catch (error) {
+        console.error('Failed to import dropped image:', error);
+        return false;
     }
-    
-    const handleTextColor = (colorValue) => {
-        if (!editor.value) return;
-        
-        if (colorValue === '#212121') {
-            editor.value.chain().focus().unsetColor().run();
-        } else {
-            editor.value.chain().focus().setColor(colorValue).run();
-        }
+};
+
+const handleImageMutation = async () => {
+    try {
+        await persistEditorContent();
+    } catch (error) {
+        console.error('Failed to persist image change:', error);
     }
-    
-    const getNote = async (id) => {
-        // Get note from the database
-        const noteInfo = await window.api.getNote(id)
-        note.value = noteInfo
-        
-        // Get note folder from the database
-        const folderInfo = await window.api.getFolder(noteInfo.folder_id)
-        note.value.folderName = folderInfo.name
-        
-        // Set active note in the store
-        store.activeNoteId = noteInfo.id
-        store.activeNoteTitle = noteInfo.title
-        store.activeNoteCurrentFolderId = noteInfo.folder_id
-        
-        if (note.value && editor.value && note.value.content_json != '{}') {
-            editor.value.commands.setContent(note.value.content_json)
-        }
+};
+
+const handleVideoMutation = async () => {
+    try {
+        await persistEditorContent();
+    } catch (error) {
+        console.error('Failed to persist video change:', error);
     }
-    
-    const saveNoteManually = async () => {
-        try {       
-            // Enable loading state
-            isLoading.value = 'primary'
-            
-            // Extract the topic from note content using AI service
-            const topic = await getTopicService.generate(editor.value.getText());
-            
-            // Save the content
-            const payload = {
-                id: note.value.id,
-                contentJson: editor.value.getJSON(),
-                contentText: editor.value.getText(),
-                topic: topic,
-            }
-            await window.api.updateNote(payload)
-            
-            // Stop loading state
-            isLoading.value = false
-        } catch (error) {
-            const errorMsg = 'Failed to save note'
-            console.error(errorMsg, error)
-        }
+};
+
+const handleKeyDown = (event) => {
+    // For Mac, event.metaKey is Command; fallback to Ctrl for others
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        saveNoteManually();
+        return;
     }
-    
-    const handleKeyDown = (event) => {
-        // For Mac, event.metaKey is Command; fallback to Ctrl for others
-        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
-            event.preventDefault()
-            saveNoteManually()
-        }
+
+    if (shouldDismissBubbleMenu(event)) {
+        event.preventDefault();
+        editor.value.view.dispatch(
+            editor.value.state.tr.setMeta(
+                EDITOR_BUBBLE_MENU_PLUGIN_KEY,
+                'hide',
+            ),
+        );
     }
-    
-    const handleRenameNote = (noteId, newTitle) => {
-        note.value.title = newTitle
-        store.renameNote(noteId, newTitle)
+};
+
+const handleRenameNote = async (noteId, newTitle) => {
+    await store.renameNote(noteId, newTitle);
+
+    if (note.value?.id === noteId) {
+        note.value.title = store.editorNoteTitle;
     }
-    
-    const toggleFavorite = async (noteId) => {
-        store.toggleNoteFavorite(noteId)
-        note.value.favorite = note.value.favorite === 0 ? 1 : 0
+};
+
+const openRenameNoteDialog = (noteId, title) => {
+    store.openRenameNoteDialog(noteId, title);
+};
+
+const toggleFavorite = async (noteId) => {
+    await store.toggleNoteFavorite(noteId);
+
+    if (store.editorNoteFavorite !== null) {
+        note.value.favorite = store.editorNoteFavorite;
     }
-    
-    const handleMoveNote = (noteId, newFolderId) => {
-        store.moveNote(noteId, newFolderId)
-        
-        // Update note's folder id and name
-        note.value.folder_id = newFolderId
-        const folderInfo = store.folders.find(folder => folder.id === newFolderId)
-        if (folderInfo) {
-            note.value.folder_name = folderInfo.name
-        }
+};
+
+const openMoveNoteDialog = (noteId, currentFolderId) => {
+    store.openMoveNoteDialog(noteId, currentFolderId);
+};
+
+const openSidebarChat = () => {
+    if (!note.value) return;
+
+    isChatOpen.value = true;
+};
+
+const closeSidebarChat = () => {
+    isChatOpen.value = false;
+};
+
+const toggleSidebarChat = () => {
+    if (isChatOpen.value) {
+        closeSidebarChat();
+        return;
     }
-    
-    const handleDeleteNote = (noteId) => {
-        store.deleteNote(noteId)
-        // Go back to home page using router
-        router.push({ name: 'home' })
+
+    openSidebarChat();
+};
+
+const startResize = () => {
+    isResizing.value = true;
+    document.addEventListener('mousemove', resize);
+    document.addEventListener('mouseup', stopResize);
+};
+
+const resize = (event) => {
+    if (!isResizing.value) return;
+
+    const newWidth = window.innerWidth - event.clientX;
+    chatWidth.value = Math.max(300, Math.min(800, newWidth));
+};
+
+const stopResize = () => {
+    isResizing.value = false;
+    document.removeEventListener('mousemove', resize);
+    document.removeEventListener('mouseup', stopResize);
+};
+
+const syncCurrentNoteFolder = (newFolderId) => {
+    if (!note.value) return;
+
+    note.value.folder_id = newFolderId;
+    note.value.folderId = newFolderId;
+
+    const folderInfo = store.folders.find(
+        (folder) => folder.id === newFolderId,
+    );
+    if (folderInfo) {
+        note.value.folder_name = folderInfo.name;
+        note.value.folderName = folderInfo.name;
     }
-    
-    const aiEdit = () => {
-        if (!editor.value) {
-            console.error('Editor not ready');
-            return;
-        }
-        
-        const { state } = editor.value.view;
-        const { from, to } = state.selection;
-        
-        selectionFrom.value = from;
-        selectionTo.value = to;
-        
-        // Get selected text
-        if (from === to) {
-            // No text selected, use all content
-            selectedText.value = state.doc.textContent;
-        } else {
-            // Use the selected text
-            selectedText.value = state.doc.textBetween(from, to, '\n');
-        }
-        
-        // Show Edit with AI dialog
-        editWithAIDialog.value = true;
+};
+
+const handleMoveNote = async (noteId, newFolderId) => {
+    await store.moveNote(noteId, newFolderId);
+
+    if (store.editorNoteCurrentFolderId === newFolderId) {
+        syncCurrentNoteFolder(newFolderId);
     }
-    
-    const handleApply = (aiText) => {
-        if (!editor.value) {
-            console.error('Editor not ready');
-            return;
-        }
-        
-        editor.value.chain().focus().setTextSelection({ from: selectionFrom.value, to: selectionTo.value }).insertContent(aiText).run();
+};
+
+const handleDeleteNote = (noteId) => {
+    void store.deleteNote(noteId);
+};
+
+const handleyoutube = ({ src }) => {
+    if (!editor.value) {
+        console.error('Editor not ready');
+        return;
     }
-    
-    const aiFixGrammar = async () => {
-        if (!editor.value) {
-            console.error('Editor not ready');
-            return;
-        }
-        
-        // Immediately hide bubble menu
-        editor.value.commands.blur();
-        
-        // Turn on skeleton
-        isLoading.value = true;
-        
-        try {
-            const { state } = editor.value.view;
-            const { from, to } = state.selection;
-            
-            let selectedText = '';
-            let isTextSelected = false;
-            if (from === to) {
-                // No text selected, use all content
-                selectedText = state.doc.textContent;
-            } else {
-                // Use the selected text
-                selectedText = state.doc.textBetween(from, to, ' ');
-                isTextSelected = true;
-            }
-            
-            let streamedText = '';
-            let firstChunk = true;
-            const stream = await fixGrammarLLMService.stream(selectedText);
-            
-            for await (const chunk of stream) {
-                streamedText += chunk;
-                if (firstChunk) {
-                    if (isTextSelected) {
-                        // Delete the range and insert the first chunk
-                        editor.value
-                        .chain()
-                        .focus()
-                        .deleteRange({ from, to })
-                        .insertContent(streamedText)
-                        .run();
-                    }
-                    else {
-                        // Delete the entire note content insert the first chunk
-                        editor.value
-                        .chain()
-                        .focus()
-                        .deleteRange({ from: 0, to: state.doc.content.size })
-                        .insertContent(streamedText)
-                        .run();
-                    }
-                    firstChunk = false;
-                } else {
-                    // Only append the new chunk
-                    editor.value.chain().focus().insertContent(chunk).run();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to get response:', error);
-        } finally {
-            // Turn off skeleton
-            isLoading.value = false;
-        }
-    }
-    
-    const aiFormatText = async () => {
-        if (!editor.value) {
-            console.error('Editor not ready');
-            return;
-        }
-        
-        // Immediately hide bubble menu
-        editor.value.commands.blur();
-        
-        // Turn on skeleton
-        isLoading.value = true;
-        
-        try {
-            const { state } = editor.value.view;
-            const { from, to } = state.selection;
-            
-            let selectedText = '';
-            let isTextSelected = false;
-            if (from === to) {
-                // No text selected, use all content
-                selectedText = state.doc.textContent;
-            } else {
-                // Use the selected text
-                selectedText = state.doc.textBetween(from, to, ' ');
-                isTextSelected = true;
-            }
-            
-            const response = await formatTextLLMService.generate(selectedText);
-            
-            // Optional delay if needed to ensure bubble menu unmount
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            // Replace the selected text
-            if (isTextSelected) {
-                editor.value
-                .chain()
-                .focus()
-                .deleteRange({ from, to })
-                .insertContent(response)
-                .run();
-            }
-            // Or replace the entire note content
-            else {
-                editor.value
-                .chain()
-                .focus()
-                .deleteRange({ from: 0, to: state.doc.content.size })
-                .insertContent(response)
-                .run();
-            }
-        } catch (error) {
-            console.error('Failed to get response:', error);
-        } finally {
-            // Turn off skeleton
-            isLoading.value = false;
-        }
-    }
-    
-    const aiImproveWriting = async () => {
-        if (!editor.value) {
-            console.error('Editor not ready');
-            return;
-        }
-        const { state } = editor.value.view;
-        const { from, to } = state.selection;
-        // Immediately hide bubble menu
-        editor.value.commands.blur();
-        isLoading.value = true;
-        try {
-            let text = '';
-            let isTextSelected = false;
-            if (from === to) {
-                text = state.doc.textContent;
-            } else {
-                text = state.doc.textBetween(from, to, ' ');
-                isTextSelected = true;
-            }
-            let streamedText = '';
-            let firstChunk = true;
-            const stream = await improveWritingLLMService.stream(text);
-            for await (const chunk of stream) {
-                streamedText += chunk;
-                if (firstChunk) {
-                    if (isTextSelected) {
-                        editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
-                    } else {
-                        editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
-                    }
-                    firstChunk = false;
-                } else {
-                    editor.value.chain().focus().insertContent(chunk).run();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to get response:', error);
-        } finally {
-            isLoading.value = false;
-        }
-    }
-    
-    const aiMakeShorter = async () => {
-        if (!editor.value) {
-            console.error('Editor not ready');
-            return;
-        }
-        const { state } = editor.value.view;
-        const { from, to } = state.selection;
-        editor.value.commands.blur();
-        isLoading.value = true;
-        try {
-            let text = '';
-            let isTextSelected = false;
-            if (from === to) {
-                text = state.doc.textContent;
-            } else {
-                text = state.doc.textBetween(from, to, ' ');
-                isTextSelected = true;
-            }
-            let streamedText = '';
-            let firstChunk = true;
-            const stream = await makeShorterLLMService.stream(text);
-            for await (const chunk of stream) {
-                streamedText += chunk;
-                if (firstChunk) {
-                    if (isTextSelected) {
-                        editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
-                    } else {
-                        editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
-                    }
-                    firstChunk = false;
-                } else {
-                    editor.value.chain().focus().insertContent(chunk).run();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to get response:', error);
-        } finally {
-            isLoading.value = false;
-        }
-    }
-    
-    const aiMakeLonger = async () => {
-        if (!editor.value) {
-            console.error('Editor not ready');
-            return;
-        }
-        const { state } = editor.value.view;
-        const { from, to } = state.selection;
-        editor.value.commands.blur();
-        isLoading.value = true;
-        try {
-            let text = '';
-            let isTextSelected = false;
-            if (from === to) {
-                text = state.doc.textContent;
-            } else {
-                text = state.doc.textBetween(from, to, ' ');
-                isTextSelected = true;
-            }
-            let streamedText = '';
-            let firstChunk = true;
-            const stream = await makeLongerLLMService.stream(text);
-            for await (const chunk of stream) {
-                streamedText += chunk;
-                if (firstChunk) {
-                    if (isTextSelected) {
-                        editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
-                    } else {
-                        editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
-                    }
-                    firstChunk = false;
-                } else {
-                    editor.value.chain().focus().insertContent(chunk).run();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to get response:', error);
-        } finally {
-            isLoading.value = false;
-        }
-    }
-    
-    const aiSimplify = async () => {
-        if (!editor.value) {
-            console.error('Editor not ready');
-            return;
-        }
-        const { state } = editor.value.view;
-        const { from, to } = state.selection;
-        editor.value.commands.blur();
-        isLoading.value = true;
-        try {
-            let text = '';
-            let isTextSelected = false;
-            if (from === to) {
-                text = state.doc.textContent;
-            } else {
-                text = state.doc.textBetween(from, to, ' ');
-                isTextSelected = true;
-            }
-            let streamedText = '';
-            let firstChunk = true;
-            const stream = await simplifyLanguageLLMService.stream(text);
-            for await (const chunk of stream) {
-                streamedText += chunk;
-                if (firstChunk) {
-                    if (isTextSelected) {
-                        editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
-                    } else {
-                        editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
-                    }
-                    firstChunk = false;
-                } else {
-                    editor.value.chain().focus().insertContent(chunk).run();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to get response:', error);
-        } finally {
-            isLoading.value = false;
-        }
-    }
-    
-    const aiChangeTone = async (tone) => {
-        if (!editor.value) {
-            console.error('Editor not ready');
-            return;
-        }
-        const { state } = editor.value.view;
-        const { from, to } = state.selection;
-        editor.value.commands.blur();
-        isLoading.value = true;
-        try {
-            // Create LLM service with the selected tone
-            const changeToneLLMService = createLlmService(changeTonePrompt(tone), 'editor');
-            let text = '';
-            let isTextSelected = false;
-            if (from === to) {
-                text = state.doc.textContent;
-            } else {
-                text = state.doc.textBetween(from, to, ' ');
-                isTextSelected = true;
-            }
-            let streamedText = '';
-            let firstChunk = true;
-            const stream = await changeToneLLMService.stream(text);
-            for await (const chunk of stream) {
-                streamedText += chunk;
-                if (firstChunk) {
-                    if (isTextSelected) {
-                        editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
-                    } else {
-                        editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
-                    }
-                    firstChunk = false;
-                } else {
-                    editor.value.chain().focus().insertContent(chunk).run();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to get response:', error);
-        } finally {
-            isLoading.value = false;
-        }
-    }
-    
-    const aiTranslateTo = async (language) => {
-        if (!editor.value) {
-            console.error('Editor not ready');
-            return;
-        }
-        const { state } = editor.value.view;
-        const { from, to } = state.selection;
-        editor.value.commands.blur();
-        isLoading.value = true;
-        try {
-            // Create LLM service with the chosen language
-            const translateToLLMService = createLlmService(translateToPrompt(language), 'editor');
-            let text = '';
-            let isTextSelected = false;
-            if (from === to) {
-                text = state.doc.textContent;
-            } else {
-                text = state.doc.textBetween(from, to, ' ');
-                isTextSelected = true;
-            }
-            let streamedText = '';
-            let firstChunk = true;
-            const stream = await translateToLLMService.stream(text);
-            for await (const chunk of stream) {
-                streamedText += chunk;
-                if (firstChunk) {
-                    if (isTextSelected) {
-                        editor.value.chain().focus().deleteRange({ from, to }).insertContent(streamedText).run();
-                    } else {
-                        editor.value.chain().focus().deleteRange({ from: 0, to: state.doc.content.size }).insertContent(streamedText).run();
-                    }
-                    firstChunk = false;
-                } else {
-                    editor.value.chain().focus().insertContent(chunk).run();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to get response:', error);
-        } finally {
-            isLoading.value = false;
-        }
-    }
-    
-    onMounted(() => {
-        editor.value = new Editor({
-            extensions: [
+
+    editor.value
+        .chain()
+        .focus()
+        .setYoutubeVideo({
+            src,
+            align: 'center',
+        })
+        .run();
+};
+
+const openyoutubeDialog = () => {
+    embedYoutubeDialog.value = true;
+};
+
+onMounted(async () => {
+    editor.value = new Editor({
+        extensions: [
             StarterKit,
-            Underline,
             Subscript,
             Superscript,
-            Blockquote,
-            BulletList,
-            OrderedList,
-            ListItem,
             TaskList,
-            HorizontalRule,
             TextStyle,
+            Details.configure({
+                persist: true,
+                openClassName: DETAILS_OPEN_CLASS_NAME,
+                HTMLAttributes: {
+                    class: 'tiptap-details',
+                },
+                renderToggleButton: renderDetailsToggleButton,
+            }),
+            DetailsSummary.configure({
+                HTMLAttributes: {
+                    class: 'tiptap-details__summary',
+                },
+            }),
+            DetailsContent.configure({
+                HTMLAttributes: {
+                    class: 'tiptap-details__content',
+                },
+            }),
             Highlight.configure({
                 multicolor: true,
             }),
             Placeholder.configure({
                 // Use a placeholder:
-                placeholder: 'Write something here...',
+                placeholder: 'Press "space" for AI or "/" for commands',
             }),
             CodeBlockLowlight.configure({
                 lowlight,
@@ -1187,334 +888,209 @@
             }),
             Table.configure({
                 resizable: true,
+                renderWrapper: true,
             }),
             TableRow,
             TableHeader,
             TableCell,
-            ],
-        })
-        
-        getNote(props.noteId)
-        window.addEventListener('keydown', handleKeyDown)
-    })
-    
-    onBeforeUnmount(() => {
-        if (editor.value) {
-            editor.value.destroy()
+            InlineEditAIDecorations,
+            InlineGenerateAICommand.configure({
+                onPreviewStateChange: (isActive) => {
+                    isInlineAIGenerationActive.value = isActive;
+                },
+            }),
+            TableSlashCommand,
+            FileHandler.configure({
+                allowedMimeTypes: [
+                    'image/png',
+                    'image/jpeg',
+                    'image/gif',
+                    'image/webp',
+                    'image/bmp',
+                    'image/svg+xml',
+                ],
+                onDrop: (currentEditor, files, pos) => {
+                    currentEditor.chain().focus(pos).run();
+                    void insertImportedImages(files, pos);
+                },
+                onPaste: (currentEditor, files) => {
+                    currentEditor.chain().focus().run();
+                    void insertImportedImages(files);
+                },
+            }),
+            ResizableImage,
+            EmbeddedYoutube.configure({
+                addPasteHandler: true,
+                width: 640,
+                height: 360,
+                controls: true,
+                nocookie: true,
+                modestBranding: true,
+            }),
+        ],
+        onUpdate: handleEditorUpdate,
+    });
+
+    await nextTick();
+    await getNote(props.noteId);
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('blur', flushPendingSave);
+    window.addEventListener(IMAGE_MUTATION_EVENT, handleImageMutation);
+    window.addEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation);
+    window.addEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openyoutubeDialog);
+    window.addEventListener(TOGGLE_NOTE_CHAT_EVENT, toggleSidebarChat);
+    window.addEventListener(SAVE_NOTE_EVENT, saveNoteManually);
+    unsubscribeFlushSaves = window.api.onFlushSaves(() => {
+        void flushPendingSave();
+    });
+    safetySaveInterval = setInterval(() => {
+        if (isDirty.value) void flushPendingSave();
+    }, SAFETY_SAVE_INTERVAL_MS);
+    window.__lumosActiveEditor = editor.value;
+    chatWidth.value = parseInt(localStorage.getItem('chatWidth')) || 450;
+});
+
+watch(
+    () => props.noteId,
+    async (nextNoteId, previousNoteId) => {
+        if (!nextNoteId || nextNoteId === previousNoteId) {
+            return;
         }
-        window.removeEventListener('keydown', handleKeyDown)
-    })
+
+        // Save the currently open note before its state is replaced.
+        await flushPendingSave();
+
+        await nextTick();
+        await getNote(nextNoteId);
+    },
+);
+
+watch(chatWidth, (newWidth) => {
+    localStorage.setItem('chatWidth', newWidth);
+});
+
+watch(isInlineAIPreviewActive, (isActive) => {
+    if (!isActive && isDirty.value) {
+        scheduleAutosave();
+    }
+});
+
+watch(
+    () => store.editorNoteCurrentFolderId,
+    (newFolderId) => {
+        if (
+            !note.value ||
+            store.editorNoteId !== note.value.id ||
+            !newFolderId
+        ) {
+            return;
+        }
+
+        syncCurrentNoteFolder(newFolderId);
+    },
+);
+
+watch(
+    () => store.editorNoteFavorite,
+    (newFavorite) => {
+        if (
+            !note.value ||
+            store.editorNoteId !== note.value.id ||
+            newFavorite === null
+        ) {
+            return;
+        }
+
+        note.value.favorite = newFavorite;
+    },
+);
+
+watch(
+    () => store.editorNoteTitle,
+    (newTitle) => {
+        if (!note.value || store.editorNoteId !== note.value.id || !newTitle) {
+            return;
+        }
+
+        note.value.title = newTitle;
+    },
+);
+
+watch(
+    () => store.editorNoteDeletedId,
+    (deletedNoteId) => {
+        if (!note.value || deletedNoteId !== note.value.id) {
+            return;
+        }
+
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+        isDirty.value = false;
+        note.value = null;
+        store.editorNoteDeletedId = null;
+    },
+);
+
+onBeforeUnmount(() => {
+    noteRequestId += 1;
+    // Best-effort flush when leaving the editor (e.g. navigating to home/chat).
+    void flushPendingSave();
+    clearTimeout(autosaveTimer);
+    if (safetySaveInterval) clearInterval(safetySaveInterval);
+    if (editor.value) {
+        editor.value.destroy();
+    }
+    window.removeEventListener('keydown', handleKeyDown, true);
+    window.removeEventListener('blur', flushPendingSave);
+    window.removeEventListener(IMAGE_MUTATION_EVENT, handleImageMutation);
+    window.removeEventListener(VIDEO_MUTATION_EVENT, handleVideoMutation);
+    window.removeEventListener(OPEN_YOUTUBE_DIALOG_EVENT, openyoutubeDialog);
+    window.removeEventListener(TOGGLE_NOTE_CHAT_EVENT, toggleSidebarChat);
+    window.removeEventListener(SAVE_NOTE_EVENT, saveNoteManually);
+    if (unsubscribeFlushSaves) unsubscribeFlushSaves();
+    window.__lumosActiveEditor = null;
+    stopResize();
+});
 </script>
 
-<style>
-    .tiptap p.is-editor-empty:first-child::before {
-        color: #adb5bd;
-        content: attr(data-placeholder);
-        float: left;
-        height: 0;
-        pointer-events: none;
-    }
-    
-    .ProseMirror {
-        padding: 16px;
-        height: calc(100vh - 300px);
-        overflow-y: auto;
-    }
-    
-    /* Remove the default outline when the editor is focused */
-    .ProseMirror:focus {
-        outline: none;
-    }
-    
-    .note-title {
-        font-weight: bolder;
-    }
-    
-    /* Highlight color style */
-    .color-btn {
-        border-radius: 4px;
-        box-shadow: inset 0px 0px 0px 1px rgba(0, 0, 0, 0.3);
-    }
-    
-    .color-btn:hover {
-        transform: scale(1.1);
-        transition: transform 0.2s;
-    }
-    
-    /* Text color style */
-    .text-color-btn {
-        border-radius: 4px;
-        box-shadow: inset 0px 0px 0px 1px rgba(0, 0, 0, 0.3);
-    }
-    
-    .text-color-btn:hover {
-        transform: scale(1.1);
-        transition: transform 0.2s;
-    }
-    
-    /* AI actions responsive container */
-    .ai-actions {
-        flex-wrap: wrap;
-        overflow-x: auto;
-    }
-    .ai-actions .v-btn {
-        flex: 0 0 auto;
-    }
-    
-    blockquote {
-        border-left: 3px solid #757575;
-        margin: 1.5rem 0;
-        padding-left: 1rem;
-    }
-    
-    /* List styles */
-    ul, ol {
-        padding: 0 1rem;
-        margin: 1.25rem 1rem 1.25rem 0.4rem;
-        
-        li p {
-            margin-top: 0.25em;
-            margin-bottom: 0.25em;
-        }
-    }
-    
-    /* Code block styles */
-    pre {
-        background: #212121;
-        border-radius: 0.5rem;
-        color: white;
-        font-family: 'JetBrainsMono', monospace;
-        margin: 1.5rem 0;
-        padding: 0.75rem 1rem;
-        
-        code {
-            background: none;
-            color: inherit;
-            font-size: 0.8rem;
-            padding: 0;
-        }
-        
-        /* Code styling */
-        .hljs-comment,
-        .hljs-quote {
-            color: #616161;
-        }
-        
-        .hljs-variable,
-        .hljs-template-variable,
-        .hljs-attribute,
-        .hljs-tag,
-        .hljs-name,
-        .hljs-regexp,
-        .hljs-link,
-        .hljs-name,
-        .hljs-selector-id,
-        .hljs-selector-class {
-            color: #f98181;
-        }
-        
-        .hljs-number,
-        .hljs-meta,
-        .hljs-built_in,
-        .hljs-builtin-name,
-        .hljs-literal,
-        .hljs-type,
-        .hljs-params {
-            color: #fbbc88;
-        }
-        
-        .hljs-string,
-        .hljs-symbol,
-        .hljs-bullet {
-            color: #b9f18d;
-        }
-        
-        .hljs-title,
-        .hljs-section {
-            color: #faf594;
-        }
-        
-        .hljs-keyword,
-        .hljs-selector-tag {
-            color: #70cff8;
-        }
-        
-        .hljs-emphasis {
-            font-style: italic;
-        }
-        
-        .hljs-strong {
-            font-weight: 700;
-        }
-    }
-    
-    /* Task list specific styles */
-    ul[data-type="taskList"] {
-        list-style: none;
-        margin-left: 0;
-        padding: 0;
-        
-        li {
-            align-items: flex-start;
-            display: flex;
-            
-            > label {
-                flex: 0 0 auto;
-                margin-right: 0.5rem;
-                user-select: none;
-            }
-            
-            > div {
-                flex: 1 1 auto;
-            }
-        }
-        
-        input[type="checkbox"] {
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        
-        ul[data-type="taskList"] {
-            margin: 0;
-        }
-    }
-    
-    /* Table styles */
-    /* Table-specific styling */
-    table {
-        border-collapse: collapse;
-        margin: 0;
-        overflow: hidden;
-        table-layout: fixed;
-        width: 100%;
-        
-        td,
-        th {
-            border: 1px solid var(--gray-3);
-            box-sizing: border-box;
-            min-width: 1em;
-            padding: 6px 8px;
-            position: relative;
-            vertical-align: top;
-            
-            > * {
-                margin-bottom: 0;
-            }
-        }
-        
-        th {
-            background-color: var(--gray-1);
-            font-weight: bold;
-            text-align: left;
-        }
-        
-        .selectedCell:after {
-            background: var(--gray-2);
-            content: "";
-            left: 0; right: 0; top: 0; bottom: 0;
-            pointer-events: none;
-            position: absolute;
-            z-index: 2;
-        }
-        
-        .column-resize-handle {
-            background-color: var(--purple);
-            bottom: -2px;
-            pointer-events: none;
-            position: absolute;
-            right: -2px;
-            top: 0;
-            width: 4px;
-        }
-    }
-    
-    .tableWrapper {
-        margin: 1.5rem 0;
-        overflow-x: auto;
-    }
-    
-    &.resize-cursor {
-        cursor: ew-resize;
-        cursor: col-resize;
-    }
-    
-    /* Editor layout styles */
-    .editor-layout {
-        display: flex;
-        height: calc(100vh - 240px); /* Adjust based on your header height */
-        position: relative;
-    }
-    
-    .editor-content {
-        flex: 1;
-        transition: width 0.3s ease;
-        overflow: hidden;
-    }
-    
-    .resize-divider {
-        width: 4px;
-        height: calc(100vh - 300px + 32px);
-        margin: 12px 0;
-        background-color: #e0e0e0;
-        cursor: ew-resize;
-        position: relative;
-        flex-shrink: 0;
-        align-self: flex-start;
-    }
-    
-    .resize-divider:hover {
-        background-color: #2196f3;
-    }
-    
-    .resize-divider::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -2px;
-        right: -2px;
-        bottom: 0;
-        background: transparent;
-    }
-    
-    .sidebar-container {
-        flex-shrink: 0;
-        height: 100%;
-        overflow: hidden;
-    }
-    
-    /* Dark theme support for resize divider */
-    [data-theme="dark"] .resize-divider {
-        background-color: #424242;
-    }
-    
-    [data-theme="dark"] .resize-divider:hover {
-        background-color: #2196f3;
-    }
-    
-    /* Floating menu */
-    .floating-menu {
-        display: flex;
-        background-color: gray;
-        padding: 0.1rem;
-        border-radius: 0.5rem;
-        
-        button {
-            background-color: unset;
-            padding: 0.275rem 0.425rem;
-            border-radius: 0.3rem;
-            
-            &:hover {
-                background-color: gray;
-            }
-            
-            &.is-active {
-                background-color: white;
-                color: purple;
-                
-                &:hover {
-                    color: darkmagenta;
-                }
-            }
-        }
-    }
+<style scoped>
+.editor-view-layout {
+    height: 100%;
+    min-height: 0;
+}
+
+.editor-view-main {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.editor-chat-resizer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    cursor: ew-resize;
+    background-color: transparent;
+    z-index: 10;
+    user-select: none;
+}
+
+.editor-chat-resizer:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.editor-chat-drawer {
+    position: relative;
+    will-change: width;
+    transition: width 0.2s ease;
+}
+
+.editor-chat-drawer.no-transition {
+    transition: none;
+}
 </style>

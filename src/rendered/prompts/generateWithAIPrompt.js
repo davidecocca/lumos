@@ -5,6 +5,6 @@ You will receive in input a text that contains the user's idea, and you have to 
 If user text contains instructions in line with your goal, follow them.
 Reply in original language.
 
-Return only the generated text. No explanations or additional comments allowed.`
+Return only the generated text. No explanations or additional comments allowed.`;
 
 export default generateWithAIPrompt;
