@@ -17,6 +17,12 @@
                 variant="outlined"
                 density="comfortable"
                 rounded="lg"
+                :menu-props="{ contentClass: 'rounded-lg' }"
+                :list-props="{
+                    density: 'compact',
+                    class: 'pl-1 pr-1 pt-2 pb-2',
+                    rounded: 'lg',
+                }"
                 @update:model-value="setSelection(feature.key, $event)"
             >
                 <template v-slot:item="{ props: itemProps, item }">
@@ -27,6 +33,7 @@
                     <v-list-item
                         v-else
                         v-bind="itemProps"
+                        rounded="lg"
                         :title="getSlotItemTitle(item)"
                         :active="
                             isModelSelected(feature.key, getSlotItemValue(item))
@@ -71,7 +78,8 @@
                                         icon="ph-brain"
                                         size="x-small"
                                         variant="text"
-                                        rounded="lg"
+                                        density="comfortable"
+                                        rounded
                                         @click.stop
                                     />
                                 </template>

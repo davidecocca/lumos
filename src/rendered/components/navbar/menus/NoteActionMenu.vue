@@ -42,7 +42,11 @@
                             }}</v-list-item-title>
                         </v-list-item>
                     </template>
-                    <v-list density="compact" rounded="lg" class="pa-1">
+                    <v-list
+                        density="compact"
+                        rounded="lg"
+                        class="pl-1 pr-1 pt-2 pb-2"
+                    >
                         <v-list-item
                             v-for="child in item.children"
                             :key="child.key"

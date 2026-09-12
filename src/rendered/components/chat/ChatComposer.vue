@@ -96,7 +96,7 @@
                                                 item.supportedReasoningEfforts
                                                     ?.length
                                             "
-                                            class="text-caption text-medium-emphasis me-1"
+                                            class="text-caption text-medium-emphasis ms-3 me-1"
                                         >
                                             {{ getReasoningLabel(item.value) }}
                                         </span>

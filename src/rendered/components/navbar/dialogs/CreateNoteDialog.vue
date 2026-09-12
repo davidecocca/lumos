@@ -15,6 +15,14 @@
             label="Folder"
             variant="outlined"
             density="comfortable"
+            rounded="lg"
+            :menu-props="{ contentClass: 'rounded-lg' }"
+            :list-props="{
+                density: 'compact',
+                class: 'pl-1 pr-1 pt-2 pb-2',
+                rounded: 'lg',
+            }"
+            :item-props="() => ({ rounded: 'lg' })"
             class="mb-3"
             :rules="[(v) => !!v || 'Folder is required']"
         ></v-select>
@@ -25,6 +33,7 @@
             clearable
             variant="outlined"
             density="comfortable"
+            rounded="lg"
             @click:clear="handleClear"
             @keydown.enter="handleEnter"
         />

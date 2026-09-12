@@ -19,6 +19,7 @@
             min-width="280"
             max-height="360"
             density="compact"
+            rounded="lg"
             class="overflow-y-auto pl-1 pr-1 pt-2 pb-2"
         >
             <v-list-subheader>Recents</v-list-subheader>
@@ -26,6 +27,7 @@
                 v-if="conversations.length === 0"
                 prepend-icon="ph-clock-counter-clockwise"
                 title="No recent chats"
+                rounded="lg"
             />
             <v-list-item
                 v-for="conversation in conversations"

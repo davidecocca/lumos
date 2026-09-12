@@ -27,9 +27,14 @@
                 max-height="800"
                 rounded="lg"
                 prepend-gap="8"
-                class="pa-2"
+                class="pl-1 pr-1 pt-2 pb-2"
             >
-                <v-list-item min-height="32" class="mb-1" :ripple="false">
+                <v-list-item
+                    min-height="32"
+                    class="mb-1"
+                    :ripple="false"
+                    rounded="lg"
+                >
                     <v-list-subheader
                         class="pa-0 text-medium-emphasis font-weight-medium"
                         >Favorites</v-list-subheader
@@ -94,6 +99,7 @@
                 <v-list-item
                     v-if="favoriteNotes.length === 0"
                     prepend-icon="ph-heart-break"
+                    rounded="lg"
                 >
                     <v-list-item-subtitle
                         >No favorite notes yet</v-list-item-subtitle
@@ -139,9 +145,14 @@
                 "
                 open-strategy="multiple"
                 rounded="lg"
-                class="pa-2"
+                class="pl-1 pr-1 pt-2 pb-2"
             >
-                <v-list-item min-height="32" class="mb-1" :ripple="false">
+                <v-list-item
+                    min-height="32"
+                    class="mb-1"
+                    :ripple="false"
+                    rounded="lg"
+                >
                     <v-list-subheader
                         class="pa-0 text-medium-emphasis font-weight-medium"
                         >Folders</v-list-subheader
@@ -318,13 +329,14 @@
                     <v-list-item
                         v-if="folder.notes.length === 0 && !folder.loading"
                         class="ms-12"
+                        rounded="lg"
                     >
                         <v-list-item-subtitle
                             >No notes yet</v-list-item-subtitle
                         >
                     </v-list-item>
                 </v-list-group>
-                <v-list-item v-if="folders.length === 0">
+                <v-list-item v-if="folders.length === 0" rounded="lg">
                     <v-list-item-subtitle>No folders yet</v-list-item-subtitle>
                 </v-list-item>
             </v-list>
