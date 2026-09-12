@@ -550,6 +550,14 @@ const updateOverlayPosition = () => {
     const cellRect = cellElement.getBoundingClientRect();
     const tableRect = tableWrapperElement.getBoundingClientRect();
 
+    if (
+        tableRect.bottom <= containerRect.top ||
+        tableRect.top >= containerRect.bottom
+    ) {
+        overlayState.value.visible = false;
+        return;
+    }
+
     overlayState.value = {
         visible: true,
         columnTop: clamp(
@@ -630,9 +638,18 @@ watch(
 
 watch(
     () => props.containerRef,
-    () => {
+    (_, __, onCleanup) => {
+        const containerElement = getContainerElement();
+        containerElement?.addEventListener('scroll', syncEditorState, {
+            passive: true,
+            capture: true,
+        });
+        onCleanup(() => {
+            containerElement?.removeEventListener('scroll', syncEditorState, true);
+        });
         syncEditorState();
     },
+    { immediate: true },
 );
 
 onMounted(() => {

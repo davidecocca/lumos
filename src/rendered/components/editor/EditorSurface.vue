@@ -1,12 +1,13 @@
 <template>
     <div class="editor-layout">
+        <!-- Keep controls outside the scroll clip so they can overlap the header. -->
+        <TableOverlayControls
+            v-if="editor"
+            :editor="editor"
+            :container-ref="editorShellRef"
+        />
         <div class="editor-content">
             <div ref="editorShellRef" class="editor-shell">
-                <TableOverlayControls
-                    v-if="editor"
-                    :editor="editor"
-                    :container-ref="editorShellRef"
-                />
                 <editor-content :editor="editor" class="editor-document" />
             </div>
         </div>
