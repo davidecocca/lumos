@@ -7,6 +7,7 @@
                         v-bind="mergeProps(menuProps, tooltipProps)"
                         variant="text"
                         density="comfortable"
+                        rounded="lg"
                         icon="ph-clock-counter-clockwise"
                         @click="emit('load')"
                     />
@@ -52,7 +53,8 @@
                                         icon="ph-dots-three"
                                         size="small"
                                         variant="text"
-                                        density="compact"
+                                        density="comfortable"
+                                        rounded
                                         class="ml-2"
                                         @click.stop
                                     />

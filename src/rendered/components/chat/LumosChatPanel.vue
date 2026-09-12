@@ -24,6 +24,7 @@
                                     variant="text"
                                     density="comfortable"
                                     icon="ph-plus"
+                                    rounded="lg"
                                     @click="resetChat"
                                 />
                             </template>

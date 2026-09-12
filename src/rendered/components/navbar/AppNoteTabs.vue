@@ -65,7 +65,7 @@
                         icon
                         variant="text"
                         size="24"
-                        rounded="sm"
+                        rounded="lg"
                         class="app-note-tabs__close"
                         :aria-label="`Close ${tab.title}`"
                         @click.stop="closeTab(tab.id)"

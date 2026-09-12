@@ -115,10 +115,12 @@
                                                     icon="ph-brain"
                                                     size="x-small"
                                                     variant="text"
+                                                    rounded
+                                                    density="comfortable"
                                                     @click.stop
                                                 />
                                             </template>
-                                            <v-list density="compact">
+                                            <v-list density="compact" class="pl-1 pr-1 pt-2 pb-2" rounded="lg">
                                                 <v-list-item
                                                     v-for="effort in item.supportedReasoningEfforts"
                                                     :key="effort"
@@ -133,6 +135,7 @@
                                                             effort,
                                                         )
                                                     "
+                                                    rounded="lg"
                                                 />
                                             </v-list>
                                         </v-menu>

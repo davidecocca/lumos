@@ -22,6 +22,7 @@
                                     icon="ph-caret-left"
                                     variant="text"
                                     density="comfortable"
+                                    rounded="lg"
                                     @click="isChatSidebarOpen = false"
                                 />
                             </template>
@@ -89,7 +90,8 @@
                                                 icon="ph-dots-three"
                                                 size="small"
                                                 variant="text"
-                                                density="compact"
+                                                density="comfortable"
+                                                rounded
                                                 @click.stop
                                             />
                                         </template>
@@ -150,6 +152,7 @@
                             icon="ph-chats-circle"
                             variant="text"
                             density="comfortable"
+                            rounded="lg"
                             @click="isChatSidebarOpen = true"
                         />
                     </template>

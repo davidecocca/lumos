@@ -16,6 +16,7 @@
                             aria-label="Hide"
                             variant="text"
                             density="comfortable"
+                            rounded="lg"
                             @click="emit('close')"
                         />
                     </template>
