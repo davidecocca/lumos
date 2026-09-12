@@ -64,6 +64,17 @@ contextBridge.exposeInMainWorld('api', {
         ipcRenderer.on('rag-status', listener);
         return () => ipcRenderer.removeListener('rag-status', listener);
     },
+
+    // Backups
+    listBackups: () => ipcRenderer.invoke('backups-list'),
+    createBackup: (name) => ipcRenderer.invoke('backups-create', name),
+    deleteBackup: (id) => ipcRenderer.invoke('backups-delete', id),
+    renameBackup: (id, name) => ipcRenderer.invoke('backups-rename', id, name),
+    revealBackup: (id) => ipcRenderer.invoke('backups-reveal', id),
+    exportBackup: (id) => ipcRenderer.invoke('backups-export', id),
+    selectBackupForRestore: () => ipcRenderer.invoke('backups-select-restore'),
+    restoreBackup: (backupPath) =>
+        ipcRenderer.invoke('backups-restore', backupPath),
     onFlushSaves: (callback) => {
         const listener = () => callback();
         ipcRenderer.on('flush-saves', listener);

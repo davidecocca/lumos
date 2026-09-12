@@ -2,7 +2,7 @@
     <v-empty-state :title="props.title" class="text-center" width="400px">
         <template #media>
             <v-avatar size="48" variant="text">
-                <v-icon :icon="props.icon" size="32"></v-icon>
+            <v-icon :icon="props.icon" size="32"></v-icon>
             </v-avatar>
         </template>
 

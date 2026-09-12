@@ -122,8 +122,8 @@
 
 <script setup>
 import ViewTitle from '../components/commons/ViewTitle.vue';
+import EmptyState from '../components/commons/EmptyState.vue';
 import NoteCard from '../components/home/NoteCard.vue';
-import EmptyState from '../components/home/EmptyState.vue';
 
 import { computed, onMounted, ref } from 'vue';
 

@@ -5,13 +5,17 @@ const {
     ipcMain,
     nativeImage,
     Menu,
+    shell,
 } = require('electron');
 
 // Set the name before resolving Electron's userData path.
 app.setName('Lumos');
 
 const path = require('path');
-const { getVectorStorePath } = require('./storagePaths');
+const fs = require('fs/promises');
+const { getDataPath, getVectorStorePath } = require('./storagePaths');
+const database = require('./database/db');
+const backupService = require('./services/backupService');
 const vectorStore = require('./database/vectorStore');
 const vectorIndexer = require('./services/vectorIndexer');
 const localEmbeddings = require('./services/localEmbeddings');
@@ -59,6 +63,12 @@ let menuState = {
     canCreateNote: false,
     hasOpenNote: false,
 };
+
+function scheduleAutomaticBackup() {
+    backupService.createAutomaticBackupIfDue().catch((error) => {
+        console.error('Automatic backup failed:', error);
+    });
+}
 
 function createApplicationMenu() {
     const isDev = process.env.NODE_ENV === 'development';
@@ -378,12 +388,83 @@ function setupIPC() {
         return requestId;
     });
 
+    // --- Backup management ---
+    ipcMain.handle('backups-list', () => backupService.listBackups());
+    ipcMain.handle('backups-create', (_, name) =>
+        backupService.createBackup('manual', name),
+    );
+    ipcMain.handle('backups-delete', (_, id) => backupService.deleteBackup(id));
+    ipcMain.handle('backups-rename', (_, id, name) =>
+        backupService.renameBackup(id, name),
+    );
+    ipcMain.handle('backups-reveal', async (_, id) => {
+        shell.showItemInFolder(await backupService.getLocalBackupPath(id));
+    });
+    ipcMain.handle('backups-export', async (event, id) => {
+        const result = await dialog.showOpenDialog(
+            BrowserWindow.fromWebContents(event.sender),
+            {
+                title: 'Export backup to folder',
+                buttonLabel: 'Export backup',
+                properties: ['openDirectory', 'createDirectory'],
+            },
+        );
+        if (result.canceled || !result.filePaths[0]) return { canceled: true };
+        const destinationPath = await backupService.exportBackup(
+            id,
+            result.filePaths[0],
+        );
+        return { canceled: false, destinationPath };
+    });
+    ipcMain.handle('backups-select-restore', async (event) => {
+        const result = await dialog.showOpenDialog(
+            BrowserWindow.fromWebContents(event.sender),
+            {
+                title: 'Select Lumos backup folder',
+                buttonLabel: 'Select backup',
+                properties: ['openDirectory'],
+            },
+        );
+        if (result.canceled || !result.filePaths[0]) return null;
+        return { path: result.filePaths[0] };
+    });
+    ipcMain.handle('backups-restore', async (_, backupPath) => {
+        if (typeof backupPath !== 'string') {
+            throw new Error('Invalid backup path.');
+        }
+        await backupService.validateBackup(backupPath);
+        await backupService.createBackup('pre-restore');
+        const stagingPath = await backupService.stageRestore(backupPath);
+        const dataPath = getDataPath();
+        const previousDataPath = `${dataPath}.before-restore-${Date.now()}`;
+
+        await new Promise((resolve, reject) =>
+            database.close((error) => (error ? reject(error) : resolve())),
+        );
+        try {
+            await fs.rename(dataPath, previousDataPath);
+            await fs.rename(stagingPath, dataPath);
+        } catch (error) {
+            await fs.rename(previousDataPath, dataPath).catch(() => {});
+            throw error;
+        }
+
+        await backupService.markRestorePending();
+
+        app.relaunch();
+        app.exit(0);
+        return { restarting: true };
+    });
+
     // --- Folder IPC ---
     ipcMain.handle('create-folder', async (event, name) => {
         return new Promise((resolve, reject) => {
             createFolder(name, (err, folderId) => {
                 if (err) reject(err);
-                else resolve(folderId);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(folderId);
+                }
             });
         });
     });
@@ -410,7 +491,10 @@ function setupIPC() {
         return new Promise((resolve, reject) => {
             updateFolder(id, newName, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(changes);
+                }
             });
         });
     });
@@ -419,7 +503,10 @@ function setupIPC() {
         return new Promise((resolve, reject) => {
             deleteFolder(id, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(changes);
+                }
             });
         });
     });
@@ -445,7 +532,10 @@ function setupIPC() {
                     contentText,
                     (err, noteId) => {
                         if (err) reject(err);
-                        else resolve(noteId);
+                        else {
+                            scheduleAutomaticBackup();
+                            resolve(noteId);
+                        }
                     },
                 );
             });
@@ -474,7 +564,10 @@ function setupIPC() {
         return new Promise((resolve, reject) => {
             renameNote(id, newTitle, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(changes);
+                }
             });
         });
     });
@@ -499,7 +592,10 @@ function setupIPC() {
                     contentText,
                     (err, changes) => {
                         if (err) reject(err);
-                        else resolve(changes);
+                        else {
+                            scheduleAutomaticBackup();
+                            resolve(changes);
+                        }
                     },
                 );
             });
@@ -521,7 +617,10 @@ function setupIPC() {
         return new Promise((resolve, reject) => {
             deleteNote(id, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(changes);
+                }
             });
         });
     });
@@ -530,7 +629,10 @@ function setupIPC() {
         return new Promise((resolve, reject) => {
             deleteNotesInFolder(folderId, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(changes);
+                }
             });
         });
     });
@@ -541,7 +643,10 @@ function setupIPC() {
             return new Promise((resolve, reject) => {
                 moveNoteToFolder(noteId, newFolderId, (err, changes) => {
                     if (err) reject(err);
-                    else resolve(changes);
+                    else {
+                        scheduleAutomaticBackup();
+                        resolve(changes);
+                    }
                 });
             });
         },
@@ -551,7 +656,10 @@ function setupIPC() {
         return new Promise((resolve, reject) => {
             setNoteFavorite(id, isFavorite, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(changes);
+                }
             });
         });
     });
@@ -630,7 +738,10 @@ function setupIPC() {
         return new Promise((resolve, reject) => {
             createChatConversation(payload, (err, conversation) => {
                 if (err) reject(err);
-                else resolve(conversation);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(conversation);
+                }
             });
         });
     });
@@ -657,7 +768,10 @@ function setupIPC() {
         return new Promise((resolve, reject) => {
             appendChatMessage(payload, (err, messageId) => {
                 if (err) reject(err);
-                else resolve(messageId);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(messageId);
+                }
             });
         });
     });
@@ -666,7 +780,10 @@ function setupIPC() {
         return new Promise((resolve, reject) => {
             updateChatConversation(payload, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(changes);
+                }
             });
         });
     });
@@ -675,7 +792,10 @@ function setupIPC() {
         return new Promise((resolve, reject) => {
             deleteChatConversation(id, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(changes);
+                }
             });
         });
     });
@@ -699,7 +819,15 @@ function broadcastRagStatus() {
 
 // Initialize the RAG system after the first frame is rendered,
 // so that the app can start up quickly without waiting for the vector store
-function initializeRag() {
+async function initializeRag() {
+    const restored = await backupService.consumeRestoreState();
+    if (restored) {
+        await fs.rm(getVectorStorePath(), { recursive: true, force: true });
+        await new Promise((resolve, reject) => {
+            clearVectorSync((error) => (error ? reject(error) : resolve()));
+        });
+    }
+
     const lancePath = getVectorStorePath();
     vectorStore
         .initialize(lancePath)
@@ -748,7 +876,11 @@ app.whenReady().then(() => {
     const mainWindow = createWindow();
     setupIPC();
 
-    mainWindow.once('ready-to-show', initializeRag);
+    mainWindow.once('ready-to-show', () => {
+        initializeRag().catch((error) => {
+            console.error('Failed to prepare the RAG system:', error);
+        });
+    });
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();

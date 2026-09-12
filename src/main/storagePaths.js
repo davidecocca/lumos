@@ -36,6 +36,10 @@ function getVectorStorePath() {
     return path.join(getCachePath(), 'lancedb');
 }
 
+function getRestoreStatePath() {
+    return path.join(getStorageRoot(), 'restore-state.json');
+}
+
 function initializeStorage() {
     fs.mkdirSync(getDataPath(), { recursive: true });
     fs.mkdirSync(getBackupPath(), { recursive: true });
@@ -47,6 +51,7 @@ module.exports = {
     getDatabasePath,
     getDataPath,
     getImagePath,
+    getRestoreStatePath,
     getStorageRoot,
     getVectorStorePath,
     initializeStorage,

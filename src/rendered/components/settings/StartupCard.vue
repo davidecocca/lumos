@@ -7,7 +7,8 @@
         elevation="0"
     >
         <v-card-text>
-            <div class="d-flex align-center ga-4">
+            <div class="d-flex align-center ga-2">
+                <v-icon size="large">ph-tabs</v-icon>
                 <p class="text-subtitle-2">Restore previous tabs</p>
                 <v-spacer />
                 <v-switch
