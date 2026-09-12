@@ -6,7 +6,12 @@ const {
     nativeImage,
     Menu,
 } = require('electron');
+
+// Set the name before resolving Electron's userData path.
+app.setName('Lumos');
+
 const path = require('path');
+const { getVectorStorePath } = require('./storagePaths');
 const vectorStore = require('./database/vectorStore');
 const vectorIndexer = require('./services/vectorIndexer');
 const localEmbeddings = require('./services/localEmbeddings');
@@ -676,9 +681,6 @@ function setupIPC() {
     });
 }
 
-// Set the app name
-app.setName('Lumos');
-
 // Broadcast background indexing progress to all renderer windows
 vectorIndexer.onStatus((status) => {
     for (const win of BrowserWindow.getAllWindows()) {
@@ -698,7 +700,7 @@ function broadcastRagStatus() {
 // Initialize the RAG system after the first frame is rendered,
 // so that the app can start up quickly without waiting for the vector store
 function initializeRag() {
-    const lancePath = path.join(app.getPath('userData'), 'lancedb');
+    const lancePath = getVectorStorePath();
     vectorStore
         .initialize(lancePath)
         .then(async ({ rebuilt }) => {

@@ -1,7 +1,10 @@
 const sqlite3 = require('sqlite3').verbose();
+const { getDatabasePath, initializeStorage } = require('../storagePaths');
 
-// Open (or create) the database file
-const db = new sqlite3.Database('./lumos.db', (err) => {
+initializeStorage();
+
+// Open (or create) the database file in Lumos's canonical data directory.
+const db = new sqlite3.Database(getDatabasePath(), (err) => {
     if (err) {
         console.error('Error opening database:', err.message);
     } else {

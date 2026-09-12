@@ -1,10 +1,10 @@
-const { app } = require('electron');
 const crypto = require('crypto');
 const fs = require('fs/promises');
 const path = require('path');
 const { fileURLToPath, pathToFileURL } = require('url');
+const { getDataPath, getImagePath } = require('../storagePaths');
 
-const IMAGE_ROOT_DIR = 'note-images';
+const IMAGE_ROOT_DIR = path.basename(getImagePath());
 const SUPPORTED_EXTENSIONS = new Set([
     '.png',
     '.jpg',
@@ -34,12 +34,8 @@ const EXTENSION_MIME_MAP = {
     '.svg': 'image/svg+xml',
 };
 
-function getUserDataPath() {
-    return app.getPath('userData');
-}
-
 function getNoteImageDir(noteId) {
-    return path.join(getUserDataPath(), IMAGE_ROOT_DIR, String(noteId));
+    return path.join(getImagePath(), String(noteId));
 }
 
 function toPortablePath(filePath) {
@@ -132,7 +128,7 @@ function normalizeManagedPath(src) {
 
     if (src.startsWith('file://')) {
         const absolutePath = fileURLToPath(src);
-        const relativePath = path.relative(getUserDataPath(), absolutePath);
+        const relativePath = path.relative(getDataPath(), absolutePath);
 
         if (!relativePath.startsWith('..') && !path.isAbsolute(relativePath)) {
             return toPortablePath(relativePath);
@@ -147,7 +143,7 @@ function resolveManagedPath(src) {
         return src;
     }
 
-    return pathToFileURL(path.join(getUserDataPath(), src)).toString();
+    return pathToFileURL(path.join(getDataPath(), src)).toString();
 }
 
 function normalizeNoteContentForStorage(contentJson) {
@@ -195,7 +191,7 @@ async function resolveNoteContentForDisplay(contentJson) {
         }
 
         try {
-            const absolutePath = path.join(getUserDataPath(), storageSrc);
+            const absolutePath = path.join(getDataPath(), storageSrc);
             const fileBuffer = await fs.readFile(absolutePath);
 
             return {
@@ -258,7 +254,7 @@ async function importNoteImage(noteId, { fileName, mimeType, data }) {
     const fileBuffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
     const storedFileName = `${crypto.randomUUID()}${extension}`;
     const relativePath = getRelativeImagePath(noteId, storedFileName);
-    const absolutePath = path.join(getUserDataPath(), relativePath);
+    const absolutePath = path.join(getDataPath(), relativePath);
 
     await ensureNoteImageDir(noteId);
     await fs.writeFile(absolutePath, fileBuffer);

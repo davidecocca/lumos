@@ -1,8 +1,9 @@
-const { app, BrowserWindow } = require('electron');
+const { BrowserWindow } = require('electron');
 const fs = require('fs/promises');
 const path = require('path');
+const { getDataPath, getImagePath } = require('../storagePaths');
 
-const IMAGE_ROOT_DIR = 'note-images';
+const IMAGE_ROOT_DIR = path.basename(getImagePath());
 const MANAGED_MARKDOWN_IMAGE_PATTERN =
     /(!\[[^\]]*\]\()(note-images\/[^)\s]+)(\))/g;
 
@@ -79,9 +80,9 @@ const makeLinksOpenInNewWindow = (content) =>
 
 // Returns the absolute path to a managed image if it is within the note-images directory, otherwise returns null
 const getManagedImageSourcePath = (storagePath) => {
-    const userDataPath = app.getPath('userData');
-    const imageRoot = path.resolve(userDataPath, IMAGE_ROOT_DIR);
-    const sourcePath = path.resolve(userDataPath, storagePath);
+    const dataPath = getDataPath();
+    const imageRoot = getImagePath();
+    const sourcePath = path.resolve(dataPath, storagePath);
     const relativePath = path.relative(imageRoot, sourcePath);
 
     return relativePath &&
