@@ -55,6 +55,8 @@
                 v-model:delete-note-dialog="deleteNoteDialog"
                 v-model:embed-youtube-dialog="embedYoutubeDialog"
                 :note="note"
+                :rename-note-id="actionNoteId"
+                :rename-note-title="actionNoteTitle"
                 :folders="store.folders"
                 :confirmation-dialog-title="confirmationDialogTitle"
                 :confirmation-dialog-text="confirmationDialogText"
@@ -192,6 +194,8 @@ const renameNoteDialog = computed({
     get: () => store.renameNoteDialog,
     set: (val) => (store.renameNoteDialog = val),
 });
+const actionNoteId = computed(() => store.actionNoteId);
+const actionNoteTitle = computed(() => store.actionNoteTitle);
 const moveToFolderDialog = computed({
     get: () => store.moveToFolderDialog,
     set: (val) => (store.moveToFolderDialog = val),
@@ -734,7 +738,7 @@ const handleKeyDown = (event) => {
 const handleRenameNote = async (noteId, newTitle) => {
     await store.renameNote(noteId, newTitle);
 
-    if (store.editorNoteTitle) {
+    if (note.value?.id === noteId) {
         note.value.title = store.editorNoteTitle;
     }
 };

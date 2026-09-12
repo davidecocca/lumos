@@ -2,8 +2,8 @@
     <div v-if="note">
         <RenameNoteDialog
             :model-value="renameNoteDialog"
-            :noteId="note.id"
-            :currentNoteTitle="note.title"
+            :noteId="renameNoteId"
+            :currentNoteTitle="renameNoteTitle"
             @update:model-value="emit('update:renameNoteDialog', $event)"
             @rename-note="handleRenameNote"
         />
@@ -54,6 +54,14 @@ defineProps({
     renameNoteDialog: {
         type: Boolean,
         default: false,
+    },
+    renameNoteId: {
+        type: Number,
+        default: null,
+    },
+    renameNoteTitle: {
+        type: String,
+        default: '',
     },
     moveToFolderDialog: {
         type: Boolean,

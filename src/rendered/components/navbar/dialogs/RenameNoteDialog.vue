@@ -31,7 +31,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import BaseDialog from '../../commons/BaseDialog.vue';
 
 const props = defineProps({
@@ -50,6 +50,13 @@ const props = defineProps({
 });
 
 const noteTitle = ref(props.currentNoteTitle);
+
+watch(
+    () => [props.noteId, props.currentNoteTitle],
+    () => {
+        noteTitle.value = props.currentNoteTitle;
+    },
+);
 
 const emit = defineEmits(['update:modelValue', 'rename-note']);
 
