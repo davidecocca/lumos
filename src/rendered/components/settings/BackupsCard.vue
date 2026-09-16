@@ -6,22 +6,50 @@
         rounded="lg"
         elevation="0"
     >
+        <template #append>
+            <SettingsInfoButton title="How backups work">
+                <p class="ma-0 mb-2 text-body-1">
+                    Backups keep a local copy of your notes so you can restore
+                    an earlier version.
+                </p>
+                <ul class="d-flex flex-column ga-2 my-0 pl-5">
+                    <li>
+                        <strong class="text-high-emphasis">auto:</strong>
+                        one per day; latest
+                        <strong class="text-high-emphasis">30</strong> kept.
+                    </li>
+                    <li>
+                        <strong class="text-high-emphasis">
+                            pre-device-restore:
+                        </strong>
+                        saved automatically before loading another device’s
+                        notes; latest
+                        <strong class="text-high-emphasis">3</strong> kept.
+                    </li>
+                    <li>
+                        <strong class="text-high-emphasis">
+                            pre-manual-restore:
+                        </strong>
+                        saved automatically before restoring a selected backup;
+                        kept until you delete them.
+                    </li>
+                    <li>
+                        <strong class="text-high-emphasis">manual:</strong>
+                        created on demand; kept until you delete them.
+                    </li>
+                    <li>
+                        <strong class="text-high-emphasis">
+                            Restore external backup:
+                        </strong>
+                        replaces your current notes and restarts Lumos.
+                    </li>
+                </ul>
+                <p class="ma-0 mt-2 text-caption text-medium-emphasis">
+                    Tip: export a backup to keep a copy outside Lumos.
+                </p>
+            </SettingsInfoButton>
+        </template>
         <v-card-text>
-            <!-- Backup policies banner -->
-            <v-alert
-                type="info"
-                icon-size="20"
-                variant="tonal"
-                density="compact"
-                rounded="lg"
-                border="start"
-                class="text-body-2 mb-4"
-                closable
-            >
-                Lumos creates one automatic backup each day and keeps the latest 30.
-                Manual backups stay until you delete them.
-            </v-alert>
-
             <!-- Backup card header -->
             <div class="d-flex align-center flex-wrap ga-3">
                 <h3 class="text-subtitle-1 font-weight-medium">Your backups</h3>
@@ -47,13 +75,11 @@
             </div>
 
             <!-- Backup list -->
-            <v-list
-                v-if="backups.length"
-                lines="two"
-                max-height="min(400px, 40vh)"
-                class="pa-0 overflow-y-auto"
-            >
-                <template v-for="(backup, index) in backups" :key="backup.id">
+            <v-list v-if="backups.length" lines="two" class="pa-0">
+                <template
+                    v-for="(backup, index) in paginatedBackups"
+                    :key="backup.id"
+                >
                     <v-list-item>
                         <template #prepend>
                             <v-chip
@@ -61,12 +87,15 @@
                                 variant="tonal"
                                 size="small"
                                 rounded="lg"
-                                density="comfortable"
                                 class="mr-4 justify-center"
-                                style="width: 92px"
+                                style="width: 140px"
                             >
-                                  <template v-slot:prepend>
-                                    <v-icon :icon="backupType(backup).icon" size="small" class="mr-1"/>
+                                <template v-slot:prepend>
+                                    <v-icon
+                                        :icon="backupType(backup).icon"
+                                        size="small"
+                                        class="mr-1"
+                                    />
                                 </template>
                                 {{ backupType(backup).label }}
                             </v-chip>
@@ -87,10 +116,11 @@
                                 icon
                                 variant="text"
                                 size="small"
+                                rounded="lg"
+                                density="comfortable"
+                                class="ml-2"
                                 :color="action.color"
-                                :aria-label="
-                                    `${action.label} ${backupLabel(backup)}`
-                                "
+                                :aria-label="`${action.label} ${backupLabel(backup)}`"
                                 @click="action.handler(backup)"
                             >
                                 <v-icon :icon="action.icon" />
@@ -100,7 +130,7 @@
                             </v-btn>
                         </template>
                     </v-list-item>
-                    <v-divider v-if="index < backups.length - 1" />
+                    <v-divider v-if="index < paginatedBackups.length - 1" />
                 </template>
             </v-list>
 
@@ -111,6 +141,31 @@
                 icon="ph-database"
                 width="100%"
             />
+
+            <div
+                v-if="backups.length"
+                class="d-flex align-center justify-space-between flex-wrap ga-2 mt-3"
+            >
+                <span class="text-caption text-medium-emphasis" role="status">
+                    {{ (page - 1) * pageSize + 1 }}–{{
+                        Math.min(page * pageSize, backups.length)
+                    }}
+                    of {{ backups.length }} backups
+                </span>
+                <v-pagination
+                    v-if="pageCount > 1"
+                    v-model="page"
+                    :length="pageCount"
+                    :total-visible="5"
+                    :disabled="loading"
+                    size="small"
+                    density="comfortable"
+                    rounded="lg"
+                    prev-icon="ph-caret-left"
+                    next-icon="ph-caret-right"
+                    aria-label="Backup pages"
+                />
+            </div>
 
             <v-btn
                 class="mt-6"
@@ -170,12 +225,21 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import EmptyState from '../commons/EmptyState.vue';
+import SettingsInfoButton from './SettingsInfoButton.vue';
 import ConfirmDeleteBackupDialog from './dialogs/ConfirmDeleteBackupDialog.vue';
 import CreateBackupDialog from './dialogs/CreateBackupDialog.vue';
 import RenameBackupDialog from './dialogs/RenameBackupDialog.vue';
 import RestoreBackupDialog from './dialogs/RestoreBackupDialog.vue';
 
 const backups = ref([]);
+const pageSize = 5;
+const page = ref(1);
+const pageCount = computed(() =>
+    Math.max(1, Math.ceil(backups.value.length / pageSize)),
+);
+const paginatedBackups = computed(() =>
+    backups.value.slice((page.value - 1) * pageSize, page.value * pageSize),
+);
 const loading = ref(true);
 const creating = ref(false);
 const createDialog = ref(false);
@@ -263,8 +327,18 @@ function backupLabel(backup) {
 function backupType(backup) {
     if (backup.trigger === 'automatic')
         return { label: 'auto', color: '', icon: 'ph-clock' };
-    if (backup.trigger === 'pre-restore')
-        return { label: 'pre-restore', color: 'amber', icon: 'ph-shield-check' };
+    if (backup.trigger === 'pre-device-restore')
+        return {
+            label: 'pre-device-restore',
+            color: 'secondary',
+            icon: 'ph-cloud-arrow-down',
+        };
+    if (backup.trigger === 'pre-manual-restore')
+        return {
+            label: 'pre-manual-restore',
+            color: 'secondary',
+            icon: 'ph-shield-check',
+        };
     return { label: 'manual', color: 'info', icon: 'ph-user' };
 }
 
@@ -288,6 +362,7 @@ async function refresh() {
     loading.value = true;
     try {
         backups.value = await window.api.listBackups();
+        page.value = Math.min(page.value, pageCount.value);
         errorMessage.value = '';
     } catch (error) {
         errorMessage.value = error.message || 'Could not load backups.';
@@ -302,6 +377,7 @@ async function createBackup() {
     dialogError.value = '';
     try {
         await window.api.createBackup(manualBackupName.value);
+        page.value = 1;
         createDialog.value = false;
         await refresh();
     } catch (error) {

@@ -40,6 +40,10 @@ function getRestoreStatePath() {
     return path.join(getStorageRoot(), 'restore-state.json');
 }
 
+function getSyncStatePath() {
+    return path.join(getStorageRoot(), 'sync-state.json');
+}
+
 function initializeStorage() {
     fs.mkdirSync(getDataPath(), { recursive: true });
     fs.mkdirSync(getBackupPath(), { recursive: true });
@@ -53,6 +57,7 @@ module.exports = {
     getImagePath,
     getRestoreStatePath,
     getStorageRoot,
+    getSyncStatePath,
     getVectorStorePath,
     initializeStorage,
 };

@@ -16,6 +16,7 @@ const fs = require('fs/promises');
 const { getDataPath, getVectorStorePath } = require('./storagePaths');
 const database = require('./database/db');
 const backupService = require('./services/backupService');
+const syncService = require('./services/syncService');
 const vectorStore = require('./database/vectorStore');
 const vectorIndexer = require('./services/vectorIndexer');
 const localEmbeddings = require('./services/localEmbeddings');
@@ -67,6 +68,13 @@ let menuState = {
 function scheduleAutomaticBackup() {
     backupService.createAutomaticBackupIfDue().catch((error) => {
         console.error('Automatic backup failed:', error);
+    });
+}
+
+function scheduleSyncableChange() {
+    scheduleAutomaticBackup();
+    syncService.requestSync().catch((error) => {
+        console.error('Could not schedule sync:', error.message);
     });
 }
 
@@ -433,7 +441,7 @@ function setupIPC() {
             throw new Error('Invalid backup path.');
         }
         await backupService.validateBackup(backupPath);
-        await backupService.createBackup('pre-restore');
+        await backupService.createBackup('pre-manual-restore');
         const stagingPath = await backupService.stageRestore(backupPath);
         const dataPath = getDataPath();
         const previousDataPath = `${dataPath}.before-restore-${Date.now()}`;
@@ -456,13 +464,38 @@ function setupIPC() {
         return { restarting: true };
     });
 
+    // --- Device handoff sync ---
+    ipcMain.handle('sync-get-status', () => syncService.getStatus());
+    ipcMain.handle('sync-select-folder', async (event) => {
+        const result = await dialog.showOpenDialog(
+            BrowserWindow.fromWebContents(event.sender),
+            {
+                title: 'Choose a cloud-synced folder',
+                buttonLabel: 'Use this folder',
+                properties: ['openDirectory', 'createDirectory'],
+            },
+        );
+        if (result.canceled || !result.filePaths[0]) return { canceled: true };
+        return {
+            canceled: false,
+            ...(await syncService.configure(result.filePaths[0])),
+        };
+    });
+    ipcMain.handle('sync-disable', () => syncService.disable());
+    ipcMain.handle('sync-now', () => syncService.syncNow());
+    ipcMain.handle('sync-reveal-folder', async () => {
+        const vaultPath = syncService.revealVault();
+        if (!vaultPath) throw new Error('Sync is not configured.');
+        shell.openPath(vaultPath);
+    });
+
     // --- Folder IPC ---
     ipcMain.handle('create-folder', async (event, name) => {
         return new Promise((resolve, reject) => {
             createFolder(name, (err, folderId) => {
                 if (err) reject(err);
                 else {
-                    scheduleAutomaticBackup();
+                    scheduleSyncableChange();
                     resolve(folderId);
                 }
             });
@@ -492,7 +525,7 @@ function setupIPC() {
             updateFolder(id, newName, (err, changes) => {
                 if (err) reject(err);
                 else {
-                    scheduleAutomaticBackup();
+                    scheduleSyncableChange();
                     resolve(changes);
                 }
             });
@@ -504,7 +537,7 @@ function setupIPC() {
             deleteFolder(id, (err, changes) => {
                 if (err) reject(err);
                 else {
-                    scheduleAutomaticBackup();
+                    scheduleSyncableChange();
                     resolve(changes);
                 }
             });
@@ -533,7 +566,7 @@ function setupIPC() {
                     (err, noteId) => {
                         if (err) reject(err);
                         else {
-                            scheduleAutomaticBackup();
+                            scheduleSyncableChange();
                             resolve(noteId);
                         }
                     },
@@ -565,7 +598,7 @@ function setupIPC() {
             renameNote(id, newTitle, (err, changes) => {
                 if (err) reject(err);
                 else {
-                    scheduleAutomaticBackup();
+                    scheduleSyncableChange();
                     resolve(changes);
                 }
             });
@@ -593,7 +626,7 @@ function setupIPC() {
                     (err, changes) => {
                         if (err) reject(err);
                         else {
-                            scheduleAutomaticBackup();
+                            scheduleSyncableChange();
                             resolve(changes);
                         }
                     },
@@ -618,7 +651,7 @@ function setupIPC() {
             deleteNote(id, (err, changes) => {
                 if (err) reject(err);
                 else {
-                    scheduleAutomaticBackup();
+                    scheduleSyncableChange();
                     resolve(changes);
                 }
             });
@@ -630,7 +663,7 @@ function setupIPC() {
             deleteNotesInFolder(folderId, (err, changes) => {
                 if (err) reject(err);
                 else {
-                    scheduleAutomaticBackup();
+                    scheduleSyncableChange();
                     resolve(changes);
                 }
             });
@@ -644,7 +677,7 @@ function setupIPC() {
                 moveNoteToFolder(noteId, newFolderId, (err, changes) => {
                     if (err) reject(err);
                     else {
-                        scheduleAutomaticBackup();
+                        scheduleSyncableChange();
                         resolve(changes);
                     }
                 });
@@ -657,7 +690,7 @@ function setupIPC() {
             setNoteFavorite(id, isFavorite, (err, changes) => {
                 if (err) reject(err);
                 else {
-                    scheduleAutomaticBackup();
+                    scheduleSyncableChange();
                     resolve(changes);
                 }
             });
@@ -817,6 +850,51 @@ function broadcastRagStatus() {
     });
 }
 
+// Broadcast the current sync status to all renderer windows
+function broadcastSyncStatus(status) {
+    for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send('sync-status', status);
+    }
+}
+
+syncService.onStatus(broadcastSyncStatus);
+
+async function restoreSyncSnapshot(snapshot) {
+    await backupService.createBackup('pre-device-restore');
+    const stagingPath = await backupService.stageRestore(snapshot.path);
+    const dataPath = getDataPath();
+    const previousDataPath = `${dataPath}.before-sync-restore-${Date.now()}`;
+
+    await new Promise((resolve, reject) =>
+        database.close((error) => (error ? reject(error) : resolve())),
+    );
+    try {
+        await fs.rename(dataPath, previousDataPath);
+        await fs.rename(stagingPath, dataPath);
+    } catch (error) {
+        await fs.rename(previousDataPath, dataPath).catch(() => {});
+        throw error;
+    }
+
+    await backupService.markRestorePending(previousDataPath);
+    await syncService.markApplied(snapshot.id);
+}
+
+async function prepareSyncBeforeWindow() {
+    const result = await syncService.prepareStartup();
+    if (result.action !== 'restore') return false;
+
+    try {
+        await restoreSyncSnapshot(result.snapshot);
+        app.relaunch();
+        app.exit(0);
+        return true;
+    } catch (error) {
+        console.error('Could not apply synced snapshot:', error);
+        return false;
+    }
+}
+
 // Initialize the RAG system after the first frame is rendered,
 // so that the app can start up quickly without waiting for the vector store
 async function initializeRag() {
@@ -854,7 +932,14 @@ async function initializeRag() {
 }
 
 // App lifecycle
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+    try {
+        await backupService.completePendingSyncRestore();
+    } catch (error) {
+        console.error('Could not clean up the previous sync data:', error);
+    }
+    if (await prepareSyncBeforeWindow()) return;
+
     Menu.setApplicationMenu(
         process.platform === 'darwin' ? createApplicationMenu() : null,
     );
@@ -891,7 +976,17 @@ app.whenReady().then(() => {
 app.on('before-quit', (event) => {
     if (flushSent) return;
     event.preventDefault();
-    requestFlushAndContinue(() => app.quit());
+    requestFlushAndContinue(async () => {
+        try {
+            await Promise.race([
+                syncService.syncNow(),
+                new Promise((resolve) => setTimeout(resolve, 8000)),
+            ]);
+        } catch (error) {
+            console.error('Final sync failed:', error.message);
+        }
+        app.quit();
+    });
 });
 
 app.on('window-all-closed', () => {

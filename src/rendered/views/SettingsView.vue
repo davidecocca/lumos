@@ -17,7 +17,10 @@
                 <StartupCard />
             </v-tabs-window-item>
             <v-tabs-window-item value="data">
-                <BackupsCard />
+                <div class="d-flex flex-column ga-4">
+                    <SyncCard />
+                    <BackupsCard />
+                </div>
             </v-tabs-window-item>
             <!-- Appearance settings -->
             <v-tabs-window-item value="appearance">
@@ -37,6 +40,7 @@ import ChangeThemeCard from '../components/settings/ChangeThemeCard.vue';
 import LumosAICard from '../components/settings/LumosAICard.vue';
 import StartupCard from '../components/settings/StartupCard.vue';
 import BackupsCard from '../components/settings/BackupsCard.vue';
+import SyncCard from '../components/settings/SyncCard.vue';
 
 import { computed, ref } from 'vue';
 

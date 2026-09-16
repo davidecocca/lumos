@@ -9,6 +9,7 @@
         "build": "vite build",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
+        "test": "node --test test/*.test.js",
         "fetch:model": "node scripts/fetch-embedding-model.mjs",
         "postinstall": "electron-builder install-app-deps",
         "dist": "npm run build && electron-builder",

@@ -12,11 +12,12 @@ const {
     getStorageRoot,
 } = require('../storagePaths');
 
-const BACKUP_FORMAT_VERSION = 1;    // Manifest schema version; prevents opening backups made with incompatible formats
-const AUTOMATIC_BACKUP_INTERVAL = 24 * 60 * 60 * 1000;  // Minimum time between automatic backups, in milliseconds: 24 hours
-const AUTOMATIC_BACKUP_LIMIT = 30;  // Maximum automatic backups retained; older automatic backups are deleted
+const BACKUP_FORMAT_VERSION = 1; // Manifest schema version; prevents opening backups made with incompatible formats
+const AUTOMATIC_BACKUP_INTERVAL = 24 * 60 * 60 * 1000; // Minimum time between automatic backups, in milliseconds: 24 hours
+const AUTOMATIC_BACKUP_LIMIT = 30; // Maximum automatic backups retained; older automatic backups are deleted
+const PRE_DEVICE_RESTORE_BACKUP_LIMIT = 3; // Maximum pre-device-restore backups retained; older pre-device-restore backups are deleted
 
-let activeBackup = null;    // Holds the in-progress backup Promise, or null when idle; prevents backups from running concurrently
+let activeBackup = null; // Holds the in-progress backup Promise, or null when idle; prevents backups from running concurrently
 let activeBackupTrigger = null; // Stores that in-progress backup’s trigger (manual or automatic), letting a duplicate automatic request reuse it while other requests wait then create their own backup
 
 // Promisified SQLite3 operations
@@ -114,7 +115,7 @@ async function getSnapshotMetadata(databasePath, imageRootPath) {
     }
 }
 
-// Builds the timestamped default backup name, using auto for automatic backups
+// Builds a timestamped default backup name, shortening automatic backups to auto.
 function backupName(trigger, createdAt) {
     const date = new Date(createdAt);
     const pad = (value) => String(value).padStart(2, '0');
@@ -202,14 +203,14 @@ async function vacuumInto(destinationPath) {
     );
 }
 
-// Deletes automatic backups beyond the configured retention limit
-async function pruneAutomaticBackups() {
-    const automaticBackups = (await listBackups()).filter(
-        (backup) => backup.trigger === 'automatic',
+// Deletes the oldest backups of a given trigger type, keeping only the newest N
+async function pruneBackups(trigger, limit) {
+    const backups = (await listBackups()).filter(
+        (backup) => backup.trigger === trigger,
     );
     await Promise.all(
-        automaticBackups
-            .slice(AUTOMATIC_BACKUP_LIMIT)
+        backups
+            .slice(limit)
             .map((backup) =>
                 fsp.rm(backup.path, { recursive: true, force: true }),
             ),
@@ -272,7 +273,11 @@ async function createBackup(trigger = 'manual', customName = '') {
                 `${JSON.stringify(manifest, null, 2)}\n`,
             );
             await fsp.rename(stagingPath, finalPath);
-            if (trigger === 'automatic') await pruneAutomaticBackups();
+            if (trigger === 'automatic') {
+                await pruneBackups(trigger, AUTOMATIC_BACKUP_LIMIT);
+            } else if (trigger === 'pre-device-restore') {
+                await pruneBackups(trigger, PRE_DEVICE_RESTORE_BACKUP_LIMIT);
+            }
             return getBackupSummary(finalPath);
         } catch (error) {
             await fsp.rm(stagingPath, { recursive: true, force: true });
@@ -402,12 +407,43 @@ async function stageRestore(backupPath) {
     }
 }
 
-// Writes a timestamped marker indicating that a restore should be completed on the next startup
-async function markRestorePending() {
+// Writes a restore marker for the next startup, optionally recording the old sync data path for validated cleanup
+async function markRestorePending(previousDataPath = null) {
     await fsp.writeFile(
         getRestoreStatePath(),
-        JSON.stringify({ createdAt: new Date().toISOString() }),
+        JSON.stringify({
+            createdAt: new Date().toISOString(),
+            previousDataPath,
+        }),
     );
+}
+
+// Run on relaunch, before another sync restore can replace the pending marker
+async function completePendingSyncRestore() {
+    let state;
+    try {
+        state = JSON.parse(await fsp.readFile(getRestoreStatePath(), 'utf8'));
+    } catch (error) {
+        if (error.code === 'ENOENT') return;
+        throw error;
+    }
+    if (!state.previousDataPath) return;
+
+    const previousPath = path.resolve(state.previousDataPath);
+    if (
+        path.dirname(previousPath) !== path.dirname(getDataPath()) ||
+        !/^data\.before-sync-restore-\d+$/.test(path.basename(previousPath))
+    ) {
+        throw new Error('Invalid sync restore cleanup path.');
+    }
+
+    const checks = await query(db, 'PRAGMA quick_check');
+    if (!checks.length || checks.some((row) => row.quick_check !== 'ok')) {
+        throw new Error('Restored database integrity check failed.');
+    }
+    await query(db, 'SELECT id FROM notes LIMIT 1');
+    await fsp.rm(previousPath, { recursive: true, force: true });
+    // Leave the marker for initializeRag to rebuild the restored note index.
 }
 
 // Reads and deletes the restore marker; returns null when no marker exists
@@ -425,6 +461,7 @@ async function consumeRestoreState() {
 }
 
 module.exports = {
+    completePendingSyncRestore,
     consumeRestoreState,
     createAutomaticBackupIfDue,
     createBackup,

@@ -75,6 +75,18 @@ contextBridge.exposeInMainWorld('api', {
     selectBackupForRestore: () => ipcRenderer.invoke('backups-select-restore'),
     restoreBackup: (backupPath) =>
         ipcRenderer.invoke('backups-restore', backupPath),
+
+    // Device handoff sync
+    getSyncStatus: () => ipcRenderer.invoke('sync-get-status'),
+    selectSyncFolder: () => ipcRenderer.invoke('sync-select-folder'),
+    disableSync: () => ipcRenderer.invoke('sync-disable'),
+    syncNow: () => ipcRenderer.invoke('sync-now'),
+    revealSyncFolder: () => ipcRenderer.invoke('sync-reveal-folder'),
+    onSyncStatus: (callback) => {
+        const listener = (_, status) => callback(status);
+        ipcRenderer.on('sync-status', listener);
+        return () => ipcRenderer.removeListener('sync-status', listener);
+    },
     onFlushSaves: (callback) => {
         const listener = () => callback();
         ipcRenderer.on('flush-saves', listener);
