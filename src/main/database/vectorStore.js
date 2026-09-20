@@ -31,6 +31,9 @@ const indexManifest = {
     quantization: 'q4',
     chunkSize,
     chunkOverlap,
+    // Increment when workspace scoping changes so old indexes cannot return
+    // embeddings indexed under incompatible workspace boundaries.
+    workspaceScopeVersion: 1,
 };
 
 /**
@@ -71,7 +74,8 @@ class VectorStore {
                 await this.createEmptyTable();
                 await this.writeManifest(manifestPath);
                 this.ready = true;
-                return { rebuilt: false };
+                // SQLite sync markers may survive a missing vector cache.
+                return { rebuilt: true };
             }
 
             const storedManifest = this.readManifest(manifestPath);
@@ -126,7 +130,8 @@ class VectorStore {
             stored.dimension === indexManifest.dimension &&
             stored.quantization === indexManifest.quantization &&
             stored.chunkSize === indexManifest.chunkSize &&
-            stored.chunkOverlap === indexManifest.chunkOverlap
+            stored.chunkOverlap === indexManifest.chunkOverlap &&
+            stored.workspaceScopeVersion === indexManifest.workspaceScopeVersion
         );
     }
 
@@ -140,7 +145,7 @@ class VectorStore {
     async createEmptyTable() {
         this.vectorStore = await LanceDB.fromTexts(
             [''], // Initialize with empty text
-            { source: 'initialization' },
+            { source: 'initialization', workspaceId: '' },
             this.buildEmbeddings(),
             {
                 uri: this.dbPath,
@@ -155,9 +160,10 @@ class VectorStore {
      * @param {number} noteId - The ID of the note.
      * @param {string} content - The content of the note.
      * @param {string|null} title - Optional note title, embedded with each chunk.
+     * @param {string} workspaceId - Workspace owning the note.
      * @returns {Promise<void>}
      */
-    async addNote(noteId, content, title = null) {
+    async addNote(noteId, content, title = null, workspaceId = null) {
         try {
             if (!this.vectorStore) {
                 throw new Error('Vector store not initialized');
@@ -178,6 +184,7 @@ class VectorStore {
                         pageContent: `${docPrefix}${chunk}`,
                         metadata: {
                             source: noteId.toString(),
+                            workspaceId: String(workspaceId || ''),
                         },
                     }),
             );
@@ -228,17 +235,25 @@ class VectorStore {
             // 2. Search for similar notes using LanceDB's query builder
             let q = this.table.search(queryEmbedding).distanceType('cosine');
 
-            // 3. If provided, apply filter
+            // 3. Combine filters so workspace scope does not replace note scope.
+            const predicates = [];
             if (filter) {
-                // For now, only support filtering by source (note ID).
                 if (filter.source != null) {
                     const sourceValue = String(filter.source).replace(
                         /'/g,
                         "''",
                     );
-                    q = q.where(`source = '${sourceValue}'`);
+                    predicates.push(`source = '${sourceValue}'`);
+                }
+                if (filter.workspaceId != null) {
+                    const workspaceValue = String(filter.workspaceId).replace(
+                        /'/g,
+                        "''",
+                    );
+                    predicates.push(`\`workspaceId\` = '${workspaceValue}'`);
                 }
             }
+            if (predicates.length) q = q.where(predicates.join(' AND '));
 
             // 4. Limit results and execute query
             const rows = await q.limit(limit * oversamplingFactor).toArray();

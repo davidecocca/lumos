@@ -266,6 +266,7 @@ let autosaveTimer = null;
 let safetySaveInterval = null;
 let saveInFlight = null;
 let unsubscribeFlushSaves = null;
+let unsubscribeWorkspaceFlushSaves = null;
 
 const {
     inlineAIEdit,
@@ -551,7 +552,12 @@ const flushPendingSave = async () => {
         !note.value ||
         isInlineAIPreviewActive.value
     ) {
-        return;
+        try {
+            if (saveInFlight) await saveInFlight;
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     // Optimistically clear; keystrokes during the save re-mark it dirty and
@@ -565,6 +571,7 @@ const flushPendingSave = async () => {
     } catch (error) {
         isDirty.value = true;
         console.error('Auto-save failed:', error);
+        return false;
     } finally {
         const remainingMs =
             MIN_AUTOSAVE_INDICATOR_MS - (Date.now() - startedAt);
@@ -573,6 +580,7 @@ const flushPendingSave = async () => {
         }
         isAutoSaving.value = false;
     }
+    return true;
 };
 
 const scheduleAutosave = () => {
@@ -812,8 +820,8 @@ const syncCurrentNoteFolder = (newFolderId) => {
     }
 };
 
-const handleMoveNote = async (noteId, newFolderId) => {
-    await store.moveNote(noteId, newFolderId);
+const handleMoveNote = async (noteId, newFolderId, options = {}) => {
+    await store.moveNote(noteId, newFolderId, undefined, options);
 
     if (store.editorNoteCurrentFolderId === newFolderId) {
         syncCurrentNoteFolder(newFolderId);
@@ -943,6 +951,15 @@ onMounted(async () => {
     unsubscribeFlushSaves = window.api.onFlushSaves(() => {
         void flushPendingSave();
     });
+    unsubscribeWorkspaceFlushSaves = window.api.onWorkspaceFlushSaves(
+        async (requestId) => {
+            const saved = await flushPendingSave();
+            window.api.completeWorkspaceFlush(
+                requestId,
+                saved ? null : 'The current note could not be saved.',
+            );
+        },
+    );
     safetySaveInterval = setInterval(() => {
         if (isDirty.value) void flushPendingSave();
     }, SAFETY_SAVE_INTERVAL_MS);
@@ -1048,6 +1065,7 @@ onBeforeUnmount(() => {
     window.removeEventListener(TOGGLE_NOTE_CHAT_EVENT, toggleSidebarChat);
     window.removeEventListener(SAVE_NOTE_EVENT, saveNoteManually);
     if (unsubscribeFlushSaves) unsubscribeFlushSaves();
+    if (unsubscribeWorkspaceFlushSaves) unsubscribeWorkspaceFlushSaves();
     window.__lumosActiveEditor = null;
     stopResize();
 });

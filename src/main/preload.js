@@ -14,6 +14,27 @@ contextBridge.exposeInMainWorld('api', {
     forceReload: () => ipcRenderer.send('force-reload'),
     updateMenuState: (state) => ipcRenderer.send('update-menu-state', state),
     getAppInfo: () => ipcRenderer.invoke('get-app-info'),
+    // Workspaces
+    getWorkspaces: () => ipcRenderer.invoke('get-workspaces'),
+    getCurrentWorkspace: () => ipcRenderer.invoke('get-current-workspace'),
+    switchWorkspace: (workspaceId) =>
+        ipcRenderer.invoke('switch-workspace', workspaceId),
+    createWorkspace: (name, icon, color) =>
+        ipcRenderer.invoke('create-workspace', name, icon, color),
+    renameWorkspace: (payload) =>
+        ipcRenderer.invoke('rename-workspace', payload),
+    deleteWorkspace: (workspaceId) =>
+        ipcRenderer.invoke('delete-workspace', workspaceId),
+    getWorkspacePreferences: () =>
+        ipcRenderer.invoke('get-workspace-preferences'),
+    setWorkspacePreferences: (preferences) =>
+        ipcRenderer.invoke('set-workspace-preferences', preferences),
+    listFoldersForWorkspace: (workspaceId) =>
+        ipcRenderer.invoke('list-folders-for-workspace', workspaceId),
+    moveNoteToWorkspace: (payload) =>
+        ipcRenderer.invoke('move-note-to-workspace', payload),
+    moveFolderToWorkspace: (payload) =>
+        ipcRenderer.invoke('move-folder-to-workspace', payload),
     exportNote: (payload) => ipcRenderer.invoke('export-note', payload),
     getCodexStatus: () => ipcRenderer.invoke('get-codex-status'),
     runCodex: (payload) => ipcRenderer.invoke('run-codex', payload),
@@ -92,6 +113,14 @@ contextBridge.exposeInMainWorld('api', {
         ipcRenderer.on('flush-saves', listener);
         return () => ipcRenderer.removeListener('flush-saves', listener);
     },
+    onWorkspaceFlushSaves: (callback) => {
+        const listener = (_, requestId) => callback(requestId);
+        ipcRenderer.on('workspace-flush-saves', listener);
+        return () =>
+            ipcRenderer.removeListener('workspace-flush-saves', listener);
+    },
+    completeWorkspaceFlush: (requestId, error = null) =>
+        ipcRenderer.send('workspace-flush-complete', { requestId, error }),
 
     // Chat
     createChatConversation: (payload) =>

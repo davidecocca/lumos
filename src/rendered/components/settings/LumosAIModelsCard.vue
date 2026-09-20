@@ -20,7 +20,7 @@
                 :menu-props="{ contentClass: 'rounded-lg' }"
                 :list-props="{
                     density: 'compact',
-                    class: 'pl-1 pr-1 pt-2 pb-2',
+                    class: 'px-1 py-2',
                     rounded: 'lg',
                 }"
                 @update:model-value="setSelection(feature.key, $event)"
@@ -83,7 +83,7 @@
                                         @click.stop
                                     />
                                 </template>
-                                <v-list density="compact" class="pl-1 pr-1 pt-2 pb-2" rounded="lg">
+                                <v-list density="compact" class="px-1 py-2" rounded="lg">
                                     <v-list-item
                                         v-for="effort in getReasoningEfforts(
                                             getSlotItemValue(item),

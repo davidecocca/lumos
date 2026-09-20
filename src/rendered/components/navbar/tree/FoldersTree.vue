@@ -1,12 +1,10 @@
 <template>
-    <v-divider class="mx-4 mb-2" />
-
     <!-- Main container -->
     <v-list
     v-if="favoriteNotes.length > 0"
     nav
     density="compact"
-    class="ps-2 pe-4 pt-0 pb-2"
+    class="ps-2 pe-4 pt-0 pb-2 mt-2"
     prepend-gap="8"
     >
     <!-- Favorites -->
@@ -105,7 +103,7 @@
         </v-expand-transition>
     </v-list>
 
-    <v-divider v-if="favoriteNotes.length > 0" class="mx-4 mb-2" />
+    <v-divider v-if="favoriteNotes.length > 0" class="mb-2" />
 
     <!-- Folders -->
     <v-list

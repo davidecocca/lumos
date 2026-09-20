@@ -136,6 +136,12 @@ export const useChatStore = defineStore('chat', () => {
         return window.api.deleteChatConversation(Number(id));
     };
 
+    const resetAllWorkspaceState = () => {
+        conversations.value = {
+            all: createSession('all'),
+        };
+    };
+
     return {
         conversations,
         getSessionKey,
@@ -152,5 +158,6 @@ export const useChatStore = defineStore('chat', () => {
         appendChatMessage,
         renameChatConversation,
         deleteChatConversation,
+        resetAllWorkspaceState,
     };
 });

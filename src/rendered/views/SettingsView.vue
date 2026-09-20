@@ -14,7 +14,10 @@
 
         <v-tabs-window v-model="tab">
             <v-tabs-window-item value="general">
-                <StartupCard />
+                <div class="d-flex flex-column ga-4">
+                    <StartupCard />
+                    <WorkspaceManagementCard />
+                </div>
             </v-tabs-window-item>
             <v-tabs-window-item value="data">
                 <div class="d-flex flex-column ga-4">
@@ -39,6 +42,7 @@ import ViewTitle from '../components/commons/ViewTitle.vue';
 import ChangeThemeCard from '../components/settings/ChangeThemeCard.vue';
 import LumosAICard from '../components/settings/LumosAICard.vue';
 import StartupCard from '../components/settings/StartupCard.vue';
+import WorkspaceManagementCard from '../components/settings/WorkspaceManagementCard.vue';
 import BackupsCard from '../components/settings/BackupsCard.vue';
 import SyncCard from '../components/settings/SyncCard.vue';
 

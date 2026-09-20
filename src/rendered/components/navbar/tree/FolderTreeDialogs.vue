@@ -17,6 +17,13 @@
         :folderId="activeFolderId"
         @delete-folder="store.deleteFolder"
     />
+    <MoveFolderToWorkspaceDialog
+        v-model="moveFolderToWorkspaceDialog"
+        :workspaces="workspaceStore.workspaces"
+        :currentWorkspaceId="workspaceStore.currentWorkspaceId"
+        :folderId="store.actionFolderId"
+        @move-folder="store.moveFolderToWorkspace"
+    />
     <CreateNoteDialog
         v-model="createNoteDialog"
         :folderId="activeFolderId"
@@ -33,6 +40,8 @@
     <MoveToFolderDialog
         v-model="moveToFolderDialog"
         :folders="folders"
+        :workspaces="workspaceStore.workspaces"
+        :currentWorkspaceId="workspaceStore.currentWorkspaceId"
         :noteId="actionNoteId"
         :currentFolderId="actionNoteCurrentFolderId"
         @move-note="store.moveNote"
@@ -57,6 +66,7 @@
 import CreateFolderDialog from '../dialogs/CreateFolderDialog.vue';
 import RenameFolderDialog from '../dialogs/RenameFolderDialog.vue';
 import ConfirmDeleteFolderDialog from '../dialogs/ConfirmDeleteFolderDialog.vue';
+import MoveFolderToWorkspaceDialog from '../dialogs/MoveFolderToWorkspaceDialog.vue';
 import CreateNoteDialog from '../dialogs/CreateNoteDialog.vue';
 import RenameNoteDialog from '../dialogs/RenameNoteDialog.vue';
 import MoveToFolderDialog from '../dialogs/MoveToFolderDialog.vue';
@@ -65,8 +75,10 @@ import ErrorDialog from '../../commons/ErrorDialog.vue';
 
 import { computed } from 'vue';
 import { useFoldersStore } from '../../../stores/foldersStore';
+import { useWorkspaceStore } from '../../../stores/workspaceStore';
 
 const store = useFoldersStore();
+const workspaceStore = useWorkspaceStore();
 
 const folders = computed(() => store.folders);
 const addFolderDialog = computed({
@@ -80,6 +92,10 @@ const renameFolderDialog = computed({
 const deleteFolderDialog = computed({
     get: () => store.deleteFolderDialog,
     set: (val) => (store.deleteFolderDialog = val),
+});
+const moveFolderToWorkspaceDialog = computed({
+    get: () => store.moveFolderToWorkspaceDialog,
+    set: (val) => (store.moveFolderToWorkspaceDialog = val),
 });
 const createNoteDialog = computed({
     get: () => store.createNoteDialog,

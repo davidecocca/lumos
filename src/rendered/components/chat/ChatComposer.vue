@@ -63,7 +63,7 @@
                         <v-list
                             density="compact"
                             rounded="lg"
-                            class="pl-1 pr-1 pt-2 pb-2"
+                            class="px-1 py-2"
                         >
                             <template
                                 v-for="group in groupedModelItems"
@@ -120,7 +120,7 @@
                                                     @click.stop
                                                 />
                                             </template>
-                                            <v-list density="compact" class="pl-1 pr-1 pt-2 pb-2" rounded="lg">
+                                            <v-list density="compact" class="px-1 py-2" rounded="lg">
                                                 <v-list-item
                                                     v-for="effort in item.supportedReasoningEfforts"
                                                     :key="effort"

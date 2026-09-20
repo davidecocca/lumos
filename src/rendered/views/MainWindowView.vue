@@ -102,6 +102,7 @@ import StartupSplash from '../components/splashscreen/StartupSplash.vue';
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';
 import { useFoldersStore } from '../stores/foldersStore';
 import { useTabsStore } from '../stores/tabsStore';
+import { useWorkspaceStore } from '../stores/workspaceStore';
 import LlmService from '../services/llmService';
 import { getGroqModels } from '../services/providers/groqService';
 
@@ -134,6 +135,7 @@ const aiStore = aiPreferencesStore();
 // Store for folders and notes
 const foldersStore = useFoldersStore();
 const tabsStore = useTabsStore();
+const workspaceStore = useWorkspaceStore();
 
 const llmService = new LlmService();
 
@@ -231,6 +233,20 @@ const handleMenuAction = (_, action) => {
     }
 };
 
+const handleWorkspaceChanged = async () => {
+    await Promise.all([
+        foldersStore.fetchFolders(),
+        foldersStore.fetchFavoriteNotes(),
+        foldersStore.fetchLastViewedNotes(),
+    ]);
+
+    await router.replace(
+        tabsStore.activeNoteId === null
+            ? { name: 'home' }
+            : { name: 'notes', params: { noteId: tabsStore.activeNoteId } },
+    );
+};
+
 // Media query to detect OS theme changes
 const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -283,6 +299,7 @@ onMounted(() => {
     updateTheme();
 
     api.on('menu-action', handleMenuAction);
+    window.addEventListener('lumos-workspace-changed', handleWorkspaceChanged);
 
     // Load AI preferences once at app startup
     aiStore.loadPreferences();
@@ -297,7 +314,8 @@ onMounted(() => {
 onMounted(async () => {
     try {
         await router.isReady();
-        await tabsStore.restoreSession();
+        await workspaceStore.initialize();
+        await tabsStore.restoreSession(workspaceStore.currentWorkspaceId);
         await router.replace(
             tabsStore.activeNoteId === null
                 ? { name: 'home' }
@@ -319,6 +337,10 @@ onBeforeUnmount(() => {
     mediaQuery.removeEventListener('change', handleOSChange);
 
     api.removeListener('menu-action', handleMenuAction);
+    window.removeEventListener(
+        'lumos-workspace-changed',
+        handleWorkspaceChanged,
+    );
     window.clearTimeout(splashTimer);
 });
 

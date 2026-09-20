@@ -14,6 +14,8 @@
                 />
             </div>
 
+            <v-divider />
+
             <div class="flex-grow-1 overflow-y-auto">
                 <v-slide-x-transition mode="out-in">
                     <div v-if="!railModel" key="folders">
@@ -24,6 +26,10 @@
                     </div>
                 </v-slide-x-transition>
             </div>
+
+            <v-divider />
+            <WorkspaceSwitcher :rail="railModel" />
+
             <FolderTreeDialogs />
         </div>
     </v-navigation-drawer>
@@ -34,9 +40,11 @@ import PageRouter from './layout/PageRouter.vue';
 import FoldersTree from './tree/FoldersTree.vue';
 import CompactFoldersTree from './tree/CompactFoldersTree.vue';
 import FolderTreeDialogs from './tree/FolderTreeDialogs.vue';
+import WorkspaceSwitcher from './WorkspaceSwitcher.vue';
 
 import { computed, onMounted } from 'vue';
 import { useFoldersStore } from '../../stores/foldersStore';
+import { useWorkspaceStore } from '../../stores/workspaceStore';
 
 const props = defineProps({
     rail: {
@@ -47,8 +55,10 @@ const props = defineProps({
 
 const emit = defineEmits(['update:rail', 'open-search']);
 const store = useFoldersStore();
+const workspaceStore = useWorkspaceStore();
 
 onMounted(async () => {
+    await workspaceStore.initialize();
     await store.fetchFolders();
     await store.fetchFavoriteNotes();
 });

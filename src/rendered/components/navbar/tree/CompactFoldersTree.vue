@@ -1,8 +1,6 @@
 <template>
-    <v-divider class="mx-4 mb-2" />
-
     <!-- Main container -->
-    <v-list density="compact" nav class="pt-0">
+    <v-list density="compact" nav class="pt-0 mt-2">
         <!-- Favorites -->
         <v-menu location="end" :close-on-content-click="false">
             <template v-slot:activator="{ props: menuProps }">
@@ -27,7 +25,7 @@
                 max-height="800"
                 rounded="lg"
                 prepend-gap="8"
-                class="pl-1 pr-1 pt-2 pb-2"
+                class="pa-2"
             >
                 <v-list-item
                     min-height="32"
@@ -145,7 +143,7 @@
                 "
                 open-strategy="multiple"
                 rounded="lg"
-                class="pl-1 pr-1 pt-2 pb-2"
+                class="pa-2"
             >
                 <v-list-item
                     min-height="32"

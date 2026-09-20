@@ -16,6 +16,7 @@ export const useFoldersStore = defineStore('folders', {
         createNoteShowFolderPicker: false,
         renameNoteDialog: false,
         moveToFolderDialog: false,
+        moveFolderToWorkspaceDialog: false,
         deleteNoteDialog: false,
         // Active folder state
         activeFolderId: null,
@@ -28,6 +29,7 @@ export const useFoldersStore = defineStore('folders', {
         actionNoteId: null,
         actionNoteTitle: '',
         actionNoteCurrentFolderId: null,
+        actionFolderId: null,
         editorNoteId: null,
         editorNoteTitle: '',
         editorNoteCurrentFolderId: null,
@@ -61,6 +63,29 @@ export const useFoldersStore = defineStore('folders', {
         },
     },
     actions: {
+        resetForWorkspace() {
+            this.folders = [];
+            this.favorites = [];
+            this.recents = [];
+            this.addFolderDialog = false;
+            this.renameFolderDialog = false;
+            this.deleteFolderDialog = false;
+            this.createNoteDialog = false;
+            this.renameNoteDialog = false;
+            this.moveToFolderDialog = false;
+            this.moveFolderToWorkspaceDialog = false;
+            this.deleteNoteDialog = false;
+            this.activeFolderId = null;
+            this.activeFolderName = '';
+            this.activeNoteId = null;
+            this.activeNoteTitle = '';
+            this.activeNoteCurrentFolderId = null;
+            this.editorNoteId = null;
+            this.editorNoteTitle = '';
+            this.editorNoteCurrentFolderId = null;
+            this.editorNoteFavorite = null;
+            this.editorNoteDeletedId = null;
+        },
         sortNotesByTitle(notes) {
             notes.sort((a, b) => a.title.localeCompare(b.title));
         },
@@ -229,6 +254,45 @@ export const useFoldersStore = defineStore('folders', {
             this.activeFolderName = folderName;
             this.renameFolderDialog = true;
         },
+        openMoveFolderToWorkspaceDialog(folderId) {
+            this.actionFolderId = folderId;
+            this.moveFolderToWorkspaceDialog = true;
+        },
+        async moveFolderToWorkspace(folderId, workspaceId) {
+            try {
+                const notes = await window.api.getFolderContent(folderId);
+                const noteIds = notes.map((note) => note.id);
+                await window.api.moveFolderToWorkspace({
+                    folderId,
+                    workspaceId,
+                });
+                this.folders = this.folders.filter(
+                    (folder) => folder.id !== folderId,
+                );
+                this.favorites = this.favorites.filter(
+                    (note) => !noteIds.includes(note.id),
+                );
+                this.recents = this.recents.filter(
+                    (note) => !noteIds.includes(note.id),
+                );
+                if (noteIds.includes(this.editorNoteId)) {
+                    this.editorNoteDeletedId = this.editorNoteId;
+                    this.editorNoteId = null;
+                    this.editorNoteTitle = '';
+                    this.editorNoteCurrentFolderId = null;
+                    this.editorNoteFavorite = null;
+                }
+                useTabsStore().closeNotes(noteIds);
+                this.moveFolderToWorkspaceDialog = false;
+            } catch (err) {
+                console.error('Error moving folder:', err);
+                this.errorDialogText =
+                    'An error occurred while moving the folder.';
+                this.errorDialogTitle = 'Folder Moving Error';
+                this.errorDialogDetails = err.message;
+                this.isErrorDialogVisible = true;
+            }
+        },
         async renameFolder(folderId, newFolderName) {
             if (newFolderName) {
                 try {
@@ -359,10 +423,25 @@ export const useFoldersStore = defineStore('folders', {
                 return;
             }
             try {
-                await window.api.moveNoteToFolder({
-                    noteId: noteId,
-                    newFolderId: newFolderId,
-                });
+                const currentWorkspaceId = (
+                    await window.api.getCurrentWorkspace()
+                ).workspace.id;
+                const targetWorkspaceId = options.targetWorkspaceId || null;
+                if (
+                    targetWorkspaceId &&
+                    targetWorkspaceId !== currentWorkspaceId
+                ) {
+                    await window.api.moveNoteToWorkspace({
+                        noteId,
+                        workspaceId: targetWorkspaceId,
+                        folderId: newFolderId,
+                    });
+                } else {
+                    await window.api.moveNoteToFolder({
+                        noteId: noteId,
+                        newFolderId: newFolderId,
+                    });
+                }
                 const resolvedCurrentFolderId =
                     currentFolderId ??
                     this.folders.find((folder) =>
@@ -371,9 +450,13 @@ export const useFoldersStore = defineStore('folders', {
                 const currentFolder = this.folders.find(
                     (folder) => folder.id === resolvedCurrentFolderId,
                 );
-                const newFolder = this.folders.find(
-                    (folder) => folder.id === newFolderId,
-                );
+                const newFolder =
+                    targetWorkspaceId &&
+                    targetWorkspaceId !== currentWorkspaceId
+                        ? null
+                        : this.folders.find(
+                              (folder) => folder.id === newFolderId,
+                          );
 
                 if (currentFolder) {
                     currentFolder.notes = currentFolder.notes.filter(
@@ -409,7 +492,16 @@ export const useFoldersStore = defineStore('folders', {
                     this.activeNoteCurrentFolderId = newFolderId;
                 }
                 if (this.editorNoteId === noteId) {
-                    this.editorNoteCurrentFolderId = newFolderId;
+                    this.editorNoteDeletedId = noteId;
+                    this.editorNoteId = null;
+                    this.editorNoteTitle = '';
+                    this.editorNoteCurrentFolderId = null;
+                }
+                if (
+                    targetWorkspaceId &&
+                    targetWorkspaceId !== currentWorkspaceId
+                ) {
+                    useTabsStore().closeNote(noteId);
                 }
                 this.moveToFolderDialog = false;
             } catch (err) {

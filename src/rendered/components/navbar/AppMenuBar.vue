@@ -20,7 +20,7 @@
                 density="compact"
                 rounded="lg"
                 min-width="320"
-                class="pl-1 pr-1 pt-2 pb-2 menu-list"
+                class="px-1 py-2 menu-list"
             >
                 <template v-for="(item, i) in menu.items" :key="i">
                     <v-divider

@@ -19,7 +19,7 @@
                     </template>
                 </v-tooltip>
             </template>
-            <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
+            <v-list density="compact" rounded="lg" class="px-1 py-2">
                 <v-list-item
                     v-for="item in menuItems"
                     :key="item.value"
@@ -83,6 +83,12 @@ const menuItems = computed(() => [
         icon: 'ph-pencil-simple-line',
         action: () =>
             store.openRenameFolderDialog(props.folder.id, props.folder.name),
+    },
+    {
+        value: 'move',
+        title: 'Move to',
+        icon: 'ph-arrow-right',
+        action: () => store.openMoveFolderToWorkspaceDialog(props.folder.id),
     },
     {
         value: 'delete',

@@ -21,6 +21,8 @@ const vectorStore = require('./database/vectorStore');
 const vectorIndexer = require('./services/vectorIndexer');
 const localEmbeddings = require('./services/localEmbeddings');
 const imageService = require('./services/imageService');
+const workspaceService = require('./services/workspaceService');
+const { getActiveWorkspaceId } = require('./workspaceContext');
 const noteExportService = require('./services/noteExportService');
 const { checkCodex, runCodex } = require('./services/codexService');
 const { randomUUID } = require('crypto');
@@ -214,6 +216,31 @@ function createApplicationMenu() {
 // Give the renderer a short grace period to flush pending auto-saves
 // before the app (or the window) goes away.
 let flushSent = false;
+const pendingWorkspaceFlushes = new Map();
+
+function requestWorkspaceFlush(sender) {
+    if (!sender || sender.isDestroyed() || !menuState.hasOpenNote) {
+        return Promise.resolve();
+    }
+
+    const requestId = randomUUID();
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            pendingWorkspaceFlushes.delete(requestId);
+            reject(
+                new Error('Could not save the current note before switching.'),
+            );
+        }, 1500);
+        pendingWorkspaceFlushes.set(requestId, (error) => {
+            clearTimeout(timeout);
+            pendingWorkspaceFlushes.delete(requestId);
+            if (error) reject(new Error(error));
+            else resolve();
+        });
+        sender.send('workspace-flush-saves', requestId);
+    });
+}
+
 function requestFlushAndContinue(continueFn) {
     if (flushSent) {
         continueFn();
@@ -330,6 +357,9 @@ function setupIPC() {
             Menu.setApplicationMenu(createApplicationMenu());
         }
     });
+    ipcMain.on('workspace-flush-complete', (_, { requestId, error } = {}) => {
+        pendingWorkspaceFlushes.get(requestId)?.(error);
+    });
     ipcMain.handle('get-app-info', () => ({
         name: app.getName(),
         version: app.getVersion(),
@@ -337,6 +367,74 @@ function setupIPC() {
         chromeVersion: process.versions.chrome,
         platform: process.platform,
     }));
+
+    // --- Workspace management ---
+    ipcMain.handle('get-workspaces', () => workspaceService.listWorkspaces());
+    ipcMain.handle('get-current-workspace', async () => ({
+        workspace: await workspaceService
+            .listWorkspaces()
+            .then((workspaces) =>
+                workspaces.find(
+                    (workspace) => workspace.id === getActiveWorkspaceId(),
+                ),
+            ),
+        preferences: await workspaceService.getPreferences(),
+    }));
+    ipcMain.handle('switch-workspace', async (event, workspaceId) => {
+        await requestWorkspaceFlush(event.sender);
+        return workspaceService.switchWorkspace(workspaceId);
+    });
+    ipcMain.handle('create-workspace', async (_, name, icon, color) => {
+        const workspace = await workspaceService.createWorkspace(
+            name,
+            icon,
+            color,
+        );
+        scheduleSyncableChange();
+        return workspace;
+    });
+    ipcMain.handle('rename-workspace', async (_, { id, name, icon, color }) => {
+        const workspace = await workspaceService.renameWorkspace(
+            id,
+            name,
+            icon,
+            color,
+        );
+        scheduleSyncableChange();
+        return workspace;
+    });
+    ipcMain.handle('delete-workspace', async (_, workspaceId) => {
+        await workspaceService.deleteWorkspace(workspaceId);
+        scheduleSyncableChange();
+    });
+    ipcMain.handle('get-workspace-preferences', () =>
+        workspaceService.getPreferences(),
+    );
+    ipcMain.handle('set-workspace-preferences', (_, preferences) =>
+        workspaceService.setPreferences(preferences),
+    );
+    ipcMain.handle('list-folders-for-workspace', (_, workspaceId) =>
+        workspaceService.listFoldersForWorkspace(workspaceId),
+    );
+    ipcMain.handle(
+        'move-note-to-workspace',
+        async (_, { noteId, workspaceId, folderId }) => {
+            await workspaceService.moveNoteToWorkspace(
+                noteId,
+                workspaceId,
+                folderId,
+            );
+            scheduleSyncableChange();
+        },
+    );
+    ipcMain.handle(
+        'move-folder-to-workspace',
+        async (_, { folderId, workspaceId }) => {
+            await workspaceService.moveFolderToWorkspace(folderId, workspaceId);
+            scheduleSyncableChange();
+        },
+    );
+
     ipcMain.handle('export-note', async (event, payload) => {
         const format = payload?.format;
         const title = payload?.title || 'Untitled note';
@@ -749,7 +847,10 @@ function setupIPC() {
             }
             return new Promise((resolve, reject) => {
                 vectorStore
-                    .searchSimilarNotes(query, limit, filter)
+                    .searchSimilarNotes(query, limit, {
+                        ...(filter || {}),
+                        workspaceId: getActiveWorkspaceId(),
+                    })
                     .then((results) => resolve(results))
                     .catch((err) => reject(err));
             });
@@ -911,7 +1012,11 @@ async function initializeRag() {
         .initialize(lancePath)
         .then(async ({ rebuilt }) => {
             if (rebuilt) {
-                await clearVectorSync();
+                await new Promise((resolve, reject) => {
+                    clearVectorSync((error) =>
+                        error ? reject(error) : resolve(),
+                    );
+                });
             }
 
             broadcastRagStatus();
@@ -933,12 +1038,14 @@ async function initializeRag() {
 
 // App lifecycle
 app.whenReady().then(async () => {
+    await database.ready;
     try {
         await backupService.completePendingSyncRestore();
     } catch (error) {
         console.error('Could not clean up the previous sync data:', error);
     }
     if (await prepareSyncBeforeWindow()) return;
+    await workspaceService.initialize();
 
     Menu.setApplicationMenu(
         process.platform === 'darwin' ? createApplicationMenu() : null,

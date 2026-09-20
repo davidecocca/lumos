@@ -3,7 +3,7 @@
         density="compact"
         rounded="lg"
         nav
-        class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark"
+        class="px-1 py-2 bg-surface-dark"
     >
         <v-list-item
             v-for="item in editMenuItems"
@@ -34,7 +34,7 @@
                 nav
                 style="min-width: 180px"
                 rounded="lg"
-                class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark"
+                class="px-1 py-2 bg-surface-dark"
             >
                 <v-list-item
                     v-for="tone in supportedTones"
@@ -67,7 +67,7 @@
                 nav
                 style="min-width: 160px"
                 rounded="lg"
-                class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark"
+                class="px-1 py-2 bg-surface-dark"
             >
                 <v-list-item
                     v-for="lang in supportedLanguages"

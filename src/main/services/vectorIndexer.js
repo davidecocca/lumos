@@ -146,7 +146,12 @@ class VectorIndexer {
 
         try {
             await vectorStore.deleteNote(noteId);
-            await vectorStore.addNote(noteId, note.content_text, note.title);
+            await vectorStore.addNote(
+                noteId,
+                note.content_text,
+                note.title,
+                note.workspace_id,
+            );
             await this.markSynced(noteId, note.updated_at);
         } catch (err) {
             // An indexing failure gets up to three attempts:

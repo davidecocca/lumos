@@ -4,7 +4,7 @@
         nav
         rounded="lg"
         min-width="180"
-        class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark"
+        class="px-1 py-2 bg-surface-dark"
     >
         <v-list-item
             v-for="(color, index) in colors"

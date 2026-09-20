@@ -114,7 +114,7 @@ const props = defineProps({
     },
     contentClass: {
         type: String,
-        default: 'px-6 pb-4',
+        default: 'px-6 pb-4 text-body-medium text-break',
     },
     actionsClass: {
         type: String,

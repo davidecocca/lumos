@@ -18,12 +18,14 @@
             rounded="lg"
             :menu-props="{ contentClass: 'rounded-lg' }"
             :list-props="{
+                nav: true,
                 density: 'compact',
-                class: 'pl-1 pr-1 pt-2 pb-2',
+                class: 'pa-2',
                 rounded: 'lg',
+                prependGap: 8,
             }"
-            :item-props="() => ({ rounded: 'lg' })"
-            class="mb-3"
+            no-data-text="No folders yet. Create one first."
+            :item-props="() => ({ rounded: 'lg', prependIcon: 'ph-folder' })"
             :rules="[(v) => !!v || 'Folder is required']"
         ></v-select>
 

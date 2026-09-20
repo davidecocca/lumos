@@ -93,7 +93,7 @@ const items = [
         hotkey: 'cmd+shift+l',
         hintShortcut: '⌘⇧L',
     },
-    { icon: 'ph-gear', title: 'Settings', value: 'settings' },
+    { icon: 'ph-gear-six', title: 'Settings', value: 'settings' },
 ].map((item) => ({
     ...item,
     hint: createHint(item),

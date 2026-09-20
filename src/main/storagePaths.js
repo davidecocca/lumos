@@ -44,6 +44,10 @@ function getSyncStatePath() {
     return path.join(getStorageRoot(), 'sync-state.json');
 }
 
+function getWorkspacePreferencesPath() {
+    return path.join(getStorageRoot(), 'workspace-preferences.json');
+}
+
 function initializeStorage() {
     fs.mkdirSync(getDataPath(), { recursive: true });
     fs.mkdirSync(getBackupPath(), { recursive: true });
@@ -58,6 +62,7 @@ module.exports = {
     getRestoreStatePath,
     getStorageRoot,
     getSyncStatePath,
+    getWorkspacePreferencesPath,
     getVectorStorePath,
     initializeStorage,
 };

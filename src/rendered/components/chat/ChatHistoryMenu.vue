@@ -20,7 +20,7 @@
             max-height="360"
             density="compact"
             rounded="lg"
-            class="overflow-y-auto pl-1 pr-1 pt-2 pb-2"
+            class="overflow-y-auto px-1 py-2"
         >
             <v-list-subheader>Recents</v-list-subheader>
             <v-list-item
@@ -66,7 +66,7 @@
                         <v-list
                             density="compact"
                             rounded="lg"
-                            class="pl-1 pr-1 pt-2 pb-2"
+                            class="px-1 py-2"
                         >
                             <v-list-item
                                 @click.stop="emit('rename', conversation)"

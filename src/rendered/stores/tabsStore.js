@@ -1,23 +1,34 @@
 import { defineStore } from 'pinia';
 
-const SESSION_STORAGE_KEY = 'lumosTabSession';
+const SESSION_STORAGE_PREFIX = 'lumosTabSession';
 const RESTORE_STORAGE_KEY = 'lumosRestoreOpenTabs';
+
+function getWorkspaceSessionKey(workspaceId) {
+    return `${SESSION_STORAGE_PREFIX}:${workspaceId}`;
+}
 
 export const useTabsStore = defineStore('tabs', {
     state: () => ({
         tabs: [],
         activeNoteId: null,
+        workspaceId: 'default',
+        isRestoring: false,
         restoreOpenTabsOnStartup: true,
     }),
     actions: {
-        async restoreSession() {
+        async restoreSession(workspaceId = 'default') {
+            this.isRestoring = true;
             try {
+                this.workspaceId = workspaceId;
+                this.tabs = [];
+                this.activeNoteId = null;
                 this.restoreOpenTabsOnStartup =
                     localStorage.getItem(RESTORE_STORAGE_KEY) !== 'false';
                 if (!this.restoreOpenTabsOnStartup) return;
 
                 const session = JSON.parse(
-                    localStorage.getItem(SESSION_STORAGE_KEY) || 'null',
+                    localStorage.getItem(getWorkspaceSessionKey(workspaceId)) ||
+                        'null',
                 );
                 if (!Array.isArray(session?.noteIds)) return;
 
@@ -45,12 +56,16 @@ export const useTabsStore = defineStore('tabs', {
                 this.$patch({ tabs, activeNoteId });
             } catch (error) {
                 console.warn('Could not restore the tab session:', error);
+            } finally {
+                this.isRestoring = false;
             }
         },
         saveSession() {
+            if (this.isRestoring) return;
             try {
+                const workspaceId = this.workspaceId || 'default';
                 localStorage.setItem(
-                    SESSION_STORAGE_KEY,
+                    getWorkspaceSessionKey(workspaceId),
                     JSON.stringify({
                         noteIds: this.tabs.map((tab) => tab.id),
                         activeNoteId: this.activeNoteId,

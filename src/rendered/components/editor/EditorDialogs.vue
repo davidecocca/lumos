@@ -14,6 +14,8 @@
             :currentFolderId="note.folder_id"
             :currentFolderName="note.folderName"
             :folders="folders"
+            :workspaces="workspaceStore.workspaces"
+            :currentWorkspaceId="workspaceStore.currentWorkspaceId"
             @update:model-value="emit('update:moveToFolderDialog', $event)"
             @move-note="handleMoveNote"
         />
@@ -41,6 +43,9 @@ import RenameNoteDialog from '../navbar/dialogs/RenameNoteDialog.vue';
 import MoveToFolderDialog from '../navbar/dialogs/MoveToFolderDialog.vue';
 import ConfirmDeleteNoteDialog from '../navbar/dialogs/ConfirmDeleteNoteDialog.vue';
 import EmbedYoutubeDialog from './dialogs/EmbedYoutubeDialog.vue';
+import { useWorkspaceStore } from '../../stores/workspaceStore';
+
+const workspaceStore = useWorkspaceStore();
 
 defineProps({
     note: {
@@ -104,7 +109,7 @@ const handleRenameNote = (noteId, title) => {
     emit('rename-note', noteId, title);
 };
 
-const handleMoveNote = (noteId, newFolderId) => {
-    emit('move-note', noteId, newFolderId);
+const handleMoveNote = (noteId, newFolderId, options) => {
+    emit('move-note', noteId, newFolderId, options);
 };
 </script>

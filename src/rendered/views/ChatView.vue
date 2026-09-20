@@ -100,7 +100,7 @@
                                 <v-list
                                     density="compact"
                                     rounded="lg"
-                                    class="pl-1 pr-1 pt-2 pb-2"
+                                    class="px-1 py-2"
                                 >
                                     <v-list-item
                                         @click.stop="
@@ -191,7 +191,7 @@ import LumosChatPanel from '../components/chat/LumosChatPanel.vue';
 import RenameChatDialog from '../components/chat/dialogs/RenameChatDialog.vue';
 import ConfirmDeleteChatDialog from '../components/chat/dialogs/ConfirmDeleteChatDialog.vue';
 import { useChatStore } from '../stores/chatStore';
-import { onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 const chatStore = useChatStore();
 const conversations = ref([]);
@@ -271,9 +271,23 @@ const formatConversationTime = (value) => {
     }).format(new Date(value));
 };
 
+const handleWorkspaceChanged = async () => {
+    selectedConversationId.value = null;
+    conversations.value = [];
+    await refreshConversations();
+};
+
 onMounted(async () => {
     await refreshConversations();
     startNewChat();
+    window.addEventListener('lumos-workspace-changed', handleWorkspaceChanged);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener(
+        'lumos-workspace-changed',
+        handleWorkspaceChanged,
+    );
 });
 </script>
 

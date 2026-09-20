@@ -3,7 +3,7 @@
         density="compact"
         nav
         rounded="lg"
-        class="pl-1 pr-1 pt-2 pb-2 bg-surface-dark"
+        class="px-1 py-2 bg-surface-dark"
     >
         <v-list-item
             v-for="item in blockItems"

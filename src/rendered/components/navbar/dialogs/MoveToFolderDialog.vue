@@ -3,47 +3,66 @@
         :model-value="modelValue"
         @update:model-value="$emit('update:modelValue', $event)"
         title="Move note"
-        subtitle="Select the destination folder."
+        subtitle="Choose a workspace and folder."
         icon="ph-arrow-right"
     >
+        <WorkspaceSelect
+            v-model="selectedWorkspaceId"
+            :workspaces="workspaces"
+            :disabled="loadingFolders"
+            class="mb-4"
+        />
         <v-select
-            label="Choose a folder"
-            clearable
-            :items="filteredFolders"
+            v-model="newFolderId"
+            :items="workspaceFolders"
             item-title="name"
             item-value="id"
-            v-model="newFolderId"
+            label="Folder"
             variant="outlined"
             density="comfortable"
             rounded="lg"
+            :loading="loadingFolders"
+            :disabled="loadingFolders"
+            hide-details="auto"
+            no-data-text="This workspace has no folders yet. Create one first."
             :menu-props="{ contentClass: 'rounded-lg' }"
             :list-props="{
+                nav: true,
                 density: 'compact',
-                class: 'pl-1 pr-1 pt-2 pb-2',
-                rounded: 'lg',
+                class: 'pa-2',
+                prependGap: 8,
             }"
-            :item-props="() => ({ rounded: 'lg' })"
-            @keydown.enter="handleEnter"
-            @click:clear="handleClear"
+            :item-props="() => ({ rounded: 'lg', prependIcon: 'ph-folder' })"
         />
+        <v-alert
+            v-if="folderError"
+            type="error"
+            variant="tonal"
+            rounded="lg"
+            class="mt-3"
+            role="alert"
+            >{{ folderError }}</v-alert
+        >
 
         <template #actions>
             <v-spacer />
-            <v-btn variant="text" @click="closeDialog()">Cancel</v-btn>
+            <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
             <v-btn
                 color="primary"
                 variant="tonal"
+                :disabled="!newFolderId || loadingFolders"
                 @click="moveNote"
-                :disabled="!newFolderId"
-                >Move</v-btn
             >
+                Move
+            </v-btn>
         </template>
     </BaseDialog>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import BaseDialog from '../../commons/BaseDialog.vue';
+import WorkspaceSelect from '../../workspaces/WorkspaceSelect.vue';
 
 const props = defineProps({
     modelValue: {
@@ -52,48 +71,100 @@ const props = defineProps({
     },
     folders: {
         type: Array,
-        mandatory: true,
         default: () => [],
+    },
+    workspaces: {
+        type: Array,
+        default: () => [],
+    },
+    currentWorkspaceId: {
+        type: String,
+        default: null,
     },
     noteId: {
         type: Number,
-        mandatory: true,
+        default: null,
     },
     currentFolderId: {
         type: Number,
-        mandatory: true,
+        default: null,
     },
 });
 
 const emit = defineEmits(['update:modelValue', 'move-note']);
-
 const newFolderId = ref(null);
+const selectedWorkspaceId = ref(null);
+const workspaceFolders = ref([]);
+const loadingFolders = ref(false);
+const folderError = ref('');
 
-const filteredFolders = computed(() => {
-    // Exclude the folder where the note is currently placed
-    return props.folders.filter(
-        (folder) => folder.id !== props.currentFolderId,
-    );
-});
+const currentWorkspaceFolders = computed(() =>
+    props.folders.filter((folder) => folder.id !== props.currentFolderId),
+);
 
-const closeDialog = () => {
-    emit('update:modelValue', false);
+const loadWorkspaceFolders = async (workspaceId) => {
+    workspaceFolders.value = [];
+    loadingFolders.value = false;
+    folderError.value = '';
+    if (!workspaceId) {
+        workspaceFolders.value = [];
+        return;
+    }
+
+    if (workspaceId === props.currentWorkspaceId) {
+        workspaceFolders.value = currentWorkspaceFolders.value;
+        return;
+    }
+
+    loadingFolders.value = true;
+    try {
+        const folders = await window.api.listFoldersForWorkspace(workspaceId);
+        if (props.modelValue && workspaceId === selectedWorkspaceId.value) {
+            workspaceFolders.value = folders;
+        }
+    } catch (error) {
+        if (props.modelValue && workspaceId === selectedWorkspaceId.value) {
+            folderError.value =
+                'Could not load folders. Close this dialog and try again.';
+        }
+    } finally {
+        if (props.modelValue && workspaceId === selectedWorkspaceId.value) {
+            loadingFolders.value = false;
+        }
+    }
 };
-const moveNote = () => {
-    if (newFolderId.value) {
-        emit('move-note', props.noteId, newFolderId.value);
+
+watch(
+    [() => props.modelValue, selectedWorkspaceId],
+    async ([isOpen, workspaceId]) => {
+        if (!isOpen) return;
         newFolderId.value = null;
-        closeDialog();
-    }
-};
+        await loadWorkspaceFolders(workspaceId);
+    },
+);
 
-const handleEnter = () => {
-    if (newFolderId.value) {
-        moveNote();
-    }
-};
+watch(
+    () => props.modelValue,
+    (isOpen) => {
+        if (!isOpen) return;
+        selectedWorkspaceId.value = props.currentWorkspaceId;
+        newFolderId.value = null;
+    },
+);
 
-const handleClear = () => {
+const closeDialog = () => emit('update:modelValue', false);
+
+const moveNote = () => {
+    if (
+        !newFolderId.value ||
+        !selectedWorkspaceId.value ||
+        loadingFolders.value
+    )
+        return;
+    emit('move-note', props.noteId, newFolderId.value, {
+        targetWorkspaceId: selectedWorkspaceId.value,
+    });
     newFolderId.value = null;
+    closeDialog();
 };
 </script>

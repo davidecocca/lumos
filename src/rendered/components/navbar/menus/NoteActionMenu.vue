@@ -19,7 +19,7 @@
                 </template>
             </v-tooltip>
         </template>
-        <v-list density="compact" rounded="lg" class="pl-1 pr-1 pt-2 pb-2">
+        <v-list density="compact" rounded="lg" class="px-1 py-2">
             <template v-for="item in menuItems" :key="item.key">
                 <v-divider v-if="item.divider" class="my-1"></v-divider>
                 <v-menu
@@ -45,7 +45,7 @@
                     <v-list
                         density="compact"
                         rounded="lg"
-                        class="pl-1 pr-1 pt-2 pb-2"
+                        class="px-1 py-2"
                     >
                         <v-list-item
                             v-for="child in item.children"
