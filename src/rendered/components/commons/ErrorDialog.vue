@@ -1,73 +1,68 @@
 <template>
-    <v-dialog
+    <BaseDialog
         :model-value="modelValue"
-        @update:model-value="$emit('update:isErrorAlertVisible', $event)"
+        @update:model-value="$emit('update:modelValue', $event)"
         persistent
         max-width="560"
+        :title="errorDialogTitle"
+        icon="ph-warning-circle"
+        icon-color="error"
+        content-class="px-6 pb-4"
     >
-        <v-card rounded="xl" elevation="8">
-            <v-card-title class="d-flex align-center pt-5 pb-1 px-6">
-                <v-avatar color="red-lighten-5" size="36" class="mr-3">
-                    <v-icon size="22" color="red-darken-2">mdi-alert-circle</v-icon>
-                </v-avatar>
-                <div class="text-h6">{{ errorDialogTitle }}</div>
-            </v-card-title>
+        {{ errorDialogText }}
+        <v-expand-transition>
+            <div v-if="showErrorDetails" class="mt-3 detail-log">
+                {{ errorDialogDetails }}
+            </div>
+        </v-expand-transition>
 
-            <v-card-text class="px-6 pb-0">
-                {{ errorDialogText }}
-                <v-expand-transition>
-                    <div v-if="showErrorDetails" class="mt-3 detail-log">
-                        {{ errorDialogDetails }}
-                    </div>
-                </v-expand-transition>
-            </v-card-text>
-
-            <v-divider class="mt-4" />
-            <v-card-actions class="px-6 py-3">
-                <v-btn variant="text" @click="toggleErrorDetails">
-                    {{ showErrorDetails ? 'Hide Log' : 'Show Log' }}
-                </v-btn>
-                <v-spacer />
-                <v-btn color="primary" variant="tonal" @click="closeDialog">Close</v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
+        <template #actions>
+            <v-btn variant="text" @click="toggleErrorDetails">
+                {{ showErrorDetails ? 'Hide Log' : 'Show Log' }}
+            </v-btn>
+            <v-spacer />
+            <v-btn color="primary" variant="tonal" @click="closeDialog"
+                >Close</v-btn
+            >
+        </template>
+    </BaseDialog>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref } from 'vue';
+import BaseDialog from './BaseDialog.vue';
 
 const props = defineProps({
     modelValue: {
         type: Boolean,
-        default: false
+        default: false,
     },
     errorDialogText: {
         type: String,
-        default: ''
+        default: '',
     },
     errorDialogTitle: {
         type: String,
-        default: ''
+        default: '',
     },
     errorDialogDetails: {
         type: String,
-        default: ''
-    }
-})
+        default: '',
+    },
+});
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue']);
 
-const showErrorDetails = ref(false)
+const showErrorDetails = ref(false);
 
 const closeDialog = () => {
-    emit('update:modelValue', false)
-    showErrorDetails.value = false
-}
+    emit('update:modelValue', false);
+    showErrorDetails.value = false;
+};
 
 const toggleErrorDetails = () => {
-    showErrorDetails.value = !showErrorDetails.value
-}
+    showErrorDetails.value = !showErrorDetails.value;
+};
 </script>
 
 <style scoped>

@@ -1,39 +1,50 @@
 <template>
     <div class="d-flex flex-column">
-        <div class="d-flex flex-column align-center mt-2 mb-4">
-            <p class="text-h4 font-weight-medium">Settings</p>
-            <p class="text-h6 font-weight-light">Set things your way.</p>
-        </div>
-        
-        <v-tabs
-        v-model="tab"
-        align-tabs="center"
-        color="primary"
-        class="mb-4"
-        >
-        <v-tab :value="appearanceTab">Appearance</v-tab>
-        <v-tab :value="lumosAITab">Lumos AI</v-tab>
-    </v-tabs>
-    
-    <v-tabs-window v-model="tab">
-        <!-- Appearance settings -->
-        <v-tabs-window-item>
-            <ChangeThemeCard
-            :theme="theme"
-            @update:theme="updateTheme"
-            />
-        </v-tabs-window-item>
-        <!-- Lumos AI settings -->
-        <v-tabs-window-item>
-            <LumosAICard />
-        </v-tabs-window-item>
-    </v-tabs-window>
-</div>
+        <!-- Page title -->
+        <ViewTitle title="Settings" subtitle="Set things your way." />
+
+        <v-tabs v-model="tab" align-tabs="center" color="primary" class="mb-4">
+            <v-tab value="general" prepend-icon="ph-sliders-horizontal"
+                >General</v-tab
+            >
+            <v-tab value="data" prepend-icon="ph-database">Data</v-tab>
+            <v-tab value="appearance" prepend-icon="ph-broom">Appearance</v-tab>
+            <v-tab value="lumos-ai" prepend-icon="ph-brain">Lumos AI</v-tab>
+        </v-tabs>
+
+        <v-tabs-window v-model="tab">
+            <v-tabs-window-item value="general">
+                <div class="d-flex flex-column ga-4">
+                    <StartupCard />
+                    <WorkspaceManagementCard />
+                </div>
+            </v-tabs-window-item>
+            <v-tabs-window-item value="data">
+                <div class="d-flex flex-column ga-4">
+                    <SyncCard />
+                    <BackupsCard />
+                </div>
+            </v-tabs-window-item>
+            <!-- Appearance settings -->
+            <v-tabs-window-item value="appearance">
+                <ChangeThemeCard :theme="theme" @update:theme="updateTheme" />
+            </v-tabs-window-item>
+            <!-- Lumos AI settings -->
+            <v-tabs-window-item value="lumos-ai">
+                <LumosAICard />
+            </v-tabs-window-item>
+        </v-tabs-window>
+    </div>
 </template>
 
 <script setup>
+import ViewTitle from '../components/commons/ViewTitle.vue';
 import ChangeThemeCard from '../components/settings/ChangeThemeCard.vue';
 import LumosAICard from '../components/settings/LumosAICard.vue';
+import StartupCard from '../components/settings/StartupCard.vue';
+import WorkspaceManagementCard from '../components/settings/WorkspaceManagementCard.vue';
+import BackupsCard from '../components/settings/BackupsCard.vue';
+import SyncCard from '../components/settings/SyncCard.vue';
 
 import { computed, ref } from 'vue';
 
@@ -41,14 +52,14 @@ const props = defineProps({
     theme: {
         type: String,
         default: 'light',
-        validator: (value) => ['light', 'dark', 'auto'].includes(value)
-    }
+        validator: (value) => ['light', 'dark', 'auto'].includes(value),
+    },
 });
 
 const emit = defineEmits(['update:theme']);
 
 // Tab states
-const tab = ref('appearanceTab')
+const tab = ref('general');
 
 // Use computed property to access the theme
 const theme = computed(() => props.theme);

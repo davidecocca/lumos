@@ -1,0 +1,43 @@
+{
+    "appId": "com.gmail.davidecocca.lumos",
+    "productName": "Lumos",
+    "directories": {
+        "output": "release"
+    },
+    "files": [
+        "src/main/**/*",
+        "src/main/preload.js",
+        "dist/**/*",
+        "package.json"
+    ],
+    "extraResources": [
+        {
+            "from": "resources/models",
+            "to": "models",
+            "filter": ["**/*"]
+        },
+        {
+            "from": "resources/licenses",
+            "to": "licenses",
+            "filter": ["**/*"]
+        }
+    ],
+    "asarUnpack": [
+        "node_modules/sqlite3/**",
+        "node_modules/@lancedb/**",
+        "node_modules/onnxruntime-node/**",
+        "node_modules/sharp/**",
+        "node_modules/@img/**"
+    ],
+    "win": {
+        "target": "nsis"
+    },
+    "mac": {
+        "target": "dmg",
+        "category": "public.app-category.productivity"
+    },
+    "linux": {
+        "target": "AppImage",
+        "category": "Office"
+    }
+}

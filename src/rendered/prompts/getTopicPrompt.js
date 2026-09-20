@@ -4,6 +4,6 @@ You will be given a note content. Your task is to extract the main topics from t
 Return a single line of text easily understandable by a human and suitable for displaying as a quick preview or recap on a notes app homepage.
 The topics should be concise, clear, and relevant to the content of the note.
 
-Return only the generated text. No explanations or additional comments allowed.`
+Return only the generated text. No explanations or additional comments allowed.`;
 
 export default getTopicPrompt;

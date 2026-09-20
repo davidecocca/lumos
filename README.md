@@ -6,13 +6,12 @@
 
 **Lumos** is a next-generation note-taking app, **built from the ground up with AI in mind**. Forget cloud lock-in and complex UI. Lumos gives you total control over your notes, enhanced with the latest in local and private AI. All your notes, all your ideas, safely on your machine.
 
-
 ## ⚠️ Project Status
 
 > **Alpha Stage Warning**: Lumos is currently in early alpha. It's not fully tested and may contain bugs. Use with caution and please report any issues you find.
 
-
 ## 🖼️ Screenshots
+
 <p align="center">
   <h3 align="center">Home</h3>
   <p align="center">
@@ -35,7 +34,6 @@
     <img src="images/dark_theme.png" alt="Note View (Dark Theme)" width="600" />
   </p>
 </p>
-
 
 ## 🚀 Features
 
@@ -64,11 +62,10 @@
   All notes are stored locally. No forced cloud. Your data, your choice.
 
 - **Local or Hosted AI Models**  
-  Run LLMs and embedding models locally via [Ollama](https://ollama.com/), or connect your own API key for hosted models if you wish.
+  Run LLms locally via [Ollama](https://ollama.com/), or connect your own API key for hosted models if you wish.
 
 - **Chat with Your Notes**  
   Search, explore, or chat directly with your notes via Lumos AI—powered by local vector search.
-
 
 ## 🌟 Why Lumos?
 
@@ -79,7 +76,6 @@ Notion and other modern note apps are great, but they often tie your data to the
 - **Local AI:** All AI features are local-first (and offline!), or you can use hosted models with your own keys.
 - **Material-inspired Design:** A beautiful, distraction-free writing experience.
 
-
 ## 🛠️ Tech Stack
 
 - **Electron** for cross-platform desktop experience
@@ -87,29 +83,32 @@ Notion and other modern note apps are great, but they often tie your data to the
 - **SQLite** for storing notes
 - **LanceDB** for fast local vector storage and search
 - **LangChain** for AI/LLM integrations
-- **Ollama** for local LLM/embeddings (plug-and-play local inference)
+- **Transformers.js + ONNX Runtime** with a bundled EmbeddingGemma model for offline embeddings (no Ollama needed)
+- **Ollama** for local chat LLMs (optional, plug-and-play local inference)
 - **Optional:** Connect your own OpenAI (or similar) API key for hosted models
-
 
 ## 🖥️ Prerequisites
 
-1. **Install [Ollama](https://ollama.com/download)**
-2. Pull the `embeddinggemma:300m` embeddings model with:  
-   ```bash
-   ollama pull embeddinggemma:300m
-   ```
-    > This is needed to locally generate embeddings for your notes.
+1. Fetch the bundled embedding model (one command, ~210 MB, only needed once per machine):
 
-3. Pull one or more LLMs. You will be able to choose in Lumos which to use!
+    ```bash
+    npm run fetch:model
+    ```
+
+    > Lumos uses it to generate note embeddings fully offline. The exact model version is pinned in `scripts/embedding-model.lock.json`.
+
+2. For local chat LLMs, install [Ollama](https://ollama.com/download) and pull the models you want to use. You will be able to choose in Lumos which to use!
 
 ## 💡 Getting Started
 
 1. **Clone this repo**
 2. Run `npm install`
-3. Start the app with `npm run dev`
-4. Add your LLM model via Ollama, or provide your API key for remote models.
-5. Take notes, organize, and let Lumos AI supercharge your workflow—privately.
+3. Run `npm run fetch:model`
+4. Start the app with `npm run dev`
+5. Add your LLM model via Ollama, or provide your API key for remote models.
+6. Take notes, organize, and let Lumos AI supercharge your workflow—privately.
 
+> Notes auto-save while you write, and are indexed for semantic search in the background.
 
 ## 🙋‍♂️ Who’s Behind Lumos?
 
@@ -119,44 +118,43 @@ I'm a software engineer passionate about open source, AI, and building technolog
 
 Lumos started as a side project—built to offer a simple, local, and AI-powered note-taking experience as an alternative to Notion, without relying on the cloud.
 
-
 ## 📋 Todo
 
 ### Core Features
-- [ ] Add support for rich media in notes:
-    - [ ] Add images with drag-and-drop
-    - [ ] Add tables with formatting
-    - [ ] Embed YouTube videos
-- [ ] Implement drag-and-drop for notes organization
+
+- [✅] Add support for rich media in notes:
+    - [✅] Add images with drag-and-drop
+    - [✅] Add tables with formatting
+    - [✅] Embed YouTube videos
+- [✅] Implement drag-and-drop for notes organization
 - [ ] Add note categorization with tags/labels
-- [ ] Add function to export notes
+- [✅] Add function to export notes
 
 ### Technical Improvements
-- [ ] Refactor codebase:
-    - [ ] Modularize components
-    - [ ] Improve code organization
-    - [ ] Add documentation
+
+- [✅] Refactor codebase:
+    - [✅] Modularize components
+    - [✅] Improve code organization
+    - [🚧] Add documentation
 - [ ] Implement comprehensive test suite:
     - [ ] Unit tests
     - [ ] Integration tests
     - [ ] End-to-end (E2E) testing
 
 ### AI Features
-- [ ] Enhance chat functionality:
-    - [ ] Add conversation history
-    - [ ] Implement context retention
 
+- [✅] Enhance chat functionality:
+    - [✅] Add conversation history
+    - [✅] Implement context retention
 
 ## 📣 Contributing
 
 Pull requests and ideas are welcome!  
 Check out the [CONTRIBUTING.md](CONTRIBUTING.md) (coming soon) for guidelines.
 
-
 ## 🪄 License
 
 MIT License. See [LICENSE](LICENSE) for details.
-
 
 ## ⭐️ Try Lumos Today!
 

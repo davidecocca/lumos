@@ -4,5 +4,4 @@ const improveWritingPrompt = `You are an expert writing assistant.
 3. Reply in original language.
 Return only the fixed text. No explanations or additional comments allowed.`;
 
-
 export default improveWritingPrompt;

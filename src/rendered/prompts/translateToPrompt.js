@@ -5,5 +5,4 @@ Ensure the translation is accurate and natural for native speakers of "${languag
 
 Return only the translated text. Do not include explanations or comments.`;
 
-
 export default translateToPrompt;

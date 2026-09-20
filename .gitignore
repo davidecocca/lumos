@@ -23,3 +23,9 @@ pnpm-debug.log*
 
 # Database
 lumos.db
+
+# Bundled embedding model (download via `npm run fetch:model`, pinned by scripts/embedding-model.lock.json)
+/resources/models
+
+# electron-builder output
+/release

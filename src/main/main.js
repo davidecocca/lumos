@@ -1,6 +1,31 @@
-const { app, BrowserWindow, ipcMain, nativeImage, Menu } = require('electron');
+const {
+    app,
+    BrowserWindow,
+    dialog,
+    ipcMain,
+    nativeImage,
+    Menu,
+    shell,
+} = require('electron');
+
+// Set the name before resolving Electron's userData path.
+app.setName('Lumos');
+
 const path = require('path');
+const fs = require('fs/promises');
+const { getDataPath, getVectorStorePath } = require('./storagePaths');
+const database = require('./database/db');
+const backupService = require('./services/backupService');
+const syncService = require('./services/syncService');
 const vectorStore = require('./database/vectorStore');
+const vectorIndexer = require('./services/vectorIndexer');
+const localEmbeddings = require('./services/localEmbeddings');
+const imageService = require('./services/imageService');
+const workspaceService = require('./services/workspaceService');
+const { getActiveWorkspaceId } = require('./workspaceContext');
+const noteExportService = require('./services/noteExportService');
+const { checkCodex, runCodex } = require('./services/codexService');
+const { randomUUID } = require('crypto');
 
 // Import CRUD functions from the local DB layer
 const {
@@ -23,27 +48,250 @@ const {
     updateNoteLastViewed,
     getFavoriteNotes,
     getLastViewedNotes,
+    searchNotes,
+    clearVectorSync,
+    createChatConversation,
+    listChatConversations,
+    getChatConversation,
+    appendChatMessage,
+    updateChatConversation,
+    deleteChatConversation,
 } = require('./database/crud.js');
+
+const sendMenuAction = (window, action) => {
+    window?.webContents.send('menu-action', action);
+};
+
+let menuState = {
+    canCreateNote: false,
+    hasOpenNote: false,
+};
+
+function scheduleAutomaticBackup() {
+    backupService.createAutomaticBackupIfDue().catch((error) => {
+        console.error('Automatic backup failed:', error);
+    });
+}
+
+function scheduleSyncableChange() {
+    scheduleAutomaticBackup();
+    syncService.requestSync().catch((error) => {
+        console.error('Could not schedule sync:', error.message);
+    });
+}
+
+function createApplicationMenu() {
+    const isDev = process.env.NODE_ENV === 'development';
+    const template = [
+        {
+            label: 'File',
+            submenu: [
+                {
+                    label: 'New Note',
+                    accelerator: 'CommandOrControl+N',
+                    enabled: menuState.canCreateNote,
+                    click: (_, window) => sendMenuAction(window, 'new-note'),
+                },
+                {
+                    label: 'New Folder',
+                    accelerator: 'CommandOrControl+Shift+N',
+                    click: (_, window) => sendMenuAction(window, 'new-folder'),
+                },
+                { type: 'separator' },
+                {
+                    label: 'Save Current Note',
+                    accelerator: 'CommandOrControl+S',
+                    enabled: menuState.hasOpenNote,
+                    click: (_, window) => sendMenuAction(window, 'save-note'),
+                },
+                {
+                    label: 'Close Tab',
+                    accelerator: 'CommandOrControl+W',
+                    enabled: menuState.hasOpenNote,
+                    click: (_, window) => sendMenuAction(window, 'close-tab'),
+                },
+            ],
+        },
+        {
+            label: 'Edit',
+            submenu: [
+                { role: 'undo' },
+                { role: 'redo' },
+                { type: 'separator' },
+                { role: 'cut' },
+                { role: 'copy' },
+                { role: 'paste' },
+                { role: 'selectAll' },
+                { type: 'separator' },
+                {
+                    label: 'Find in Notes',
+                    accelerator: 'CommandOrControl+K',
+                    click: (_, window) => sendMenuAction(window, 'open-search'),
+                },
+            ],
+        },
+        {
+            label: 'View',
+            submenu: [
+                {
+                    label: 'Toggle Sidebar',
+                    accelerator: 'CommandOrControl+\\',
+                    click: (_, window) =>
+                        sendMenuAction(window, 'toggle-sidebar'),
+                },
+                {
+                    label: 'Toggle Note Chat',
+                    accelerator: 'CommandOrControl+L',
+                    enabled: menuState.hasOpenNote,
+                    click: (_, window) =>
+                        sendMenuAction(window, 'toggle-note-chat'),
+                },
+                {
+                    label: 'Open Chat',
+                    accelerator: 'CommandOrControl+Shift+L',
+                    click: (_, window) => sendMenuAction(window, 'open-chat'),
+                },
+                { type: 'separator' },
+                { role: 'resetZoom' },
+                { role: 'zoomIn' },
+                { role: 'zoomOut' },
+                { type: 'separator' },
+                { role: 'togglefullscreen' },
+                ...(isDev
+                    ? [
+                          { type: 'separator' },
+                          { role: 'reload' },
+                          { role: 'forceReload' },
+                          {
+                              label: 'Toggle App Menu',
+                              click: (_, window) =>
+                                  sendMenuAction(
+                                      window,
+                                      'toggle-app-menu-preview',
+                                  ),
+                          },
+                          {
+                              label: 'Toggle Developer Tools',
+                              accelerator: 'CommandOrControl+Shift+I',
+                              click: (_, window) =>
+                                  window?.webContents.toggleDevTools(),
+                          },
+                      ]
+                    : []),
+            ],
+        },
+        {
+            label: 'Window',
+            submenu: [
+                { role: 'minimize' },
+                { role: 'zoom' },
+                ...(process.platform === 'darwin'
+                    ? [{ type: 'separator' }, { role: 'front' }]
+                    : []),
+            ],
+        },
+    ];
+
+    if (process.platform === 'darwin') {
+        template.unshift({
+            label: app.name,
+            submenu: [
+                {
+                    label: 'About Lumos',
+                    click: (_, window) => sendMenuAction(window, 'about'),
+                },
+                { type: 'separator' },
+                { role: 'hide' },
+                { role: 'hideOthers' },
+                { role: 'unhide' },
+                { type: 'separator' },
+                { role: 'quit' },
+            ],
+        });
+    }
+
+    return Menu.buildFromTemplate(template);
+}
+
+// Give the renderer a short grace period to flush pending auto-saves
+// before the app (or the window) goes away.
+let flushSent = false;
+const pendingWorkspaceFlushes = new Map();
+
+function requestWorkspaceFlush(sender) {
+    if (!sender || sender.isDestroyed() || !menuState.hasOpenNote) {
+        return Promise.resolve();
+    }
+
+    const requestId = randomUUID();
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            pendingWorkspaceFlushes.delete(requestId);
+            reject(
+                new Error('Could not save the current note before switching.'),
+            );
+        }, 1500);
+        pendingWorkspaceFlushes.set(requestId, (error) => {
+            clearTimeout(timeout);
+            pendingWorkspaceFlushes.delete(requestId);
+            if (error) reject(new Error(error));
+            else resolve();
+        });
+        sender.send('workspace-flush-saves', requestId);
+    });
+}
+
+function requestFlushAndContinue(continueFn) {
+    if (flushSent) {
+        continueFn();
+        return;
+    }
+    const windows = BrowserWindow.getAllWindows();
+    if (windows.length === 0) {
+        continueFn();
+        return;
+    }
+    flushSent = true;
+    windows.forEach((w) => w.webContents.send('flush-saves'));
+    setTimeout(continueFn, 900);
+}
 
 // Create the BrowserWindow
 function createWindow() {
+    const iconPath = path.join(
+        __dirname,
+        '..',
+        'rendered',
+        'assets',
+        'app_logo.png',
+    );
     const win = new BrowserWindow({
         width: 800,
         height: 600,
-        // Remove the default titlebar
-        titleBarStyle: 'hidden',
-        trafficLightPosition: { x: 10, y: 16 },
-        // Expose window controlls in Windows/Linux
-        ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
+        icon: iconPath,
+        ...(process.platform === 'darwin'
+            ? {
+                  // Keep native traffic lights while rendering the title bar in-app.
+                  titleBarStyle: 'hidden',
+                  trafficLightPosition: { x: 14, y: 12 },
+              }
+            : { frame: false }),
         webPreferences: {
             // Use a preload script for secure IPC access from renderer
             preload: path.join(__dirname, 'preload.js'),
-            nodeIntegration: false,    // Best practice: disable nodeIntegration
-            contextIsolation: true,     // Keep this true for security
+            nodeIntegration: false, // Best practice: disable nodeIntegration
+            contextIsolation: true, // Keep this true for security
             devTools: process.env.NODE_ENV === 'development', // Enable dev tools in development
-        }
+        },
     });
-    
+
+    // Flush pending auto-saves before the window actually closes
+    win.on('close', (event) => {
+        if (flushSent) return;
+        event.preventDefault();
+        requestFlushAndContinue(() => win.close());
+    });
+
     // DEV vs. PROD logic
     if (process.env.NODE_ENV === 'development') {
         // If running dev server (Vite on localhost:5173)
@@ -53,38 +301,305 @@ function createWindow() {
         win.loadFile(path.join(__dirname, '../../dist', 'index.html'));
         // Adjust the path above to match where Vite outputs your build
     }
-    
-    // Setup the events to manage window fullscreen state
-    win.on('enter-full-screen', () => {
-        console.log('Main process: Entered full screen');
-        // Send message to the renderer process
-        win.webContents.send('fullscreen-changed', true);
-    });
-    
-    win.on('leave-full-screen', () => {
-        console.log('Main process: Left full screen');
-        // Send message to the renderer process
-        win.webContents.send('fullscreen-changed', false);
-    });
-    
-    // Initial check in case the window starts fullscreen
-    win.webContents.on('did-finish-load', () => {
-        win.webContents.send('fullscreen-changed', win.isFullScreen());
-    });
+
+    return win;
 }
 
 // Set up IPC handlers for folders and notes
 function setupIPC() {
+    // Window controls
+    ipcMain.on('window-minimize', () => {
+        BrowserWindow.getFocusedWindow()?.minimize();
+    });
+    ipcMain.on('window-maximize', () => {
+        const win = BrowserWindow.getFocusedWindow();
+        if (!win) return;
+        if (win.isMaximized()) {
+            win.unmaximize();
+        } else {
+            win.maximize();
+        }
+    });
+    ipcMain.on('window-close', () => {
+        BrowserWindow.getFocusedWindow()?.close();
+    });
+    ipcMain.on('quit-app', () => {
+        app.quit();
+    });
+    ipcMain.on('open-devtools', () => {
+        BrowserWindow.getFocusedWindow()?.webContents.toggleDevTools();
+    });
+    ipcMain.on('window-reset-zoom', () => {
+        BrowserWindow.getFocusedWindow()?.webContents.setZoomLevel(0);
+    });
+    ipcMain.on('window-zoom-in', () => {
+        const contents = BrowserWindow.getFocusedWindow()?.webContents;
+        if (contents) contents.setZoomLevel(contents.getZoomLevel() + 0.5);
+    });
+    ipcMain.on('window-zoom-out', () => {
+        const contents = BrowserWindow.getFocusedWindow()?.webContents;
+        if (contents) contents.setZoomLevel(contents.getZoomLevel() - 0.5);
+    });
+    ipcMain.on('force-reload', () => {
+        BrowserWindow.getFocusedWindow()?.webContents.reloadIgnoringCache();
+    });
+    ipcMain.on('window-toggle-fullscreen', () => {
+        const win = BrowserWindow.getFocusedWindow();
+        if (!win) return;
+        win.setFullScreen(!win.isFullScreen());
+    });
+    ipcMain.on('update-menu-state', (_, state) => {
+        menuState = {
+            canCreateNote: Boolean(state?.canCreateNote),
+            hasOpenNote: Boolean(state?.hasOpenNote),
+        };
+        if (process.platform === 'darwin') {
+            Menu.setApplicationMenu(createApplicationMenu());
+        }
+    });
+    ipcMain.on('workspace-flush-complete', (_, { requestId, error } = {}) => {
+        pendingWorkspaceFlushes.get(requestId)?.(error);
+    });
+    ipcMain.handle('get-app-info', () => ({
+        name: app.getName(),
+        version: app.getVersion(),
+        electronVersion: process.versions.electron,
+        chromeVersion: process.versions.chrome,
+        platform: process.platform,
+    }));
+
+    // --- Workspace management ---
+    ipcMain.handle('get-workspaces', () => workspaceService.listWorkspaces());
+    ipcMain.handle('get-current-workspace', async () => ({
+        workspace: await workspaceService
+            .listWorkspaces()
+            .then((workspaces) =>
+                workspaces.find(
+                    (workspace) => workspace.id === getActiveWorkspaceId(),
+                ),
+            ),
+        preferences: await workspaceService.getPreferences(),
+    }));
+    ipcMain.handle('switch-workspace', async (event, workspaceId) => {
+        await requestWorkspaceFlush(event.sender);
+        return workspaceService.switchWorkspace(workspaceId);
+    });
+    ipcMain.handle('create-workspace', async (_, name, icon, color) => {
+        const workspace = await workspaceService.createWorkspace(
+            name,
+            icon,
+            color,
+        );
+        scheduleSyncableChange();
+        return workspace;
+    });
+    ipcMain.handle('rename-workspace', async (_, { id, name, icon, color }) => {
+        const workspace = await workspaceService.renameWorkspace(
+            id,
+            name,
+            icon,
+            color,
+        );
+        scheduleSyncableChange();
+        return workspace;
+    });
+    ipcMain.handle('delete-workspace', async (_, workspaceId) => {
+        await workspaceService.deleteWorkspace(workspaceId);
+        scheduleSyncableChange();
+    });
+    ipcMain.handle('get-workspace-preferences', () =>
+        workspaceService.getPreferences(),
+    );
+    ipcMain.handle('set-workspace-preferences', (_, preferences) =>
+        workspaceService.setPreferences(preferences),
+    );
+    ipcMain.handle('list-folders-for-workspace', (_, workspaceId) =>
+        workspaceService.listFoldersForWorkspace(workspaceId),
+    );
+    ipcMain.handle(
+        'move-note-to-workspace',
+        async (_, { noteId, workspaceId, folderId }) => {
+            await workspaceService.moveNoteToWorkspace(
+                noteId,
+                workspaceId,
+                folderId,
+            );
+            scheduleSyncableChange();
+        },
+    );
+    ipcMain.handle(
+        'move-folder-to-workspace',
+        async (_, { folderId, workspaceId }) => {
+            await workspaceService.moveFolderToWorkspace(folderId, workspaceId);
+            scheduleSyncableChange();
+        },
+    );
+
+    ipcMain.handle('export-note', async (event, payload) => {
+        const format = payload?.format;
+        const title = payload?.title || 'Untitled note';
+        const content = payload?.content;
+
+        if (
+            !['pdf', 'markdown', 'html'].includes(format) ||
+            typeof content !== 'string'
+        ) {
+            throw new Error('Invalid note export request');
+        }
+
+        const { canceled, filePath } = await dialog.showSaveDialog(
+            BrowserWindow.fromWebContents(event.sender),
+            noteExportService.getSaveDialogOptions(title, format),
+        );
+
+        if (canceled || !filePath) return { canceled: true };
+
+        await noteExportService.writeExport({
+            filePath,
+            format,
+            title,
+            content,
+        });
+        return { canceled: false, filePath };
+    });
+    ipcMain.handle('get-codex-status', () => checkCodex());
+    ipcMain.handle('run-codex', async (_, payload) => runCodex(payload || {}));
+    ipcMain.handle('start-codex-stream', (event, payload) => {
+        const requestId = randomUUID();
+        setImmediate(() => {
+            runCodex({
+                ...(payload || {}),
+                onDelta: (text) =>
+                    event.sender.send('codex-stream', {
+                        requestId,
+                        type: 'delta',
+                        text,
+                    }),
+            })
+                .then((text) =>
+                    event.sender.send('codex-stream', {
+                        requestId,
+                        type: 'complete',
+                        text,
+                    }),
+                )
+                .catch((error) =>
+                    event.sender.send('codex-stream', {
+                        requestId,
+                        type: 'error',
+                        error: error.message,
+                    }),
+                );
+        });
+        return requestId;
+    });
+
+    // --- Backup management ---
+    ipcMain.handle('backups-list', () => backupService.listBackups());
+    ipcMain.handle('backups-create', (_, name) =>
+        backupService.createBackup('manual', name),
+    );
+    ipcMain.handle('backups-delete', (_, id) => backupService.deleteBackup(id));
+    ipcMain.handle('backups-rename', (_, id, name) =>
+        backupService.renameBackup(id, name),
+    );
+    ipcMain.handle('backups-reveal', async (_, id) => {
+        shell.showItemInFolder(await backupService.getLocalBackupPath(id));
+    });
+    ipcMain.handle('backups-export', async (event, id) => {
+        const result = await dialog.showOpenDialog(
+            BrowserWindow.fromWebContents(event.sender),
+            {
+                title: 'Export backup to folder',
+                buttonLabel: 'Export backup',
+                properties: ['openDirectory', 'createDirectory'],
+            },
+        );
+        if (result.canceled || !result.filePaths[0]) return { canceled: true };
+        const destinationPath = await backupService.exportBackup(
+            id,
+            result.filePaths[0],
+        );
+        return { canceled: false, destinationPath };
+    });
+    ipcMain.handle('backups-select-restore', async (event) => {
+        const result = await dialog.showOpenDialog(
+            BrowserWindow.fromWebContents(event.sender),
+            {
+                title: 'Select Lumos backup folder',
+                buttonLabel: 'Select backup',
+                properties: ['openDirectory'],
+            },
+        );
+        if (result.canceled || !result.filePaths[0]) return null;
+        return { path: result.filePaths[0] };
+    });
+    ipcMain.handle('backups-restore', async (_, backupPath) => {
+        if (typeof backupPath !== 'string') {
+            throw new Error('Invalid backup path.');
+        }
+        await backupService.validateBackup(backupPath);
+        await backupService.createBackup('pre-manual-restore');
+        const stagingPath = await backupService.stageRestore(backupPath);
+        const dataPath = getDataPath();
+        const previousDataPath = `${dataPath}.before-restore-${Date.now()}`;
+
+        await new Promise((resolve, reject) =>
+            database.close((error) => (error ? reject(error) : resolve())),
+        );
+        try {
+            await fs.rename(dataPath, previousDataPath);
+            await fs.rename(stagingPath, dataPath);
+        } catch (error) {
+            await fs.rename(previousDataPath, dataPath).catch(() => {});
+            throw error;
+        }
+
+        await backupService.markRestorePending();
+
+        app.relaunch();
+        app.exit(0);
+        return { restarting: true };
+    });
+
+    // --- Device handoff sync ---
+    ipcMain.handle('sync-get-status', () => syncService.getStatus());
+    ipcMain.handle('sync-select-folder', async (event) => {
+        const result = await dialog.showOpenDialog(
+            BrowserWindow.fromWebContents(event.sender),
+            {
+                title: 'Choose a cloud-synced folder',
+                buttonLabel: 'Use this folder',
+                properties: ['openDirectory', 'createDirectory'],
+            },
+        );
+        if (result.canceled || !result.filePaths[0]) return { canceled: true };
+        return {
+            canceled: false,
+            ...(await syncService.configure(result.filePaths[0])),
+        };
+    });
+    ipcMain.handle('sync-disable', () => syncService.disable());
+    ipcMain.handle('sync-now', () => syncService.syncNow());
+    ipcMain.handle('sync-reveal-folder', async () => {
+        const vaultPath = syncService.revealVault();
+        if (!vaultPath) throw new Error('Sync is not configured.');
+        shell.openPath(vaultPath);
+    });
+
     // --- Folder IPC ---
     ipcMain.handle('create-folder', async (event, name) => {
         return new Promise((resolve, reject) => {
             createFolder(name, (err, folderId) => {
                 if (err) reject(err);
-                else resolve(folderId);
+                else {
+                    scheduleSyncableChange();
+                    resolve(folderId);
+                }
             });
         });
     });
-    
+
     ipcMain.handle('get-folder-content', async (event, id) => {
         return new Promise((resolve, reject) => {
             getFolderContent(id, (err, folder) => {
@@ -93,7 +608,7 @@ function setupIPC() {
             });
         });
     });
-    
+
     ipcMain.handle('get-folder', async (event, id) => {
         return new Promise((resolve, reject) => {
             getFolder(id, (err, folder) => {
@@ -102,25 +617,31 @@ function setupIPC() {
             });
         });
     });
-    
+
     ipcMain.handle('update-folder', async (event, { id, newName }) => {
         return new Promise((resolve, reject) => {
             updateFolder(id, newName, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleSyncableChange();
+                    resolve(changes);
+                }
             });
         });
     });
-    
+
     ipcMain.handle('delete-folder', async (event, id) => {
         return new Promise((resolve, reject) => {
             deleteFolder(id, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleSyncableChange();
+                    resolve(changes);
+                }
             });
         });
     });
-    
+
     ipcMain.handle('list-folders', async (event) => {
         return new Promise((resolve, reject) => {
             listFolders((err, folders) => {
@@ -129,17 +650,29 @@ function setupIPC() {
             });
         });
     });
-    
+
     // --- Note IPC ---
-    ipcMain.handle('create-note', async (event, { folder_id, title, contentJson }) => {
-        return new Promise((resolve, reject) => {
-            createNote(folder_id, title, contentJson, (err, noteId) => {
-                if (err) reject(err);
-                else resolve(noteId);
+    ipcMain.handle(
+        'create-note',
+        async (event, { folder_id, title, contentJson, contentText }) => {
+            return new Promise((resolve, reject) => {
+                createNote(
+                    folder_id,
+                    title,
+                    contentJson,
+                    contentText,
+                    (err, noteId) => {
+                        if (err) reject(err);
+                        else {
+                            scheduleSyncableChange();
+                            resolve(noteId);
+                        }
+                    },
+                );
             });
-        });
-    });
-    
+        },
+    );
+
     ipcMain.handle('get-note', async (event, id) => {
         return new Promise((resolve, reject) => {
             getNote(id, (err, note) => {
@@ -148,7 +681,7 @@ function setupIPC() {
             });
         });
     });
-    
+
     ipcMain.handle('get-notes-by-ids', async (event, ids) => {
         return new Promise((resolve, reject) => {
             getNotesByIds(ids, (err, notes) => {
@@ -157,16 +690,19 @@ function setupIPC() {
             });
         });
     });
-    
+
     ipcMain.handle('rename-note', async (event, { id, newTitle }) => {
         return new Promise((resolve, reject) => {
             renameNote(id, newTitle, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleSyncableChange();
+                    resolve(changes);
+                }
             });
         });
     });
-    
+
     ipcMain.handle('list-notes', async (event) => {
         return new Promise((resolve, reject) => {
             listNotes((err, notes) => {
@@ -175,52 +711,90 @@ function setupIPC() {
             });
         });
     });
-    
-    ipcMain.handle('update-note', async (event, { id, topic, contentJson, contentText }) => {
-        return new Promise((resolve, reject) => {
-            updateNote(id, topic, contentJson, contentText, (err, changes) => {
-                if (err) reject(err);
-                else resolve(changes);
+
+    ipcMain.handle(
+        'update-note',
+        async (event, { id, topic, contentJson, contentText }) => {
+            return new Promise((resolve, reject) => {
+                updateNote(
+                    id,
+                    topic,
+                    contentJson,
+                    contentText,
+                    (err, changes) => {
+                        if (err) reject(err);
+                        else {
+                            scheduleSyncableChange();
+                            resolve(changes);
+                        }
+                    },
+                );
             });
-        });
-    });
-    
+        },
+    );
+
+    ipcMain.handle(
+        'import-note-image',
+        async (event, { noteId, fileName, mimeType, data }) => {
+            return imageService.importNoteImage(noteId, {
+                fileName,
+                mimeType,
+                data,
+            });
+        },
+    );
+
     ipcMain.handle('delete-note', async (event, id) => {
         return new Promise((resolve, reject) => {
             deleteNote(id, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleSyncableChange();
+                    resolve(changes);
+                }
             });
         });
     });
-    
+
     ipcMain.handle('delete-notes-in-folder', async (event, folderId) => {
         return new Promise((resolve, reject) => {
             deleteNotesInFolder(folderId, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleSyncableChange();
+                    resolve(changes);
+                }
             });
         });
     });
-    
-    ipcMain.handle('move-note-to-folder', async (event, { noteId, newFolderId }) => {
-        return new Promise((resolve, reject) => {
-            moveNoteToFolder(noteId, newFolderId, (err, changes) => {
-                if (err) reject(err);
-                else resolve(changes);
+
+    ipcMain.handle(
+        'move-note-to-folder',
+        async (event, { noteId, newFolderId }) => {
+            return new Promise((resolve, reject) => {
+                moveNoteToFolder(noteId, newFolderId, (err, changes) => {
+                    if (err) reject(err);
+                    else {
+                        scheduleSyncableChange();
+                        resolve(changes);
+                    }
+                });
             });
-        });
-    });
-    
+        },
+    );
+
     ipcMain.handle('set-note-favorite', async (event, { id, isFavorite }) => {
         return new Promise((resolve, reject) => {
             setNoteFavorite(id, isFavorite, (err, changes) => {
                 if (err) reject(err);
-                else resolve(changes);
+                else {
+                    scheduleSyncableChange();
+                    resolve(changes);
+                }
             });
         });
     });
-    
+
     ipcMain.handle('update-note-last-viewed', async (event, id) => {
         return new Promise((resolve, reject) => {
             updateNoteLastViewed(id, (err, changes) => {
@@ -229,7 +803,7 @@ function setupIPC() {
             });
         });
     });
-    
+
     ipcMain.handle('get-favorite-notes', async (event) => {
         return new Promise((resolve, reject) => {
             getFavoriteNotes((err, notes) => {
@@ -238,7 +812,7 @@ function setupIPC() {
             });
         });
     });
-    
+
     ipcMain.handle('get-last-viewed-notes', async (event) => {
         return new Promise((resolve, reject) => {
             getLastViewedNotes((err, notes) => {
@@ -247,44 +821,278 @@ function setupIPC() {
             });
         });
     });
-    
-    ipcMain.handle('search-similar-notes', async (event, { query, limit, filter }) => {
+
+    ipcMain.handle(
+        'search-notes',
+        async (event, { query, limit = 10 } = {}) => {
+            const safeLimit = Math.max(1, Number(limit) || 10);
+            return new Promise((resolve, reject) => {
+                searchNotes(query, safeLimit, (err, notes) => {
+                    if (err) reject(err);
+                    else resolve(notes);
+                });
+            });
+        },
+    );
+
+    ipcMain.handle(
+        'search-similar-notes',
+        async (event, { query, limit, filter }) => {
+            if (!vectorStore.ready) {
+                throw new Error(
+                    vectorStore.initializing
+                        ? 'Semantic search is still initializing.'
+                        : 'Semantic search is unavailable: the local embedding model could not be loaded.',
+                );
+            }
+            return new Promise((resolve, reject) => {
+                vectorStore
+                    .searchSimilarNotes(query, limit, {
+                        ...(filter || {}),
+                        workspaceId: getActiveWorkspaceId(),
+                    })
+                    .then((results) => resolve(results))
+                    .catch((err) => reject(err));
+            });
+        },
+    );
+
+    // --- RAG index management ---
+    ipcMain.handle('rag-get-status', async () => vectorIndexer.getStatus());
+    ipcMain.handle('rag-rebuild', async () => {
+        if (!vectorStore.ready) {
+            throw new Error('Vector store is unavailable.');
+        }
+        await vectorIndexer.rebuildAll();
+        return vectorIndexer.getStatus();
+    });
+
+    // --- Chat IPC ---
+    ipcMain.handle('create-chat-conversation', async (event, payload) => {
         return new Promise((resolve, reject) => {
-            vectorStore.searchSimilarNotes(query, limit, filter)
-            .then(results => resolve(results))
-            .catch(err => reject(err));
+            createChatConversation(payload, (err, conversation) => {
+                if (err) reject(err);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(conversation);
+                }
+            });
+        });
+    });
+
+    ipcMain.handle('list-chat-conversations', async (event, payload) => {
+        return new Promise((resolve, reject) => {
+            listChatConversations(payload, (err, conversations) => {
+                if (err) reject(err);
+                else resolve(conversations);
+            });
+        });
+    });
+
+    ipcMain.handle('get-chat-conversation', async (event, id) => {
+        return new Promise((resolve, reject) => {
+            getChatConversation(id, (err, conversation) => {
+                if (err) reject(err);
+                else resolve(conversation);
+            });
+        });
+    });
+
+    ipcMain.handle('append-chat-message', async (event, payload) => {
+        return new Promise((resolve, reject) => {
+            appendChatMessage(payload, (err, messageId) => {
+                if (err) reject(err);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(messageId);
+                }
+            });
+        });
+    });
+
+    ipcMain.handle('update-chat-conversation', async (event, payload) => {
+        return new Promise((resolve, reject) => {
+            updateChatConversation(payload, (err, changes) => {
+                if (err) reject(err);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(changes);
+                }
+            });
+        });
+    });
+
+    ipcMain.handle('delete-chat-conversation', async (event, id) => {
+        return new Promise((resolve, reject) => {
+            deleteChatConversation(id, (err, changes) => {
+                if (err) reject(err);
+                else {
+                    scheduleAutomaticBackup();
+                    resolve(changes);
+                }
+            });
         });
     });
 }
 
-// Set the app name for macOS
-if (process.platform === 'darwin') {
-    app.setName('Lumos');
+// Broadcast background indexing progress to all renderer windows
+vectorIndexer.onStatus((status) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send('rag-status', status);
+    }
+});
+
+// Broadcast the current RAG status to all renderer windows
+function broadcastRagStatus() {
+    vectorIndexer.getStatus().then((status) => {
+        for (const win of BrowserWindow.getAllWindows()) {
+            win.webContents.send('rag-status', status);
+        }
+    });
+}
+
+// Broadcast the current sync status to all renderer windows
+function broadcastSyncStatus(status) {
+    for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send('sync-status', status);
+    }
+}
+
+syncService.onStatus(broadcastSyncStatus);
+
+async function restoreSyncSnapshot(snapshot) {
+    await backupService.createBackup('pre-device-restore');
+    const stagingPath = await backupService.stageRestore(snapshot.path);
+    const dataPath = getDataPath();
+    const previousDataPath = `${dataPath}.before-sync-restore-${Date.now()}`;
+
+    await new Promise((resolve, reject) =>
+        database.close((error) => (error ? reject(error) : resolve())),
+    );
+    try {
+        await fs.rename(dataPath, previousDataPath);
+        await fs.rename(stagingPath, dataPath);
+    } catch (error) {
+        await fs.rename(previousDataPath, dataPath).catch(() => {});
+        throw error;
+    }
+
+    await backupService.markRestorePending(previousDataPath);
+    await syncService.markApplied(snapshot.id);
+}
+
+async function prepareSyncBeforeWindow() {
+    const result = await syncService.prepareStartup();
+    if (result.action !== 'restore') return false;
+
+    try {
+        await restoreSyncSnapshot(result.snapshot);
+        app.relaunch();
+        app.exit(0);
+        return true;
+    } catch (error) {
+        console.error('Could not apply synced snapshot:', error);
+        return false;
+    }
+}
+
+// Initialize the RAG system after the first frame is rendered,
+// so that the app can start up quickly without waiting for the vector store
+async function initializeRag() {
+    const restored = await backupService.consumeRestoreState();
+    if (restored) {
+        await fs.rm(getVectorStorePath(), { recursive: true, force: true });
+        await new Promise((resolve, reject) => {
+            clearVectorSync((error) => (error ? reject(error) : resolve()));
+        });
+    }
+
+    const lancePath = getVectorStorePath();
+    vectorStore
+        .initialize(lancePath)
+        .then(async ({ rebuilt }) => {
+            if (rebuilt) {
+                await new Promise((resolve, reject) => {
+                    clearVectorSync((error) =>
+                        error ? reject(error) : resolve(),
+                    );
+                });
+            }
+
+            broadcastRagStatus();
+            localEmbeddings.warmup();
+            vectorIndexer.reconcile().catch((err) => {
+                console.error('Vector index reconciliation failed:', err);
+            });
+        })
+        .catch((err) => {
+            console.error(
+                'Failed to initialize vector store, continuing without RAG:',
+                err,
+            );
+            broadcastRagStatus();
+        });
+
+    broadcastRagStatus();
 }
 
 // App lifecycle
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+    await database.ready;
+    try {
+        await backupService.completePendingSyncRestore();
+    } catch (error) {
+        console.error('Could not clean up the previous sync data:', error);
+    }
+    if (await prepareSyncBeforeWindow()) return;
+    await workspaceService.initialize();
+
+    Menu.setApplicationMenu(
+        process.platform === 'darwin' ? createApplicationMenu() : null,
+    );
+
     // Only on macOS
     if (process.platform === 'darwin') {
         // Set dock icon
-        const iconPath = path.join(__dirname, '..', 'rendered', 'assets', 'app_logo.png');
+        const iconPath = path.join(
+            __dirname,
+            '..',
+            'rendered',
+            'assets',
+            'app_logo.png',
+        );
         const icon = nativeImage.createFromPath(iconPath);
         app.dock.setIcon(icon);
     }
-    
-    // Initialize the vector store
-    vectorStore.initialize()
-    .then(() => {
-        createWindow();
-        setupIPC();
-    })
-    .catch((err) => {
-        console.error('Failed to initialize vector store:', err);
-        app.quit();
+
+    const mainWindow = createWindow();
+    setupIPC();
+
+    mainWindow.once('ready-to-show', () => {
+        initializeRag().catch((error) => {
+            console.error('Failed to prepare the RAG system:', error);
+        });
     });
-    
+
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
+});
+
+// Flush pending auto-saves before quitting (menu quit / Cmd+Q)
+app.on('before-quit', (event) => {
+    if (flushSent) return;
+    event.preventDefault();
+    requestFlushAndContinue(async () => {
+        try {
+            await Promise.race([
+                syncService.syncNow(),
+                new Promise((resolve) => setTimeout(resolve, 8000)),
+            ]);
+        } catch (error) {
+            console.error('Final sync failed:', error.message);
+        }
+        app.quit();
     });
 });
 
