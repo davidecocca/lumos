@@ -23,8 +23,8 @@ const serializer = new MarkdownSerializer(
             state.write(`![${alt}](${src})`);
         },
         taskList(state, node) {
-            state.renderList(node, '  ', (item) =>
-                item.attrs.checked ? '- [x] ' : '- [ ] ',
+            state.renderList(node, '  ', (index) =>
+                node.child(index).attrs.checked ? '- [x] ' : '- [ ] ',
             );
         },
         taskItem(state, node) {
@@ -75,6 +75,7 @@ const serializer = new MarkdownSerializer(
         ...defaultMarkdownSerializer.marks,
         bold: defaultMarkdownSerializer.marks.strong,
         italic: defaultMarkdownSerializer.marks.em,
+        underline: { open: '<u>', close: '</u>', mixable: true },
         strike: {
             open: '~~',
             close: '~~',
