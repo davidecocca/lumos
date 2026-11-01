@@ -70,21 +70,12 @@ defineProps({
     },
 });
 
-const emit = defineEmits(['open-search']);
-
 const createHint = (item) =>
     item.hintShortcut
         ? `${item.title} (${formatShortcut(item.hintShortcut)})`
         : item.title;
 
 const items = [
-    {
-        icon: 'ph-magnifying-glass',
-        title: 'Search',
-        value: 'search',
-        hotkey: 'cmd+k',
-        hintShortcut: '⌘K',
-    },
     { icon: 'ph-house', title: 'Home', value: 'home' },
     { icon: 'ph-kanban', title: 'Kanban', value: 'kanban' },
     {
@@ -109,12 +100,7 @@ const activePage = computed(() =>
 const hotkeyPlatform = vHotkeyPlatform();
 
 const openRoute = (routeName) => {
-    if (routeName === 'search') {
-        emit('open-search');
-    } else {
-        // Use router-link navigation for other routes
-        router.push({ name: routeName });
-    }
+    router.push({ name: routeName });
 };
 </script>
 

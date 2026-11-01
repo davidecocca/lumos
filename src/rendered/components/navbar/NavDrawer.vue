@@ -8,10 +8,7 @@
     >
         <div class="d-flex flex-column h-100">
             <div class="flex-shrink-0">
-                <PageRouter
-                    :rail="railModel"
-                    @open-search="emit('open-search')"
-                />
+                <PageRouter :rail="railModel" />
             </div>
 
             <v-divider />
@@ -53,7 +50,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['update:rail', 'open-search']);
+const emit = defineEmits(['update:rail']);
 const store = useFoldersStore();
 const workspaceStore = useWorkspaceStore();
 

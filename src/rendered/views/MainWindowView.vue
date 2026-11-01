@@ -15,17 +15,43 @@
             }"
         >
             <div
-                class="app-chrome__leading no-drag"
+                class="app-chrome__leading ga-2 no-drag"
                 :class="{ 'app-chrome__leading--mac': isMacOS }"
             >
-                <v-btn
-                    icon="ph-sidebar-simple"
-                    variant="text"
-                    density="comfortable"
-                    size="small"
-                    rounded="lg"
-                    @click="toggleNavbar"
-                />
+                <v-tooltip
+                    :text="`Toggle Sidebar (${sidebarShortcut})`"
+                    location="bottom"
+                >
+                    <template v-slot:activator="{ props: tooltipProps }">
+                        <v-btn
+                            v-bind="tooltipProps"
+                            icon="ph-sidebar-simple"
+                            variant="text"
+                            density="comfortable"
+                            size="small"
+                            rounded="lg"
+                            aria-label="Toggle sidebar"
+                            @click="toggleNavbar"
+                        />
+                    </template>
+                </v-tooltip>
+                <v-tooltip
+                    :text="`Search (${formatShortcut('cmd+k')})`"
+                    location="bottom"
+                >
+                    <template v-slot:activator="{ props: tooltipProps }">
+                        <v-btn
+                            v-bind="tooltipProps"
+                            icon="ph-magnifying-glass"
+                            variant="text"
+                            density="comfortable"
+                            size="small"
+                            rounded="lg"
+                            aria-label="Search"
+                            @click="openSearch"
+                        />
+                    </template>
+                </v-tooltip>
             </div>
 
             <AppMenuBar
@@ -66,7 +92,7 @@
     </v-app-bar>
 
     <!-- Navigation drawer -->
-    <NavigationDrawer v-model:rail="isDrawerRail" @open-search="openSearch" />
+    <NavigationDrawer v-model:rail="isDrawerRail" />
 
     <!-- Main content area -->
     <v-main
@@ -104,6 +130,7 @@ import AppNoteTabs from '../components/navbar/AppNoteTabs.vue';
 import SearchDialog from '../components/navbar/dialogs/SearchDialog.vue';
 import AboutDialog from '../components/navbar/dialogs/AboutDialog.vue';
 import StartupSplash from '../components/splashscreen/StartupSplash.vue';
+import { formatShortcut } from '../utils/shortcuts';
 
 import { aiPreferencesStore } from '../stores/aiPreferencesStore';
 import { useFoldersStore } from '../stores/foldersStore';
@@ -121,6 +148,34 @@ const { api } = window;
 const isMacOS = api.platform === 'darwin';
 const isAppChromePreview = ref(false);
 const showAppChrome = computed(() => !isMacOS || isAppChromePreview.value);
+
+const sidebarKey = ref('\\');
+const sidebarShortcut = computed(() =>
+    formatShortcut(`cmd+${sidebarKey.value}`),
+);
+const keyboard = navigator.keyboard;
+
+const refreshKeyboardLayout = async () => {
+    if (!keyboard?.getLayoutMap) return;
+
+    try {
+        const layout = await keyboard.getLayoutMap();
+        sidebarKey.value = layout.get('Backslash') || '\\';
+    } catch {
+        // Keep the configured shortcut label if layout access is unavailable.
+    }
+};
+
+onMounted(() => {
+    refreshKeyboardLayout();
+    keyboard?.addEventListener?.('layoutchange', refreshKeyboardLayout);
+    window.addEventListener('focus', refreshKeyboardLayout);
+});
+
+onBeforeUnmount(() => {
+    keyboard?.removeEventListener?.('layoutchange', refreshKeyboardLayout);
+    window.removeEventListener('focus', refreshKeyboardLayout);
+});
 
 const isDrawerRail = ref(false);
 const { mainRect } = useLayout();
