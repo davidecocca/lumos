@@ -17,10 +17,13 @@ const serializer = new MarkdownSerializer(
         orderedList: defaultMarkdownSerializer.nodes.ordered_list,
         noteImage(state, node) {
             const alt = state.esc(node.attrs.alt || '');
-            const src = state.esc(
+            const src = encodeURI(
                 node.attrs.storageSrc || node.attrs.src || '',
+            ).replace(/[()]/g, (character) =>
+                character === '(' ? '%28' : '%29',
             );
             state.write(`![${alt}](${src})`);
+            state.closeBlock(node);
         },
         taskList(state, node) {
             state.renderList(node, '  ', (index) =>
@@ -45,6 +48,7 @@ const serializer = new MarkdownSerializer(
         youtube(state, node) {
             const src = state.esc(node.attrs.src || '');
             if (src) state.write(`[YouTube video](${src})`);
+            state.closeBlock(node);
         },
         table(state, node) {
             const rows = [];
@@ -82,7 +86,8 @@ const serializer = new MarkdownSerializer(
             mixable: true,
             expelEnclosingWhitespace: true,
         },
-        highlight: { open: '==', close: '==', mixable: true },
+        // Markdown has no portable highlight or text color syntax.
+        highlight: { open: '', close: '', mixable: true },
         subscript: { open: '<sub>', close: '</sub>' },
         superscript: { open: '<sup>', close: '</sup>' },
         textStyle: { open: '', close: '' },

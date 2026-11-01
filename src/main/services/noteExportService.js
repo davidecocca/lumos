@@ -5,7 +5,7 @@ const { getDataPath, getImagePath } = require('../storagePaths');
 
 const IMAGE_ROOT_DIR = path.basename(getImagePath());
 const MANAGED_MARKDOWN_IMAGE_PATTERN =
-    /(!\[[^\]]*\]\()(note-images\/[^)\s]+)(\))/g;
+    /(!\[(?:\\.|[^\]\\])*\]\()(note-images\/[^)\s]+)(\))/g;
 
 // Normalizes a note title for filenames, replacing OS-invalid characters and limiting length.
 const exportFileName = (title) =>
@@ -106,13 +106,24 @@ async function writeMarkdownExport(filePath, content) {
     const markdown = content.replace(
         MANAGED_MARKDOWN_IMAGE_PATTERN,
         (match, prefix, storagePath, suffix) => {
-            const sourcePath = getManagedImageSourcePath(storagePath);
+            let decodedPath;
+            try {
+                decodedPath = decodeURIComponent(storagePath);
+            } catch {
+                return match;
+            }
+            const sourcePath = getManagedImageSourcePath(decodedPath);
 
             if (!sourcePath) return match;
 
             const fileName = path.basename(sourcePath);
             imageSources.set(sourcePath, fileName);
-            return `${prefix}${encodeURI(`${assetsDirectoryName}/${fileName}`)}${suffix}`;
+            const destination = encodeURI(
+                `${assetsDirectoryName}/${fileName}`,
+            ).replace(/[()]/g, (character) =>
+                character === '(' ? '%28' : '%29',
+            );
+            return `${prefix}${destination}${suffix}`;
         },
     );
 
@@ -143,7 +154,17 @@ const createExportDocument = (title, content) => `<!doctype html>
         h1 { font-size: 24pt; margin: 0 0 24px; }
         h2 { font-size: 18pt; margin-top: 28px; }
         h3 { font-size: 14pt; margin-top: 22px; }
-        img, video, iframe { display: block; max-width: 100%; height: auto; margin: 16px auto; }
+        h1, h2, h3, h4, h5, h6 { break-after: avoid-page; }
+        img, video, iframe { display: block; max-width: 100%; height: auto; margin: 16px auto; break-inside: avoid; }
+        img[data-align="left"] { margin-left: 0; margin-right: auto; }
+        img[data-align="right"] { margin-left: auto; margin-right: 0; }
+        img[data-align="center"] { margin-left: auto; margin-right: auto; }
+        ul[data-type="taskList"] { list-style: none; padding-left: 24px; }
+        ul[data-type="taskList"] > li { display: flex; align-items: flex-start; gap: 8px; margin: 8px 0; }
+        ul[data-type="taskList"] > li > label { flex: 0 0 auto; }
+        ul[data-type="taskList"] > li > div { flex: 1; min-width: 0; }
+        ul[data-type="taskList"] > li > div > :first-child { margin-top: 0; }
+        ul[data-type="taskList"] > li > div > :last-child { margin-bottom: 0; }
         pre { background: #f5f5f5; border-radius: 4px; overflow-wrap: break-word; padding: 12px; white-space: pre-wrap; }
         code { font-family: "SFMono-Regular", Consolas, monospace; }
         blockquote { border-left: 3px solid #777; color: #555; margin-left: 0; padding-left: 16px; }
@@ -152,7 +173,9 @@ const createExportDocument = (title, content) => `<!doctype html>
         th { background: #f5f5f5; }
         details { margin: 12px 0; }
         a { color: #345995; }
-        .video-export-link { margin: 16px 0; }
+        [data-youtube-video] { margin: 16px 0; break-inside: avoid; }
+        .video-export-link { margin: 16px 0; overflow-wrap: anywhere; }
+        [data-youtube-video] > .video-export-link { margin: 0; }
     </style>
 </head>
 <body>
@@ -190,6 +213,12 @@ async function createPdf(title, content) {
                 createExportDocument(title, content),
             )}`,
         );
+        // PDF cannot expand interactive sections, so include every details body.
+        await exportWindow.webContents.executeJavaScript(`
+            document.querySelectorAll('details').forEach((details) => {
+                details.open = true;
+            });
+        `);
         return await exportWindow.webContents.printToPDF({
             pageSize: 'A4',
             printBackground: true,
