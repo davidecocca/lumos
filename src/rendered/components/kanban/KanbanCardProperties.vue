@@ -88,6 +88,7 @@
             >
                 <template #actions>
                     <v-btn
+                        rounded="lg"
                         variant="text"
                         :disabled="disabled || !draft.dueDate"
                         @click="setDueDate(null)"

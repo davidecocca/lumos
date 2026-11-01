@@ -25,6 +25,7 @@
                     color="primary"
                     variant="tonal"
                     prepend-icon="ph-plus"
+                    rounded="lg"
                     :disabled="loading"
                     @click="openCreate"
                 >

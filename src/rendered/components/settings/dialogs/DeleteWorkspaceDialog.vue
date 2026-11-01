@@ -7,7 +7,8 @@
         icon-color="error"
         @update:model-value="emit('update:modelValue', $event)"
     >
-        This workspace and all its folders, notes, boards, and chats will be permanently deleted. This action cannot be undone.
+        This workspace and all its folders, notes, boards, and chats will be
+        permanently deleted. This action cannot be undone.
         <div
             class="mt-4"
             v-if="workspace?.id === workspaceStore.currentWorkspaceId"
@@ -27,12 +28,14 @@
         <template #actions>
             <v-spacer />
             <v-btn
+                rounded="lg"
                 variant="text"
                 :disabled="deleting"
                 @click="emit('update:modelValue', false)"
                 >Cancel</v-btn
             >
             <v-btn
+                rounded="lg"
                 color="error"
                 variant="tonal"
                 :loading="deleting"

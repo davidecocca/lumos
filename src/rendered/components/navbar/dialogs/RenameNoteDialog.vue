@@ -12,14 +12,18 @@
             clearable
             variant="outlined"
             density="comfortable"
+            rounded="lg"
             @click:clear="handleClear"
             @keydown.enter="handleEnter"
         />
 
         <template #actions>
             <v-spacer />
-            <v-btn variant="text" @click="closeDialog()">Close</v-btn>
+            <v-btn rounded="lg" variant="text" @click="closeDialog()"
+                >Close</v-btn
+            >
             <v-btn
+                rounded="lg"
                 color="primary"
                 variant="tonal"
                 @click="renameNote"

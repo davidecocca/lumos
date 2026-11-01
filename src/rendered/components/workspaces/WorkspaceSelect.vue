@@ -15,6 +15,7 @@
             nav: true,
             density: 'compact',
             class: 'pa-2',
+            rounded: 'lg',
             prependGap: 8,
         }"
         no-data-text="No other workspaces yet. Create one first."

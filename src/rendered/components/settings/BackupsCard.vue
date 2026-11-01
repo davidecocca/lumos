@@ -66,6 +66,7 @@
                     color="primary"
                     variant="tonal"
                     prepend-icon="ph-plus"
+                    rounded="lg"
                     :disabled="loading"
                     :loading="creating"
                     @click="openCreateDialog"
@@ -171,6 +172,7 @@
                 class="mt-6"
                 variant="text"
                 prepend-icon="ph-folder-open"
+                rounded="lg"
                 @click="selectBackupForRestore"
             >
                 Restore external backup

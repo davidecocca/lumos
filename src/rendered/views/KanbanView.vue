@@ -22,6 +22,7 @@
                 color="primary"
                 variant="tonal"
                 prepend-icon="ph-plus"
+                rounded="lg"
                 :disabled="disabled"
                 @click="openCreateBoard"
                 >New board</v-btn

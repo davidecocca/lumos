@@ -20,6 +20,7 @@
         </v-form>
         <template #actions>
             <v-btn
+                rounded="lg"
                 v-if="editing"
                 variant="text"
                 color="error"
@@ -28,8 +29,11 @@
                 >Remove link</v-btn
             >
             <v-spacer />
-            <v-btn variant="text" @click="open = false">Cancel</v-btn>
+            <v-btn rounded="lg" variant="text" @click="open = false"
+                >Cancel</v-btn
+            >
             <v-btn
+                rounded="lg"
                 type="submit"
                 form="kanban-link-form"
                 variant="tonal"

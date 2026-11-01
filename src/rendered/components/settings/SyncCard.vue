@@ -155,6 +155,7 @@
                             color="primary"
                             variant="tonal"
                             prepend-icon="ph-arrows-clockwise"
+                            rounded="lg"
                             :loading="syncing || status.status === 'syncing'"
                             :disabled="busy || restartRequired"
                             @click="syncNow"

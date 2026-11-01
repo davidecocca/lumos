@@ -50,7 +50,11 @@
                 >Tip: type a new tag and press Enter to add it.</span
             >
             <v-spacer />
-            <v-btn variant="tonal" color="primary" @click="open = false"
+            <v-btn
+                rounded="lg"
+                variant="tonal"
+                color="primary"
+                @click="open = false"
                 >Done</v-btn
             >
         </template>
@@ -63,7 +67,10 @@ import BaseDialog from '../../commons/BaseDialog.vue';
 import { addCommittedTags } from '../utils/cards.js';
 
 const open = defineModel({ type: Boolean, default: false });
-const selectedTags = defineModel('selectedTags', { type: Array, default: () => [] });
+const selectedTags = defineModel('selectedTags', {
+    type: Array,
+    default: () => [],
+});
 defineProps({ tags: { type: Array, default: () => [] }, disabled: Boolean });
 const entry = ref([]);
 const menuOpen = ref(false);

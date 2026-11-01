@@ -30,6 +30,7 @@
                 nav: true,
                 density: 'compact',
                 class: 'pa-2',
+                rounded: 'lg',
                 prependGap: 8,
             }"
             :item-props="() => ({ rounded: 'lg', prependIcon: 'ph-folder' })"
@@ -46,8 +47,11 @@
 
         <template #actions>
             <v-spacer />
-            <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
+            <v-btn rounded="lg" variant="text" @click="closeDialog"
+                >Cancel</v-btn
+            >
             <v-btn
+                rounded="lg"
                 color="primary"
                 variant="tonal"
                 :disabled="!newFolderId || loadingFolders"

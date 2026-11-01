@@ -109,12 +109,16 @@
                     <v-card-actions class="pa-0">
                         <v-spacer />
                         <v-btn
+                            rounded="lg"
                             :disabled="!active"
                             variant="text"
                             @click="emit('clear')"
                             >Clear filters</v-btn
                         >
-                        <v-btn variant="tonal" @click="filtersOpen = false"
+                        <v-btn
+                            rounded="lg"
+                            variant="tonal"
+                            @click="filtersOpen = false"
                             >Close</v-btn
                         >
                     </v-card-actions>

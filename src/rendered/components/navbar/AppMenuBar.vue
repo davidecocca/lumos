@@ -8,6 +8,7 @@
         >
             <template v-slot:activator="{ props }">
                 <v-btn
+                    rounded="lg"
                     v-bind="props"
                     variant="text"
                     density="comfortable"

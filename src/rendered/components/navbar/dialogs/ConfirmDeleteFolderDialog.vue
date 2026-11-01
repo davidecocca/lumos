@@ -10,8 +10,14 @@
 
         <template #actions>
             <v-spacer />
-            <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
-            <v-btn color="error" variant="tonal" @click="deleteFolder"
+            <v-btn rounded="lg" variant="text" @click="closeDialog"
+                >Cancel</v-btn
+            >
+            <v-btn
+                rounded="lg"
+                color="error"
+                variant="tonal"
+                @click="deleteFolder"
                 >Delete</v-btn
             >
         </template>

@@ -33,6 +33,7 @@
                             color="primary"
                             variant="tonal"
                             prepend-icon="ph-plus"
+                            rounded="lg"
                             :disabled="loading || !store.folders.length"
                             @click="
                                 store.openCreateNoteDialog(

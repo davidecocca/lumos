@@ -141,6 +141,7 @@
                             variant="text"
                             size="small"
                             prepend-icon="ph-arrows-clockwise"
+                            rounded="lg"
                             :loading="isCheckingCodex"
                             @click="refreshCodexStatus"
                         >

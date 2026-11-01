@@ -22,7 +22,12 @@
         </div>
         <template #actions>
             <v-spacer />
-            <v-btn color="primary" variant="tonal" @click="open = false">
+            <v-btn
+                rounded="lg"
+                color="primary"
+                variant="tonal"
+                @click="open = false"
+            >
                 Got it
             </v-btn>
         </template>

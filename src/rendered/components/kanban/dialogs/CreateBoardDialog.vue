@@ -30,10 +30,15 @@
         </v-form>
         <template #actions>
             <v-spacer />
-            <v-btn variant="text" :disabled="busy" @click="open = false"
+            <v-btn
+                rounded="lg"
+                variant="text"
+                :disabled="busy"
+                @click="open = false"
                 >Cancel</v-btn
             >
             <v-btn
+                rounded="lg"
                 type="submit"
                 form="kanban-create-board-form"
                 color="primary"

@@ -17,11 +17,15 @@
         </v-expand-transition>
 
         <template #actions>
-            <v-btn variant="text" @click="toggleErrorDetails">
+            <v-btn rounded="lg" variant="text" @click="toggleErrorDetails">
                 {{ showErrorDetails ? 'Hide Log' : 'Show Log' }}
             </v-btn>
             <v-spacer />
-            <v-btn color="primary" variant="tonal" @click="closeDialog"
+            <v-btn
+                rounded="lg"
+                color="primary"
+                variant="tonal"
+                @click="closeDialog"
                 >Close</v-btn
             >
         </template>

@@ -47,12 +47,14 @@
         <template #actions>
             <v-spacer />
             <v-btn
+                rounded="lg"
                 variant="text"
                 :disabled="saving"
                 @click="emit('update:modelValue', false)"
                 >Cancel</v-btn
             >
             <v-btn
+                rounded="lg"
                 color="primary"
                 variant="tonal"
                 :disabled="!validName"

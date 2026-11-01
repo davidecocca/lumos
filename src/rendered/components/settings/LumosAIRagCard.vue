@@ -29,6 +29,7 @@
                         variant="text"
                         size="small"
                         prepend-icon="ph-hammer"
+                        rounded="lg"
                         :disabled="!canRebuild"
                         :loading="rebuilding"
                         @click="rebuildDialog = true"
@@ -63,10 +64,17 @@
 
             <template #actions>
                 <v-spacer />
-                <v-btn variant="text" @click="rebuildDialog = false"
+                <v-btn
+                    rounded="lg"
+                    variant="text"
+                    @click="rebuildDialog = false"
                     >Cancel</v-btn
                 >
-                <v-btn color="primary" variant="tonal" @click="rebuildIndex"
+                <v-btn
+                    rounded="lg"
+                    color="primary"
+                    variant="tonal"
+                    @click="rebuildIndex"
                     >Rebuild</v-btn
                 >
             </template>

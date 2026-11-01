@@ -17,6 +17,7 @@
             placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
             variant="outlined"
             density="comfortable"
+            rounded="lg"
             clearable
             autofocus
             :error-messages="urlError ? [urlError] : []"
@@ -29,8 +30,11 @@
                 >Supported: youtube.com, youtu.be, music.youtube.com</span
             >
             <v-spacer />
-            <v-btn variant="text" @click="closeDialog"> Close </v-btn>
+            <v-btn rounded="lg" variant="text" @click="closeDialog">
+                Close
+            </v-btn>
             <v-btn
+                rounded="lg"
                 color="primary"
                 variant="tonal"
                 :disabled="!canEmbed"

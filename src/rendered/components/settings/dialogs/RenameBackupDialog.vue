@@ -34,6 +34,7 @@
         <template #actions>
             <v-spacer />
             <v-btn
+                rounded="lg"
                 variant="text"
                 :disabled="renaming"
                 @click="$emit('update:modelValue', false)"
@@ -41,6 +42,7 @@
                 Cancel
             </v-btn>
             <v-btn
+                rounded="lg"
                 color="primary"
                 variant="tonal"
                 type="submit"

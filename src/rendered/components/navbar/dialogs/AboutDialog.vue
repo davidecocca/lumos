@@ -19,7 +19,10 @@
 
         <template #actions>
             <v-spacer />
-            <v-btn variant="text" @click="$emit('update:modelValue', false)"
+            <v-btn
+                rounded="lg"
+                variant="text"
+                @click="$emit('update:modelValue', false)"
                 >Close</v-btn
             >
         </template>

@@ -17,8 +17,9 @@
             </template>
             <template v-else>{{ backupPath }}</template>
         </p>
-        Before restoring, Lumos will create a safety backup. Your current notes and images
-        will then be replaced, semantic search rebuilt, and the app restarted.
+        Before restoring, Lumos will create a safety backup. Your current notes
+        and images will then be replaced, semantic search rebuilt, and the app
+        restarted.
         <v-alert
             v-if="error"
             type="error"
@@ -33,6 +34,7 @@
         <template #actions>
             <v-spacer />
             <v-btn
+                rounded="lg"
                 variant="text"
                 :disabled="restoring"
                 @click="$emit('update:modelValue', false)"
@@ -40,6 +42,7 @@
                 Cancel
             </v-btn>
             <v-btn
+                rounded="lg"
                 color="error"
                 variant="tonal"
                 :loading="restoring"
