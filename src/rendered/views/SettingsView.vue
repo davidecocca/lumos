@@ -1,9 +1,6 @@
 <template>
     <div class="d-flex flex-column">
-        <!-- Page title -->
-        <ViewTitle title="Settings" subtitle="Set things your way." />
-
-        <v-tabs v-model="tab" align-tabs="center" color="primary" class="mb-4">
+        <v-tabs v-model="tab" align-tabs="start" color="primary" class="mb-4">
             <v-tab value="general" prepend-icon="ph-sliders-horizontal"
                 >General</v-tab
             >
@@ -38,7 +35,6 @@
 </template>
 
 <script setup>
-import ViewTitle from '../components/commons/ViewTitle.vue';
 import ChangeThemeCard from '../components/settings/ChangeThemeCard.vue';
 import LumosAICard from '../components/settings/LumosAICard.vue';
 import StartupCard from '../components/settings/StartupCard.vue';
