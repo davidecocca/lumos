@@ -43,6 +43,13 @@
 - **Rich Formatting**  
   Format and style your notes to make them truly yours.
 
+- **Kanban Boards**\
+  Open **Kanban** in the sidebar to create boards in your workspace. Add cards with titles and descriptions, then drag them between To do, In progress, In review, Blocked, and Done. Customize and reorder columns, or use card menus and the column dropdown to organize work with the keyboard. Boards are saved locally and included in backups.
+
+  Cards support optional due dates, priority, workspace-wide tags, and links to your notes. Search titles and descriptions, combine priority/tag/date filters, or duplicate a card from its menu. Quick filters show overdue work and unfinished cards due this calendar week (Monday–Sunday). Progress types—Not started, Active, Blocked, and Complete—keep completion independent of column names; completed cards never show as overdue.
+
+  Creation, update, and completion timestamps are recorded automatically and shown inside the card dialog. Historical timestamps for older cards display as **Not recorded**. Opening a linked note saves the card first.
+
 - **Generate with AI**  
   Stuck on an idea? Let Lumos AI suggest topics or expand your thoughts.
 

@@ -11,12 +11,12 @@ export const useTabsStore = defineStore('tabs', {
     state: () => ({
         tabs: [],
         activeNoteId: null,
-        workspaceId: 'default',
+        workspaceId: 0,
         isRestoring: false,
         restoreOpenTabsOnStartup: true,
     }),
     actions: {
-        async restoreSession(workspaceId = 'default') {
+        async restoreSession(workspaceId = 0) {
             this.isRestoring = true;
             try {
                 this.workspaceId = workspaceId;
@@ -63,7 +63,7 @@ export const useTabsStore = defineStore('tabs', {
         saveSession() {
             if (this.isRestoring) return;
             try {
-                const workspaceId = this.workspaceId || 'default';
+                const workspaceId = this.workspaceId ?? 0;
                 localStorage.setItem(
                     getWorkspaceSessionKey(workspaceId),
                     JSON.stringify({

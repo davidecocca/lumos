@@ -1,0 +1,4 @@
+{
+    "_comment": "Treat renderer .js files as ES modules for direct imports in Node tests; main-process files remain CommonJS.",
+    "type": "module"
+}

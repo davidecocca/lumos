@@ -2,66 +2,80 @@
     <v-card
         elevation="0"
         rounded="lg"
-        height="220"
-        class="border pa-2 d-flex flex-column"
+        height="180"
+        class="border pa-4 d-flex flex-column"
         @click="openNote(props.note.id)"
     >
-        <v-card-item>
-            <v-card-title class="d-flex flex-column ga-2">
-                <span>{{ props.note.title }}</span>
+        <div class="d-flex align-center ga-2">
+            <v-card-title
+                class="pa-0 text-title-large font-weight-medium text-truncate flex-grow-1 flex-shrink-1"
+                style="min-width: 0"
+                :title="props.note.title"
+            >
+                {{ props.note.title }}
             </v-card-title>
-
-            <template v-slot:append>
-                <v-chip
-                    color="primary"
-                    variant="tonal"
-                    size="small"
-                    rounded="lg"
-                    prepend-icon="ph-folder-simple"
-                >
-                    {{ props.note.folder_name }}
-                </v-chip>
-            </template>
-        </v-card-item>
+            <div class="flex-shrink-0" @click.stop @keydown.stop>
+                <NoteActionMenu
+                    v-model="noteActionMenu"
+                    :note="props.note"
+                    visible
+                    button-size="x-small"
+                    button-density="comfortable"
+                    button-class="text-medium-emphasis"
+                    @toggle-favorite="store.toggleNoteFavorite"
+                    @rename-note="store.openRenameNoteDialog"
+                    @move-note="store.openMoveNoteDialog"
+                    @delete-note="store.openDeleteNoteConfirmationDialog"
+                />
+            </div>
+        </div>
 
         <v-card-text
-            class="text-medium-emphasis mt-1 h-50 flex-grow-0 note-topic"
+            class="text-body-medium text-medium-emphasis pa-0 my-3 flex-grow-0 note-topic"
         >
             {{ props.note.topic || emptyNoteMessage }}
         </v-card-text>
 
-        <v-card-actions class="mt-auto">
-            <v-chip
-                v-if="props.showUpdatedAt"
-                variant="text"
-                prepend-icon="ph-pencil-simple"
+        <div
+            class="d-flex align-center ga-2 mt-auto text-body-small text-medium-emphasis"
+        >
+            <template v-if="props.note.folder_name">
+                <v-icon icon="ph-folder-simple" size="18" />
+                <span class="text-truncate" :title="props.note.folder_name">
+                    {{ props.note.folder_name }}
+                </span>
+            </template>
+            <v-spacer />
+            <span
+                v-if="props.showUpdatedAt && updatedAtLabel"
+                class="text-no-wrap"
             >
-                {{ updatedAtLabel }}
-            </v-chip>
-
-            <v-chip
-                v-if="props.showAccessedAt"
-                variant="text"
-                prepend-icon="ph-clock-counter-clockwise"
+                Updated {{ updatedAtLabel }}
+            </span>
+            <span
+                v-if="props.showAccessedAt && lastViewedAtLabel"
+                class="text-no-wrap"
             >
-                {{ lastViewedAtLabel }}
-            </v-chip>
-        </v-card-actions>
+                Last opened {{ lastViewedAtLabel }}
+            </span>
+        </div>
     </v-card>
 </template>
 
 <script setup>
+import NoteActionMenu from '../navbar/menus/NoteActionMenu.vue';
 import { useFoldersStore } from '../../stores/foldersStore';
 import { parseTimestamp } from '../../utils/date';
 
 import { useRouter } from 'vue-router';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
 import { round } from 'javascript-time-ago/steps';
 
 const router = useRouter();
 const store = useFoldersStore();
+const noteActionMenu = ref(false);
 const emptyNoteMessage = 'No content yet. Click to start writing.';
 
 TimeAgo.addDefaultLocale(en);

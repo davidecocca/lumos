@@ -160,10 +160,10 @@ class VectorStore {
      * @param {number} noteId - The ID of the note.
      * @param {string} content - The content of the note.
      * @param {string|null} title - Optional note title, embedded with each chunk.
-     * @param {string} workspaceId - Workspace owning the note.
+     * @param {number} workspaceId - Workspace owning the note.
      * @returns {Promise<void>}
      */
-    async addNote(noteId, content, title = null, workspaceId = null) {
+    async addNote(noteId, content, title = null, workspaceId) {
         try {
             if (!this.vectorStore) {
                 throw new Error('Vector store not initialized');
@@ -184,7 +184,7 @@ class VectorStore {
                         pageContent: `${docPrefix}${chunk}`,
                         metadata: {
                             source: noteId.toString(),
-                            workspaceId: String(workspaceId || ''),
+                            workspaceId: workspaceId.toString(),
                         },
                     }),
             );

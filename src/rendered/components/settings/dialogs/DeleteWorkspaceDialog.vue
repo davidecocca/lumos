@@ -7,7 +7,7 @@
         icon-color="error"
         @update:model-value="emit('update:modelValue', $event)"
     >
-        This workspace and all its folders, notes, images, and chats will be permanently deleted. This action cannot be undone.
+        This workspace and all its folders, notes, boards, and chats will be permanently deleted. This action cannot be undone.
         <div
             class="mt-4"
             v-if="workspace?.id === workspaceStore.currentWorkspaceId"

@@ -1,16 +1,51 @@
 <template>
     <div class="d-flex flex-column">
-        <!-- Page title -->
-        <ViewTitle title="Welcome back!" :subtitle="subtitle" />
-
-        <v-tabs v-model="tab" align-tabs="center" color="primary" class="mb-4">
-            <v-tab :value="favoritesTab" prepend-icon="ph-heart"
-                >Favorites</v-tab
+        <div class="d-flex align-center ga-3 mb-4">
+            <v-tabs
+                v-model="tab"
+                align-tabs="start"
+                color="primary"
+                class="flex-grow-1"
             >
-            <v-tab :value="recentsTab" prepend-icon="ph-clock-counter-clockwise"
-                >Recents</v-tab
+                <v-tab :value="favoritesTab" prepend-icon="ph-heart"
+                    >Favorites</v-tab
+                >
+                <v-tab
+                    :value="recentsTab"
+                    prepend-icon="ph-clock-counter-clockwise"
+                    >Recents</v-tab
+                >
+            </v-tabs>
+            <v-tooltip
+                text="Create a folder before adding a note"
+                location="bottom"
+                :disabled="loading || store.folders.length > 0"
             >
-        </v-tabs>
+                <template #activator="{ props }">
+                    <span
+                        v-bind="props"
+                        class="d-inline-flex flex-shrink-0"
+                        :tabindex="
+                            !loading && !store.folders.length ? 0 : undefined
+                        "
+                    >
+                        <v-btn
+                            color="primary"
+                            variant="tonal"
+                            prepend-icon="ph-plus"
+                            :disabled="loading || !store.folders.length"
+                            @click="
+                                store.openCreateNoteDialog(
+                                    store.activeFolderId,
+                                    true,
+                                )
+                            "
+                            >New note</v-btn
+                        >
+                    </span>
+                </template>
+            </v-tooltip>
+        </div>
 
         <v-tabs-window v-model="tab">
             <!-- Favorite notes -->
@@ -26,7 +61,7 @@
                         <v-card
                             class="border pa-4"
                             elevation="0"
-                            height="220"
+                            height="180"
                             rounded="lg"
                         >
                             <v-skeleton-loader
@@ -78,7 +113,7 @@
                         <v-card
                             class="border pa-4"
                             elevation="0"
-                            height="220"
+                            height="180"
                             rounded="lg"
                         >
                             <v-skeleton-loader
@@ -121,7 +156,6 @@
 </template>
 
 <script setup>
-import ViewTitle from '../components/commons/ViewTitle.vue';
 import EmptyState from '../components/commons/EmptyState.vue';
 import NoteCard from '../components/home/NoteCard.vue';
 
@@ -143,24 +177,7 @@ const recentsTab = 'recentsTab';
 const tab = ref(favoritesTab);
 const loading = ref(true);
 
-const subtitles = ref([
-    'Your thoughts, all in one place.',
-    'Capture. Organize. Remember.',
-    'From quick scribbles to big ideas.',
-    'Your second brain, ready to go.',
-    'Find it fast, remember it forever.',
-    'Because great ideas deserve a safe home.',
-    'Notes that work as hard as you do.',
-    'Your day, neatly organized.',
-    'Where your ideas come to life.',
-    'Search less, do more.',
-]);
-const subtitle = ref('');
-
 onMounted(async () => {
-    subtitle.value =
-        subtitles.value[Math.floor(Math.random() * subtitles.value.length)];
-
     await Promise.all([
         store.fetchFavoriteNotes(),
         store.fetchLastViewedNotes(),

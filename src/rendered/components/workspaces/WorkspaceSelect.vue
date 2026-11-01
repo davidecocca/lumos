@@ -50,7 +50,7 @@
 import WorkspaceAvatar from './WorkspaceAvatar.vue';
 
 defineProps({
-    modelValue: { type: String, default: null },
+    modelValue: { type: Number, default: null },
     workspaces: { type: Array, default: () => [] },
     label: { type: String, default: 'Workspace' },
     disabled: { type: Boolean, default: false },

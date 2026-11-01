@@ -171,12 +171,11 @@ async function createWorkspace(
     if (duplicate)
         throw new Error('A workspace with this name already exists.');
 
-    const id = crypto.randomUUID();
-    await run(
-        `INSERT INTO workspaces (id, name, icon, color, is_default) VALUES (?, ?, ?, ?, 0)`,
-        [id, normalizedName, icon, color],
+    const result = await run(
+        `INSERT INTO workspaces (name, icon, color, is_default) VALUES (?, ?, ?, 0)`,
+        [normalizedName, icon, color],
     );
-    return getWorkspace(id);
+    return getWorkspace(result.lastID);
 }
 
 // Update a workspace's name, icon, and color while preserving omitted values.

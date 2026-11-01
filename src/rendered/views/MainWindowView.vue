@@ -71,11 +71,17 @@
     <!-- Main content area -->
     <v-main
         class="detail-pane"
-        :class="{ 'detail-pane--editor': route.name === 'notes' }"
+        :class="{
+            'detail-pane--editor': route.name === 'notes',
+            'detail-pane--kanban-board': route.name === 'kanban-board',
+        }"
     >
         <v-container
             fluid
-            :class="{ 'detail-container--editor': route.name === 'notes' }"
+            :class="{
+                'detail-container--editor': route.name === 'notes',
+                'h-100 overflow-y-auto': route.name === 'kanban-board',
+            }"
         >
             <router-view
                 v-if="isSessionReady"
@@ -472,7 +478,8 @@ watch(
     min-height: 100vh;
 }
 
-.detail-pane--editor {
+.detail-pane--editor,
+.detail-pane--kanban-board {
     height: 100vh;
     min-height: 0;
     overflow: hidden;

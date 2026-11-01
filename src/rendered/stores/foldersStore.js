@@ -426,9 +426,9 @@ export const useFoldersStore = defineStore('folders', {
                 const currentWorkspaceId = (
                     await window.api.getCurrentWorkspace()
                 ).workspace.id;
-                const targetWorkspaceId = options.targetWorkspaceId || null;
+                const targetWorkspaceId = options.targetWorkspaceId ?? null;
                 if (
-                    targetWorkspaceId &&
+                    targetWorkspaceId != null &&
                     targetWorkspaceId !== currentWorkspaceId
                 ) {
                     await window.api.moveNoteToWorkspace({
@@ -451,7 +451,7 @@ export const useFoldersStore = defineStore('folders', {
                     (folder) => folder.id === resolvedCurrentFolderId,
                 );
                 const newFolder =
-                    targetWorkspaceId &&
+                    targetWorkspaceId != null &&
                     targetWorkspaceId !== currentWorkspaceId
                         ? null
                         : this.folders.find(
@@ -498,7 +498,7 @@ export const useFoldersStore = defineStore('folders', {
                     this.editorNoteCurrentFolderId = null;
                 }
                 if (
-                    targetWorkspaceId &&
+                    targetWorkspaceId != null &&
                     targetWorkspaceId !== currentWorkspaceId
                 ) {
                     useTabsStore().closeNote(noteId);

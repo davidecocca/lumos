@@ -1,4 +1,5 @@
 const vectorStore = require('../database/vectorStore');
+const vectorSync = require('../database/crud/notes/vectorSync');
 
 // Background worker that keeps LanceDB synchronized with SQLite notes.
 // Its main purpose is: save the note immediately, create embeddings later.
@@ -113,16 +114,12 @@ class VectorIndexer {
 
     // Index a single note by reading its latest state from SQLite, deleting any existing vectors, and creating new embeddings.
     async indexNote(noteId, attempt = 1) {
-        // Lazy require: crud.js imports this module, so requiring it at the top
-        // would create a circular dependency.
-        const crud = require('../database/crud');
-
         let note = null;
         try {
             // Latest state wins rule:
             // Read the note from SQLite right before embedding it, so we always embed the freshest content.
             note = await new Promise((resolve, reject) => {
-                crud.getNoteRawForIndexing(noteId, (err, row) =>
+                vectorSync.getNoteRawForIndexing(noteId, (err, row) =>
                     err ? reject(err) : resolve(row),
                 );
             });
@@ -179,9 +176,8 @@ class VectorIndexer {
     }
 
     async markSynced(noteId, updatedAt) {
-        const crud = require('../database/crud');
         await new Promise((resolve, reject) => {
-            crud.setNoteVectorSynced(noteId, updatedAt, (err) =>
+            vectorSync.setNoteVectorSynced(noteId, updatedAt, (err) =>
                 err ? reject(err) : resolve(),
             );
         });
@@ -196,9 +192,8 @@ class VectorIndexer {
      * @returns {Promise<number>} number of notes queued
      */
     async reconcile() {
-        const crud = require('../database/crud');
         const noteIds = await new Promise((resolve, reject) => {
-            crud.getNotesNeedingVectorSync((err, rows) => {
+            vectorSync.getNotesNeedingVectorSync((err, rows) => {
                 if (err) reject(err);
                 else resolve((rows || []).map((row) => row.id));
             });
@@ -220,9 +215,10 @@ class VectorIndexer {
      * Clear all sync markers (after a full index rebuild) and re-queue everything.
      */
     async rebuildAll() {
-        const crud = require('../database/crud');
         await new Promise((resolve, reject) => {
-            crud.clearVectorSync((err) => (err ? reject(err) : resolve()));
+            vectorSync.clearVectorSync((err) =>
+                err ? reject(err) : resolve(),
+            );
         });
         return this.reconcile();
     }
@@ -231,9 +227,8 @@ class VectorIndexer {
      * Aggregate status for the settings UI.
      */
     async getStatus() {
-        const crud = require('../database/crud');
         const stats = await new Promise((resolve, reject) => {
-            crud.getVectorSyncStats((err, rows) => {
+            vectorSync.getVectorSyncStats((err, rows) => {
                 if (err) reject(err);
                 else resolve(rows);
             });

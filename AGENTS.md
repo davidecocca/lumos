@@ -60,3 +60,9 @@ Key constraints:
 6. Assume files may change between interactions.
     - The user reviews and edits code manually.
     - Inspect the current file before applying follow-up changes.
+
+7. Keep database changes forward-only.
+    - When changing the database schema or stored data format, update the code and tests to use only the new version.
+    - Do not add startup migrations, legacy fallbacks, or backward-compatibility code unless explicitly requested.
+    - Migrate the existing local database once, outside app startup, rather than retaining migration logic in the app.
+    - Before migrating, back up the database and ensure the app is closed. Preserve existing data and verify integrity afterward.

@@ -207,7 +207,8 @@ corrupt, or after bulk-importing notes while the app was closed.
 | `src/main/services/localEmbeddings.js`                | Model loading, batching, prefix-free raw embedding                  |
 | `src/main/database/vectorStore.js`                    | LanceDB schema, manifest, add/delete/search, prefixes               |
 | `src/main/services/vectorIndexer.js`                  | Background queue, retries, reconcile/rebuild, status                |
-| `src/main/database/crud.js`                           | Save hooks calling `requestIndex`; `vector_sync` queries            |
+| `src/main/database/crud/notes/notes.js`               | Save hooks calling `requestIndex`                                  |
+| `src/main/database/crud/notes/vectorSync.js`          | `vector_sync` queries and raw notes for indexing                    |
 | `src/main/database/db.js`                             | Creates the `vector_sync` table                                     |
 | `src/main/main.js`                                    | Startup init (non-fatal), IPC handlers, `rag-status` broadcast      |
 | `src/main/preload.js`                                 | Safe renderer API surface (`searchSimilarNotes`, `getRagStatus`, …) |

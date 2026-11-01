@@ -23,7 +23,9 @@
             <v-btn
                 color="primary"
                 variant="tonal"
-                :disabled="!workspaceId || workspaceId === currentWorkspaceId"
+                :disabled="
+                    workspaceId == null || workspaceId === currentWorkspaceId
+                "
                 @click="moveFolder"
             >
                 Move
@@ -47,7 +49,7 @@ const props = defineProps({
         default: () => [],
     },
     currentWorkspaceId: {
-        type: String,
+        type: Number,
         default: null,
     },
     folderId: {
@@ -74,7 +76,10 @@ watch(
 const closeDialog = () => emit('update:modelValue', false);
 
 const moveFolder = () => {
-    if (!workspaceId.value || workspaceId.value === props.currentWorkspaceId) {
+    if (
+        workspaceId.value == null ||
+        workspaceId.value === props.currentWorkspaceId
+    ) {
         return;
     }
     emit('move-folder', props.folderId, workspaceId.value);

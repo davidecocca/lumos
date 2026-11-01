@@ -51,7 +51,11 @@
                                 :size="24"
                                 class="me-2"
                             />
-                            <v-icon v-else icon="ph-clock-counter-clockwise" class="me-1"/>
+                            <v-icon
+                                v-else
+                                icon="ph-clock-counter-clockwise"
+                                class="me-1"
+                            />
                             <span class="text-truncate">{{
                                 startupLabel
                             }}</span>
@@ -173,9 +177,9 @@ const setStartupWorkspace = async (workspaceId) => {
     error.value = '';
     try {
         await workspaceStore.setStartupPreferences({
-            startupMode: workspaceId ? 'specific' : 'last-used',
+            startupMode: workspaceId != null ? 'specific' : 'last-used',
             startupWorkspaceId:
-                workspaceId || workspaceStore.preferences.startupWorkspaceId,
+                workspaceId ?? workspaceStore.preferences.startupWorkspaceId,
         });
     } catch (cause) {
         error.value = cause.message || 'Could not save the startup preference.';

@@ -78,7 +78,7 @@ const props = defineProps({
         default: () => [],
     },
     currentWorkspaceId: {
-        type: String,
+        type: Number,
         default: null,
     },
     noteId: {
@@ -106,7 +106,7 @@ const loadWorkspaceFolders = async (workspaceId) => {
     workspaceFolders.value = [];
     loadingFolders.value = false;
     folderError.value = '';
-    if (!workspaceId) {
+    if (workspaceId == null) {
         workspaceFolders.value = [];
         return;
     }
@@ -157,7 +157,7 @@ const closeDialog = () => emit('update:modelValue', false);
 const moveNote = () => {
     if (
         !newFolderId.value ||
-        !selectedWorkspaceId.value ||
+        selectedWorkspaceId.value == null ||
         loadingFolders.value
     )
         return;

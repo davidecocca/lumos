@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('api', {
     forceReload: () => ipcRenderer.send('force-reload'),
     updateMenuState: (state) => ipcRenderer.send('update-menu-state', state),
     getAppInfo: () => ipcRenderer.invoke('get-app-info'),
+    openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
     // Workspaces
     getWorkspaces: () => ipcRenderer.invoke('get-workspaces'),
     getCurrentWorkspace: () => ipcRenderer.invoke('get-current-workspace'),
@@ -45,6 +46,26 @@ contextBridge.exposeInMainWorld('api', {
         ipcRenderer.on('codex-stream', listener);
         return () => ipcRenderer.removeListener('codex-stream', listener);
     },
+    // Kanban
+    listKanbanBoards: (payload) => ipcRenderer.invoke('kanban-list', payload),
+    getKanbanBoard: (payload) => ipcRenderer.invoke('kanban-get', payload),
+    getKanbanOptions: (payload) =>
+        ipcRenderer.invoke('kanban-options', payload),
+    createKanbanBoard: (payload) =>
+        ipcRenderer.invoke('kanban-create', payload),
+    renameKanbanBoard: (payload) =>
+        ipcRenderer.invoke('kanban-rename', payload),
+    saveKanbanColumns: (payload) =>
+        ipcRenderer.invoke('kanban-saveColumns', payload),
+    saveKanbanCard: (payload) => ipcRenderer.invoke('kanban-saveCard', payload),
+    moveKanbanCard: (payload) => ipcRenderer.invoke('kanban-moveCard', payload),
+    deleteKanbanCard: (payload) =>
+        ipcRenderer.invoke('kanban-deleteCard', payload),
+    duplicateKanbanBoard: (payload) =>
+        ipcRenderer.invoke('kanban-duplicate', payload),
+    deleteKanbanBoard: (payload) =>
+        ipcRenderer.invoke('kanban-remove', payload),
+
     // Folders
     createFolder: (name) => ipcRenderer.invoke('create-folder', name),
     getFolderContent: (id) => ipcRenderer.invoke('get-folder-content', id),

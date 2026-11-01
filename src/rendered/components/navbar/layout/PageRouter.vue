@@ -6,7 +6,7 @@
         nav
         mandatory
         select-strategy="single-independent"
-        :selected="[currentRoute.name]"
+        :selected="[activePage]"
     >
         <v-tooltip
             v-for="item in items"
@@ -21,13 +21,13 @@
                     class="page-router-item"
                     rounded="lg"
                     :value="item.value"
-                    :active="currentRoute.name === item.value"
+                    :active="activePage === item.value"
                     @click="openRoute(item.value)"
                 >
                     <template v-slot:prepend>
                         <v-icon
                             :icon="
-                                currentRoute.name === item.value
+                                activePage === item.value
                                     ? `${item.icon}-fill`
                                     : item.icon
                             "
@@ -36,8 +36,7 @@
                     <template v-if="!rail" v-slot:title>
                         <span
                             :class="{
-                                'font-weight-medium':
-                                    currentRoute.name === item.value,
+                                'font-weight-medium': activePage === item.value,
                             }"
                             >{{ item.title }}</span
                         >
@@ -60,6 +59,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { formatShortcut, vHotkeyPlatform } from '../../../utils/shortcuts';
 
@@ -86,6 +86,7 @@ const items = [
         hintShortcut: '⌘K',
     },
     { icon: 'ph-house', title: 'Home', value: 'home' },
+    { icon: 'ph-kanban', title: 'Kanban', value: 'kanban' },
     {
         icon: 'ph-chat-circle',
         title: 'Chat',
@@ -101,6 +102,9 @@ const items = [
 
 const router = useRouter();
 const currentRoute = useRoute();
+const activePage = computed(() =>
+    currentRoute.name === 'kanban-board' ? 'kanban' : currentRoute.name,
+);
 
 const hotkeyPlatform = vHotkeyPlatform();
 

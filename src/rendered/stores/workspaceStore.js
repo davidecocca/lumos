@@ -9,14 +9,14 @@ export const useWorkspaceStore = defineStore('workspaces', {
         currentWorkspace: null,
         preferences: {
             startupMode: 'last-used',
-            startupWorkspaceId: 'default',
-            lastUsedWorkspaceId: 'default',
+            startupWorkspaceId: 0,
+            lastUsedWorkspaceId: 0,
         },
         initialized: false,
         switching: false,
     }),
     getters: {
-        currentWorkspaceId: (state) => state.currentWorkspace?.id || null,
+        currentWorkspaceId: (state) => state.currentWorkspace?.id ?? null,
     },
     actions: {
         async initialize() {
@@ -85,7 +85,7 @@ export const useWorkspaceStore = defineStore('workspaces', {
         },
         async deleteWorkspace(id) {
             if (id === this.currentWorkspaceId) {
-                await this.switchWorkspace('default');
+                await this.switchWorkspace(0);
             }
             await window.api.deleteWorkspace(id);
             await this.refresh();

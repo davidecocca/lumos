@@ -15,6 +15,10 @@ const path = require('path');
 const fs = require('fs/promises');
 const { getDataPath, getVectorStorePath } = require('./storagePaths');
 const database = require('./database/db');
+const kanbanBoards = require('./database/crud/kanban/boards');
+const kanbanColumns = require('./database/crud/kanban/columns');
+const kanbanCards = require('./database/crud/kanban/cards');
+const kanbanOptions = require('./database/crud/kanban/options');
 const backupService = require('./services/backupService');
 const syncService = require('./services/syncService');
 const vectorStore = require('./database/vectorStore');
@@ -27,15 +31,17 @@ const noteExportService = require('./services/noteExportService');
 const { checkCodex, runCodex } = require('./services/codexService');
 const { randomUUID } = require('crypto');
 
-// Import CRUD functions from the local DB layer
+// Import workspace-scoped operations from the local DB layer.
 const {
     createFolder,
     getFolderContent,
     getFolder,
     updateFolder,
     deleteFolder,
-    createNote,
     listFolders,
+} = require('./database/crud/notes/folders');
+const {
+    createNote,
     getNote,
     getNotesByIds,
     listNotes,
@@ -48,15 +54,17 @@ const {
     updateNoteLastViewed,
     getFavoriteNotes,
     getLastViewedNotes,
-    searchNotes,
-    clearVectorSync,
+} = require('./database/crud/notes/notes');
+const { searchNotes } = require('./database/crud/notes/search');
+const { clearVectorSync } = require('./database/crud/notes/vectorSync');
+const {
     createChatConversation,
     listChatConversations,
     getChatConversation,
     appendChatMessage,
     updateChatConversation,
     deleteChatConversation,
-} = require('./database/crud.js');
+} = require('./database/crud/chat');
 
 const sendMenuAction = (window, action) => {
     window?.webContents.send('menu-action', action);
@@ -368,6 +376,17 @@ function setupIPC() {
         platform: process.platform,
     }));
 
+    ipcMain.handle('open-external-url', (_, value) => {
+        if (typeof value !== 'string') throw new Error('Invalid link.');
+        const url = new URL(value);
+        if (
+            !['http:', 'https:', 'mailto:'].includes(url.protocol) ||
+            (url.protocol === 'mailto:' ? !url.pathname : !url.hostname)
+        )
+            throw new Error('Only web and email links can be opened.');
+        return shell.openExternal(url.href);
+    });
+
     // --- Workspace management ---
     ipcMain.handle('get-workspaces', () => workspaceService.listWorkspaces());
     ipcMain.handle('get-current-workspace', async () => ({
@@ -586,6 +605,29 @@ function setupIPC() {
         if (!vaultPath) throw new Error('Sync is not configured.');
         shell.openPath(vaultPath);
     });
+
+    // --- Kanban IPC ---
+    ipcMain.handle('kanban-list', (_, payload) => kanbanBoards.list(payload));
+    ipcMain.handle('kanban-get', (_, payload) => kanbanBoards.get(payload));
+    ipcMain.handle('kanban-options', (_, payload) =>
+        kanbanOptions.getOptions(payload),
+    );
+    for (const [action, operation] of Object.entries({
+        create: kanbanBoards.create,
+        rename: kanbanBoards.rename,
+        saveColumns: kanbanColumns.saveColumns,
+        saveCard: kanbanCards.saveCard,
+        moveCard: kanbanCards.moveCard,
+        deleteCard: kanbanCards.deleteCard,
+        duplicate: kanbanBoards.duplicate,
+        remove: kanbanBoards.deleteBoard,
+    })) {
+        ipcMain.handle(`kanban-${action}`, async (_, payload) => {
+            const result = await operation(payload);
+            scheduleSyncableChange();
+            return result;
+        });
+    }
 
     // --- Folder IPC ---
     ipcMain.handle('create-folder', async (event, name) => {
